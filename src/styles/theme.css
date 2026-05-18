@@ -1,0 +1,147 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #0B0E1A;
+  --foreground: #F2F2F5;
+  --card: #141828;
+  --card-foreground: #F2F2F5;
+  --popover: #141828;
+  --popover-foreground: #F2F2F5;
+  --primary: #F2F2F5;
+  --primary-foreground: #0B0E1A;
+  --secondary: #7A8699;
+  --secondary-foreground: #F2F2F5;
+  --muted: #141828;
+  --muted-foreground: #7A8699;
+  --accent: #141828;
+  --accent-foreground: #FF4D7E;
+  --destructive: #FF4D7E;
+  --destructive-foreground: #F2F2F5;
+  --border: rgba(122, 134, 153, 0.2);
+  --input: transparent;
+  --input-background: #141828;
+  --switch-background: #7A8699;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #FF4D7E;
+  --radius: 14px;
+  
+  /* Tokyo Midnight specific colors */
+  --color-tertiary: #FF4D7E;
+  
+  --sidebar: #0B0E1A;
+  --sidebar-foreground: #F2F2F5;
+  --sidebar-primary: #FF4D7E;
+  --sidebar-primary-foreground: #0B0E1A;
+  --sidebar-accent: #141828;
+  --sidebar-accent-foreground: #FF4D7E;
+  --sidebar-border: rgba(122, 134, 153, 0.2);
+  --sidebar-ring: #FF4D7E;
+}
+
+/* Tokyo Midnight is a dark-first theme, so .dark remains similar or slightly adjusted if needed */
+.dark {
+  --background: #0B0E1A;
+  --foreground: #F2F2F5;
+  --card: #141828;
+  --card-foreground: #F2F2F5;
+  --popover: #141828;
+  --popover-foreground: #F2F2F5;
+  --primary: #F2F2F5;
+  --primary-foreground: #0B0E1A;
+  --secondary: #7A8699;
+  --secondary-foreground: #F2F2F5;
+  --muted: #141828;
+  --muted-foreground: #7A8699;
+  --accent: #141828;
+  --accent-foreground: #FF4D7E;
+  --destructive: #FF4D7E;
+  --destructive-foreground: #F2F2F5;
+  --border: rgba(122, 134, 153, 0.2);
+}
+
+@theme inline {
+  --font-family-display: "Space Grotesk", sans-serif;
+  --font-family-body: "Inter", sans-serif;
+  --font-family-label: "JetBrains Mono", monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--color-tertiary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: var(--radius);
+  --radius-xl: 18px;
+
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 32px;
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family-body);
+    line-height: 1.55;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-family-display);
+    letter-spacing: -0.03em;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  label, .font-label {
+    font-family: var(--font-family-label);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  button {
+    font-weight: 600;
+  }
+}
