@@ -127,7 +127,7 @@ function AppRowItem({
         <td className="px-6 py-4 font-medium text-sm text-primary">{app.appName}</td>
         <td className="px-6 py-4 text-sm text-secondary">{app.ownerId}</td>
         <td className="px-6 py-4">
-          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label border ${riskStyle}`}>{app.risk.toUpperCase()}</span>
+          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label border ${riskStyle}`}>{app.risk?.toUpperCase() ?? "N/A"}</span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons onDepClick={() => onDepClick(app.id)} />
@@ -162,7 +162,7 @@ function AppRowItem({
                         <td className="px-4 py-2">
                           <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-label border ${
                             srv.environment === "Production" ? "bg-primary/10 text-primary border-primary/20" : "bg-secondary/10 text-secondary border-secondary/20"
-                          }`}>{srv.environment.toUpperCase()}</span>
+                          }`}>{srv.environment?.toUpperCase() ?? "UNKNOWN"}</span>
                         </td>
                         <td className="px-4 py-2">
                           <span className="flex items-center gap-1.5 text-xs text-primary font-label uppercase">

@@ -141,7 +141,7 @@ function ServerRowItem({
               ? "bg-primary/10 text-primary border-primary/20"
               : "bg-secondary/10 text-secondary border-secondary/20"
           }`}>
-            {server.environment.toUpperCase()}
+            {server.environment?.toUpperCase() ?? "UNKNOWN"}
           </span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
