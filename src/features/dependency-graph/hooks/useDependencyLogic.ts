@@ -9,6 +9,7 @@ import {
   type Edge,
   type Connection,
 } from "@xyflow/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../../../core/api";
 import { PaletteApp, SelectedItem } from "../types";
 
@@ -18,7 +19,6 @@ const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
 export function useDependencyLogic() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [paletteApps, setPaletteApps] = useState<PaletteApp[]>([]);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
@@ -27,48 +27,51 @@ export function useDependencyLogic() {
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
 
   const reactFlowInstance = useReactFlow();
+  const queryClient = useQueryClient();
 
-  // ── Fetch palette and graph data ──────────────────────────────────────────
-  useEffect(() => {
-    const initData = async () => {
-      setIsLoading(true);
-      try {
-        const queryParams = new URLSearchParams({
-          environment: selectedEnv,
-          datacenter: selectedDatacenter,
-        });
+  // ── Fetch graph data with useQuery ────────────────────────────────────────
+  const { isLoading: isGraphLoading, isFetching: isGraphFetching } = useQuery({
+    queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        environment: selectedEnv,
+        datacenter: selectedDatacenter,
+      });
+      const data = await apiFetch<{ nodes: any[]; edges: any[] }>(`/api/dependency/map?${queryParams}`);
+      
+      const mappedNodes = data.nodes.map((n) => ({
+        ...n,
+        zIndex: n.type === "serverNode" ? -1 : undefined,
+      }));
 
-        const [graphData, appsData] = await Promise.all([
-          apiFetch<{ nodes: any[]; edges: any[] }>(`/api/analytics/dependencies?${queryParams}`),
-          apiFetch<PaletteApp[]>("/api/applications"),
-        ]);
-        
-        const mappedNodes = graphData.nodes.map((n) => ({
-          ...n,
-          zIndex: n.type === "serverNode" ? -1 : undefined,
-        }));
+      const mappedEdges = data.edges.map((e) => ({
+        ...e,
+        type: "default",
+        animated: true,
+        markerEnd: edgeMarker,
+        style: edgeStyle,
+        data: { protocol: e.data?.protocol ?? e.protocol ?? "TCP" },
+      }));
 
-        const mappedEdges = graphData.edges.map((e) => ({
-          ...e,
-          type: "default",
-          animated: true,
-          markerEnd: edgeMarker,
-          style: edgeStyle,
-          data: { protocol: e.data?.protocol ?? e.protocol ?? "TCP" },
-        }));
+      setNodes(mappedNodes);
+      setEdges(mappedEdges);
+      return data;
+    },
+  });
 
-        setNodes(mappedNodes);
-        setEdges(mappedEdges);
-        setPaletteApps(appsData);
-      } catch (err) {
-        console.error("[useDependencyLogic] Initialization failed:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // ── Fetch palette applications ────────────────────────────────────────────
+  const { isLoading: isAppsLoading, isFetching: isAppsFetching } = useQuery({
+    queryKey: ["applications"],
+    queryFn: async () => {
+      const data = await apiFetch<PaletteApp[]>("/api/applications");
+      setPaletteApps(data);
+      return data;
+    },
+  });
 
-    initData();
-  }, [setNodes, setEdges, selectedEnv, selectedDatacenter]);
+  const isLoading = isGraphLoading || isAppsLoading || isGraphFetching || isAppsFetching;
+
+
 
   // ── Connect two nodes ──────────────────────────────────────────────────────
   const onConnect = useCallback(
@@ -200,6 +203,15 @@ export function useDependencyLogic() {
     [nodes, edges, getDependencies],
   );
 
+  // ── Auto-Map from DB ──────────────────────────────────────────────────────
+  const handleAutoMap = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
+    setTimeout(() => {
+      reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
+    }, 100);
+  }, [queryClient, reactFlowInstance]);
+
+
   return {
     nodes,
     edges,
@@ -219,5 +231,7 @@ export function useDependencyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    handleAutoMap,
   };
 }
+

@@ -5,6 +5,7 @@ import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanva
 import { PaletteSidebar } from "../../features/dependency-graph/components/PaletteSidebar";
 import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
+import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
 import { RegisterModal } from "../../app/components/RegisterModal";
 
 function DependencyManagerContent() {
@@ -13,6 +14,7 @@ function DependencyManagerContent() {
     onSelectionChange, isLoading, paletteApps, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
+    handleAutoMap,
   } = useDependencyLogic();
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -20,12 +22,17 @@ function DependencyManagerContent() {
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
       {/* Performance Filter Bar */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3">
         <FilterBar
           selectedEnv={selectedEnv}
           setSelectedEnv={setSelectedEnv}
           selectedDatacenter={selectedDatacenter}
           setSelectedDatacenter={setSelectedDatacenter}
+        />
+        <SubToolbar 
+          onAddServer={() => setIsRegisterModalOpen(true)}
+          onAddDatacenter={() => console.log("Add Datacenter")}
+          onAutoMap={handleAutoMap}
         />
       </div>
 

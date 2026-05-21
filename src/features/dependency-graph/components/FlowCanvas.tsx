@@ -1,17 +1,20 @@
+import { useMemo } from "react";
 import {
   ReactFlow,
   Background,
   MiniMap,
+  DefaultEdgeOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { AppNode } from "./AppNode";
-import { ServerNode } from "./ServerNode";
+import { ServerGroupNode } from "./ServerGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 
-const nodeTypes = {
-  appNode: AppNode,
-  serverNode: ServerNode,
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: 'default', // Bezier is default in ReactFlow
+  animated: true,
+  style: { strokeWidth: 2, stroke: "#3b82f6" },
 };
 
 interface FlowCanvasProps {
@@ -39,6 +42,11 @@ export function FlowCanvas({
   isLoading,
   onQuickAdd,
 }: FlowCanvasProps) {
+  const nodeTypes = useMemo(() => ({
+    appNode: AppNode,
+    serverNode: ServerGroupNode,
+  }), []);
+
   return (
     <div className="relative w-full h-full bg-background">
       {isLoading && (
@@ -59,6 +67,7 @@ export function FlowCanvas({
         onDrop={onDrop}
         onDragOver={onDragOver}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
         fitView
         className="bg-background"
         colorMode="dark"
@@ -76,3 +85,4 @@ export function FlowCanvas({
     </div>
   );
 }
+
