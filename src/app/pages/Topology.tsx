@@ -1,18 +1,20 @@
 import { Network, Server as ServerIcon, Plug, Building, Filter } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import apiClient, { Schemas } from "../../shared/api/client";
 
-import { apiFetch } from "../../core/api";
-
-type RegistryPort = { id: string; portNumber: number; appName: string };
-type RegistryServer = { id: string; ipAddress: string; hostname: string; ports: RegistryPort[] };
+type RegistryServer = Schemas["ServerNodeDto"];
 
 export function Topology() {
   const [nodeLimit, setNodeLimit] = useState(100);
 
   const { data: registryData = [], isLoading: isInitialLoading, isFetching } = useQuery<RegistryServer[]>({
     queryKey: ["topology-tree"],
-    queryFn: () => apiFetch("/api/topology/tree"),
+    queryFn: async () => {
+      const response = await apiClient.get<Schemas["TopologyTreeDto"][]>("/api/Topology/tree");
+      // Flatten servers from all datacenters for the current UI
+      return response.data.flatMap(dc => dc.servers || []);
+    },
   });
 
   const isLoading = isInitialLoading || isFetching;
@@ -136,22 +138,22 @@ function ServerNode({ server }: { server: RegistryServer }) {
       </div>
 
       {/* Ports Container */}
-      {server.ports && server.ports.length > 0 && (
+      {server.applications && server.applications.length > 0 && (
         <>
           <div className="w-px h-8 bg-slate-800"></div>
           <div className="relative flex justify-center w-full">
-            {server.ports.length > 1 && (
+            {server.applications.length > 1 && (
               <div className="absolute top-0 h-px bg-slate-800" style={{ left: '25%', right: '25%' }}></div>
             )}
             <div className="flex gap-4 justify-center">
-              {server.ports.map(port => (
-                <div key={port.id} className="flex flex-col items-center">
+              {server.applications.map(app => (
+                <div key={app.id} className="flex flex-col items-center">
                   <div className="w-px h-6 bg-slate-800"></div>
                   <div className="z-10 flex items-center gap-2 px-3 py-1.5 bg-[#0c1322] border border-slate-800 rounded-lg text-primary hover:border-slate-700 hover:bg-[#11192e] transition-all duration-200 shadow-sm">
                     <Plug size={11} className="text-tertiary/70" />
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-secondary/80 font-medium">{port.appName}</span>
-                      <span className="font-mono text-[11px] font-bold text-tertiary tracking-tighter">{port.portNumber}</span>
+                      <span className="text-[10px] text-secondary/80 font-medium">{app.name}</span>
+                      <span className="font-mono text-[11px] font-bold text-tertiary tracking-tighter">{app.port}</span>
                     </div>
                   </div>
                 </div>

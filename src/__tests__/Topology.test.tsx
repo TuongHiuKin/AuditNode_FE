@@ -2,9 +2,18 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Topology } from "../app/pages/Topology";
+import apiClient from "../shared/api/client";
 
-// Mock fetch
-global.fetch = vi.fn();
+// Mock the apiClient
+vi.mock("../shared/api/client", () => ({
+  default: {
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn(), eject: vi.fn() },
+      response: { use: vi.fn(), eject: vi.fn() },
+    },
+  },
+}));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,10 +28,7 @@ describe("Topology Page", () => {
   });
 
   it("renders the Datacenter node and micro-dot background", async () => {
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
 
     render(
       <QueryClientProvider client={queryClient}>
@@ -46,19 +52,22 @@ describe("Topology Page", () => {
   it("renders server nodes when data is fetched", async () => {
     const mockData = [
       {
-        id: "s1",
-        ipAddress: "10.0.0.1",
-        hostname: "web-srv-01",
-        ports: [
-          { id: "p1", portNumber: 80, appName: "HTTP" }
+        id: "dc-1",
+        name: "Corporate Datacenter",
+        servers: [
+          {
+            id: "s1",
+            ipAddress: "10.0.0.1",
+            hostname: "web-srv-01",
+            applications: [
+              { id: "p1", port: 80, name: "HTTP" }
+            ]
+          }
         ]
       }
     ];
 
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
     render(
       <QueryClientProvider client={queryClient}>

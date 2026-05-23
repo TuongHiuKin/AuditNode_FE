@@ -37,3 +37,43 @@ Integrate live backend REST APIs into the ReactFlow Dependency Canvas and Topolo
 
 3. VITEST SUITE COMPLIANCE:
 - Update 'src/__tests__/DependencyManager.test.tsx' using MSW (Mock Service Worker) or standard Vitest spy network mocks to simulate active API loading and success states. Assert that the 'ServerGroupNode' container safely parses the real IP string and prints it without throwing TypeErrors.
+
+## [2026-05-23] Configure type-safe API synchronization with openapi-typescript
+**Context:** Setting up a type-safe API pipeline, centralized Axios client with Keycloak interceptors, and TanStack Query refactoring.
+**Prompt:**
+Configure a type-safe API synchronization pipeline using OpenAPI TypeScript and a centralized Axios client.
+
+1. NPM TOOLING SETUP:
+- Install 'openapi-typescript' and 'axios' (using --legacy-peer-deps for TypeScript 6.x compatibility).
+- Register "sync-api" script: "openapi-typescript http://localhost:5000/openapi/v1.json --output src/shared/api/v1-contract.ts".
+
+2. CENTRALIZED API CLIENT BINDING:
+- Create 'src/shared/api/client.ts' with an Axios instance consuming generated 'v1-contract.ts' types.
+- Configure request interceptors to inject Keycloak Bearer Tokens into 'Authorization' headers.
+- Refactor ReactFlow components and TanStack Query hooks (useDependencyLogic, ServerTable, AppTable, Topology) to bind directly to generated contract schemas.
+
+3. VALIDATION & TESTING:
+- Update existing Vitest suites (ServerTable, AppTable, Topology, DependencyManager) to mock the new Axios client and use QueryClientProvider.
+- Ensure all infrastructure properties (ipAddress, appName, portNumber) match the backend's camelCase DTOs.
+
+## [2026-05-23] Synchronize with Scalar Backend and Refactor DTOs
+**Context:** Updating endpoint to https://localhost:7126, handling self-signed certificates, and refactoring to new DTO names (ServerResponseDto, ApplicationResponseDto, etc.).
+**Prompt:**
+Synchronize the Frontend with the live Scalar-enabled Backend at https://localhost:7126/openapi/v1.json.
+
+1. ENDPOINT UPDATE & SECURITY:
+- Update 'sync-api' in 'package.json' to 'https://localhost:7126/openapi/v1.json'.
+- Use 'cross-env NODE_TLS_REJECT_UNAUTHORIZED=0' to bypass self-signed certificate errors during local synchronization.
+- Update default 'API_BASE' in 'src/shared/api/client.ts' to 'https://localhost:7126'.
+
+2. DTO REFACTORING:
+- Refactor 'useDependencyLogic.ts' to map new 'DependencyMapDto' (grouped servers/apps) to flat ReactFlow nodes.
+- Update 'ServerTable.tsx' to consume 'ServerResponseDto' and use 'applications' instead of 'apps'.
+- Update 'AppTable.tsx' to consume 'ApplicationResponseDto'.
+- Update 'Topology.tsx' to flatten 'TopologyTreeDto' (datacenter-grouped) for the tree view and map 'applications' instead of 'ports'.
+
+3. TEST COMPLIANCE:
+- Update Vitest mocks in 'Topology.test.tsx' and 'DependencyManager.test.tsx' to reflect the new nested DTO structures.
+- Ensure 100% pass rate for all 22 tests.
+
+
