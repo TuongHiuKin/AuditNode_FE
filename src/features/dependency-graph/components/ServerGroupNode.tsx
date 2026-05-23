@@ -31,6 +31,11 @@ export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNodeData
         <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 uppercase tracking-tight">
           {data.server.ipAddress}
         </span>
+        {data.server.osType && (
+          <span className="text-[10px] font-mono text-secondary/60 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 uppercase tracking-tight">
+            {data.server.osType}
+          </span>
+        )}
       </div>
 
       {/* Connection Handles */}

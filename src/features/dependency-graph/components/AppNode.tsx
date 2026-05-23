@@ -27,11 +27,20 @@ export function AppNode({ data, selected }: any) {
         <Icon size={14} />
       </div>
       <div className="h-4 w-px bg-slate-800 shrink-0" />
-      <span className="text-[11px] font-mono text-tertiary/90 shrink-0 font-bold tracking-tighter">{data.app.portNumber}</span>
+      <div className="flex flex-col shrink-0">
+        <span className="text-[10px] font-mono text-tertiary/90 font-bold tracking-tighter leading-none">{data.app.portNumber}</span>
+        <span className="text-[8px] font-mono text-secondary/50 font-bold uppercase tracking-tight leading-none mt-0.5">{data.app.protocol}</span>
+      </div>
       <div className="h-4 w-px bg-slate-800 shrink-0" />
       <span className="text-xs font-medium text-primary/90 truncate flex-1 font-body">
         {data.app.appName}
       </span>
+      {data.app.risk && (
+        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ml-1 ${
+          data.app.risk === "Critical" || data.app.risk === "High" ? "bg-rose-500" :
+          data.app.risk === "Medium" ? "bg-amber-500" : "bg-emerald-500"
+        }`} title={`Risk: ${data.app.risk}`} />
+      )}
       <Handle
         type="source"
         position={Position.Right}

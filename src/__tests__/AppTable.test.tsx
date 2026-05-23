@@ -1,10 +1,28 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppTable } from "../app/components/AppTable";
+import apiClient from "../shared/api/client";
 
-// Mock fetch
-global.fetch = vi.fn();
+// Mock the apiClient
+vi.mock("../shared/api/client", () => ({
+  default: {
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn(), eject: vi.fn() },
+      response: { use: vi.fn(), eject: vi.fn() },
+    },
+  },
+}));
+
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
 
 describe("AppTable Reproduction", () => {
   beforeEach(() => {
@@ -20,19 +38,19 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         // risk: "High", // Intentionally omitted
         desc: "Test Description",
-        servers: []
+        hostedServers: []
       }
     ];
 
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <AppTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     // Wait for the skeleton to disappear and the data to render
@@ -52,19 +70,19 @@ describe("AppTable Reproduction", () => {
         appName: "High Risk App",
         ownerId: "OWNER-2",
         risk: "High",
-        servers: []
+        hostedServers: []
       }
     ];
 
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <AppTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await waitFor(() => {
@@ -87,19 +105,19 @@ describe("AppTable Reproduction", () => {
         appName: "Medium Risk App",
         ownerId: "OWNER-3",
         risk: "Medium",
-        servers: []
+        hostedServers: []
       }
     ];
 
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <AppTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await waitFor(() => {
@@ -122,7 +140,7 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         risk: "High",
         desc: "Test Description",
-        servers: [
+        hostedServers: [
           {
             id: "s1",
             ipAddress: "1.1.1.1",
@@ -135,15 +153,15 @@ describe("AppTable Reproduction", () => {
       }
     ];
 
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockData,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <AppTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await waitFor(() => {
@@ -158,7 +176,4 @@ describe("AppTable Reproduction", () => {
       expect(screen.getByText("UNKNOWN")).toBeDefined();
     });
   });
-
-
-
 });

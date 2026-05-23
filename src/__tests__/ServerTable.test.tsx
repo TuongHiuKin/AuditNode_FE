@@ -1,10 +1,28 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerTable } from "../app/components/ServerTable";
+import apiClient from "../shared/api/client";
 
-// Mock fetch
-global.fetch = vi.fn();
+// Mock the apiClient
+vi.mock("../shared/api/client", () => ({
+  default: {
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn(), eject: vi.fn() },
+      response: { use: vi.fn(), eject: vi.fn() },
+    },
+  },
+}));
+
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
 
 describe("ServerTable", () => {
   beforeEach(() => {
@@ -24,15 +42,15 @@ describe("ServerTable", () => {
   ];
 
   it("renders server rows and applies SaaS monochromatic container styles", async () => {
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockServers,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <ServerTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ServerTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     // Wait for loading to finish
@@ -50,15 +68,15 @@ describe("ServerTable", () => {
   });
 
   it("enforces monospaced font for IP addresses", async () => {
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockServers,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <ServerTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ServerTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await waitFor(() => {
@@ -68,15 +86,15 @@ describe("ServerTable", () => {
   });
 
   it("applies technical mono headers tracking-widest", async () => {
-    (fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockServers,
-    });
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
 
+    const queryClient = createTestQueryClient();
     render(
-      <MemoryRouter>
-        <ServerTable />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ServerTable />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
 
     await waitFor(() => {
