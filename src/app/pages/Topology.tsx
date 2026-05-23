@@ -8,16 +8,20 @@ type RegistryServer = Schemas["ServerNodeDto"];
 export function Topology() {
   const [nodeLimit, setNodeLimit] = useState(100);
 
-  const { data: registryData = [], isLoading: isInitialLoading, isFetching } = useQuery<RegistryServer[]>({
+  const { data: topologyData = [], isLoading: isInitialLoading, isFetching } = useQuery<Schemas["TopologyTreeDto"][]>({
     queryKey: ["topology-tree"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["TopologyTreeDto"][]>("/api/Topology/tree");
-      // Flatten servers from all datacenters for the current UI
-      return response.data.flatMap(dc => dc.servers || []);
+      return response.data;
     },
   });
 
-  const isLoading = isInitialLoading || isFetching;
+  // Flatten servers for the current tree layout, but keep datacenter info if needed
+  const registryData = topologyData.flatMap(dc => dc.servers || []);
+  const mainDatacenter = topologyData[0] || { name: "Corporate Datacenter", location: "10.0.0.0/16" };
+
+  // Only show loading on initial fetch when no data is present
+  const isLoading = isInitialLoading && topologyData.length === 0;
 
 
   return (
@@ -48,8 +52,9 @@ export function Topology() {
             {/* Datacenter Dropdown */}
             <select className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm text-primary focus:outline-none focus:border-tertiary focus:ring-1 focus:ring-tertiary/50 appearance-none min-w-[160px] cursor-pointer">
               <option>All Datacenters / Zones</option>
-              <option>AWS us-east-1</option>
-              <option>Azure Edge (DR)</option>
+              {topologyData.map(dc => (
+                <option key={dc.id} value={dc.id}>{dc.name}</option>
+              ))}
             </select>
 
             {/* Timeline Dropdown */}
@@ -94,8 +99,8 @@ export function Topology() {
                     <Building size={20} className="text-tertiary" />
                   </div>
                   <div>
-                    <div className="font-bold text-base font-display">Corporate Datacenter</div>
-                    <div className="text-[10px] text-tertiary font-mono bg-tertiary/10 px-2 py-0.5 rounded border border-tertiary/20 mt-1 uppercase tracking-wider">10.0.0.0/16</div>
+                    <div className="font-bold text-base font-display">{mainDatacenter.name}</div>
+                    <div className="text-[10px] text-tertiary font-mono bg-tertiary/10 px-2 py-0.5 rounded border border-tertiary/20 mt-1 uppercase tracking-wider">{mainDatacenter.location || "N/A"}</div>
                   </div>
                 </div>
                 {/* Vertical link line to Level 2 */}

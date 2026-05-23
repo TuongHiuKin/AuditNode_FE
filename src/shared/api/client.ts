@@ -30,29 +30,30 @@ const apiClient: AxiosInstance = axios.create({
 /**
  * Request interceptor to inject the Keycloak Bearer Token.
  */
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = getToken();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+export const requestInterceptorHandler = (config: InternalAxiosRequestConfig) => {
+  const token = getToken();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+};
+
+apiClient.interceptors.request.use(requestInterceptorHandler, (error) => {
+  return Promise.reject(error);
+});
 
 /**
  * Response interceptor for centralized error handling.
  */
+export const responseInterceptorErrorHandler = (error: any) => {
+  const message = error.response?.data?.message || error.message || "An unexpected error occurred";
+  console.error("[API Error]", message);
+  return Promise.reject(error);
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const message = error.response?.data?.message || error.message || "An unexpected error occurred";
-    console.error("[API Error]", message);
-    return Promise.reject(error);
-  }
+  responseInterceptorErrorHandler
 );
 
 export default apiClient;

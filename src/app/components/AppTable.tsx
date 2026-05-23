@@ -5,10 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 
-type AppRow = Schemas["AppDTO"] & {
-  risk?: string;
-  desc?: string;
-  servers?: Schemas["ServerDTO"][];
+type AppRow = Schemas["ApplicationResponseDto"] & {
+  description?: string;
+  hostedServers?: Schemas["ServerResponseDto"][];
 };
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
@@ -31,7 +30,11 @@ export function AppTable() {
     queryKey: ["applications"],
     queryFn: async () => {
       const response = await apiClient.get<AppRow[]>("/api/Applications");
-      return response.data;
+      // Map techStack to description if description is missing in the payload
+      return response.data.map(app => ({
+        ...app,
+        description: app.description || app.techStack
+      }));
     },
   });
 
@@ -78,8 +81,8 @@ export function AppTable() {
                 </tr>
               ) : (
                 apps.map((app) => (
-                  <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id]}
-                    onToggle={() => toggleRow(app.id)} onDepClick={(id) => goToDep(id)} />
+                  <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id!]}
+                    onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} />
                 ))
               )}
             </tbody>
@@ -106,13 +109,16 @@ function AppRowItem({
           {expanded ? <ChevronDown size={14} className="text-secondary" /> : <ChevronRight size={14} className="text-secondary" />}
           {app.appCode}
         </td>
-        <td className="px-6 py-4 font-medium text-sm text-primary/90">{app.appName}</td>
+        <td className="px-6 py-4 font-medium text-sm text-primary/90">
+          <div>{app.appName}</div>
+          {app.description && <div className="text-[10px] text-secondary/60 font-normal mt-0.5">{app.description}</div>}
+        </td>
         <td className="px-6 py-4 text-sm text-secondary/80">{app.ownerId}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-          <ActionButtons onDepClick={() => onDepClick(app.id)} />
+          <ActionButtons onDepClick={() => onDepClick(app.id!)} />
         </td>
       </tr>
 
@@ -123,7 +129,7 @@ function AppRowItem({
               <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Server size={12} /> DEPLOYED SERVERS
               </h4>
-              {(app.servers?.length || 0) > 0 ? (
+              {(app.hostedServers?.length || 0) > 0 ? (
                 <table className="w-full text-left bg-[#0c1322]/40 rounded-lg overflow-hidden border border-slate-800/50">
                   <thead className="bg-[#0c1322] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
                     <tr>
@@ -136,7 +142,7 @@ function AppRowItem({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
-                    {app.servers?.map((srv) => (
+                    {app.hostedServers?.map((srv) => (
                       <tr key={srv.id} className="hover:bg-slate-900/30 transition-colors text-primary/80">
                         <td className="px-4 py-2 font-mono text-[11px]">{srv.ipAddress}</td>
                         <td className="px-4 py-2 text-sm">{srv.hostname}</td>

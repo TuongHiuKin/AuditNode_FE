@@ -80,8 +80,8 @@ export function ServerTable() {
                   <ServerRowItem
                     key={server.id}
                     server={server}
-                    expanded={!!expandedRows[server.id || ""]}
-                    onToggle={() => toggleRow(server.id || "")}
+                    expanded={!!expandedRows[server.id!]}
+                    onToggle={() => toggleRow(server.id!)}
                     onDepClick={(id) => goToDep(id)}
                   />
                 ))

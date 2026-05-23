@@ -38,7 +38,7 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         // risk: "High", // Intentionally omitted
         desc: "Test Description",
-        servers: []
+        hostedServers: []
       }
     ];
 
@@ -70,7 +70,7 @@ describe("AppTable Reproduction", () => {
         appName: "High Risk App",
         ownerId: "OWNER-2",
         risk: "High",
-        servers: []
+        hostedServers: []
       }
     ];
 
@@ -105,7 +105,7 @@ describe("AppTable Reproduction", () => {
         appName: "Medium Risk App",
         ownerId: "OWNER-3",
         risk: "Medium",
-        servers: []
+        hostedServers: []
       }
     ];
 
@@ -140,7 +140,7 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         risk: "High",
         desc: "Test Description",
-        servers: [
+        hostedServers: [
           {
             id: "s1",
             ipAddress: "1.1.1.1",

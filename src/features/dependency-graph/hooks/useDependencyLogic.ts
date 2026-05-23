@@ -55,7 +55,11 @@ export function useDependencyLogic() {
           type: "serverNode",
           position: { x: srvIdx * 400, y: 0 }, // Basic layout placeholder
           data: { 
-            server: { hostname: srv.hostname, ipAddress: srv.ipAddress },
+            server: { 
+              hostname: srv.hostname, 
+              ipAddress: srv.ipAddress,
+              osType: (srv as any).osType // Use as any in case it's in payload but not in contract
+            },
             width: 300,
             height: 200
           },
@@ -98,7 +102,7 @@ export function useDependencyLogic() {
 
       setNodes(mappedNodes);
       setEdges(mappedEdges);
-      return data;
+      return { nodes: mappedNodes, edges: mappedEdges }; // Return the required top-level object
     },
   });
 
@@ -113,7 +117,8 @@ export function useDependencyLogic() {
     },
   });
 
-  const isLoading = isGraphLoading || isAppsLoading || isGraphFetching || isAppsFetching;
+  // Only show initial loading state if no nodes are present
+  const isLoading = (isGraphLoading || isAppsLoading) && nodes.length === 0;
 
 
 
