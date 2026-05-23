@@ -16,9 +16,9 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="p-5 border-b border-border flex justify-between items-center rounded-t-xl bg-surface">
+        <div className="p-5 border-b border-border flex justify-between items-center rounded-t-2xl bg-surface">
           <h3 className="text-lg font-bold text-primary font-display">Register New Entity</h3>
           <button onClick={onClose} className="text-secondary hover:text-primary transition-colors">
             <X size={20} />
@@ -138,7 +138,7 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
         </div>
 
         {/* Modal Footer */}
-        <div className="p-5 border-t border-border flex justify-end gap-3 rounded-b-xl bg-surface">
+        <div className="p-5 border-t border-border flex justify-end gap-3 rounded-b-2xl bg-surface">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-background transition-colors"

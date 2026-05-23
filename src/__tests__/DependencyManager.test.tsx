@@ -101,7 +101,7 @@ describe("ServerGroupNode", () => {
     // Check for dashed border class
     const container = screen.getByText("prod-web-01").closest(".border-dashed");
     expect(container).toBeDefined();
-    expect(container?.className).toContain("border-slate-600");
+    expect(container?.className).toContain("border-slate-800");
   });
 });
 
