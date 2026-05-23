@@ -96,6 +96,11 @@
       "optional": true
     }
   },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
+  },
   "pnpm": {
     "overrides": {
       "vite": "6.3.5"
