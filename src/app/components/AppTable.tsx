@@ -1,26 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Server, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
-import { API_BASE } from "../../core/api";
+import apiClient, { Schemas } from "../../shared/api/client";
 
-type ServerRef = {
-  id: string;
-  ipAddress: string;
-  hostname: string;
-  osType: string;
-  environment: string;
-  status: string;
-};
-
-type AppRow = {
-  id: string;
-  appCode: string;
-  appName: string;
-  ownerId: string;
-  risk: string;
-  desc: string;
-  servers: ServerRef[];
+type AppRow = Schemas["AppDTO"] & {
+  risk?: string;
+  desc?: string;
+  servers?: Schemas["ServerDTO"][];
 };
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
@@ -36,22 +24,16 @@ function TableSkeleton() {
 
 // ── AppTable ──────────────────────────────────────────────────────────────────
 export function AppTable() {
-  const [apps, setApps] = useState<AppRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetch(`${API_BASE}/api/applications`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: AppRow[]) => setApps(data))
-      .catch((err) => console.error("[AppTable] Failed to fetch applications:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { data: apps = [], isLoading } = useQuery({
+    queryKey: ["applications"],
+    queryFn: async () => {
+      const response = await apiClient.get<AppRow[]>("/api/Applications");
+      return response.data;
+    },
+  });
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -154,7 +136,7 @@ function AppRowItem({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
-                    {app.servers.map((srv) => (
+                    {app.servers?.map((srv) => (
                       <tr key={srv.id} className="hover:bg-slate-900/30 transition-colors text-primary/80">
                         <td className="px-4 py-2 font-mono text-[11px]">{srv.ipAddress}</td>
                         <td className="px-4 py-2 text-sm">{srv.hostname}</td>
@@ -167,11 +149,11 @@ function AppRowItem({
                         <td className="px-4 py-2">
                           <span className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-tight">
                             <span className={`w-1.5 h-1.5 rounded-full ${srv.status === "Active" ? "bg-emerald-500" : "bg-slate-600"}`} />
-                            {srv.status}
+                            {srv.status || "Unknown"}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <ActionButtons onDepClick={() => onDepClick(srv.id)} />
+                          <ActionButtons onDepClick={() => onDepClick(srv.id || "")} />
                         </td>
                       </tr>
                     ))}
