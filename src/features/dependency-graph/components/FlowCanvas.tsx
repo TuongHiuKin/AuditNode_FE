@@ -74,12 +74,12 @@ export function FlowCanvas({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background color="#141828" gap={24} size={1.5} />
+        <Background color="#1e293b" gap={20} size={1} variant="dots" />
         <GraphToolbar onQuickAdd={onQuickAdd} />
         <MiniMap
-          nodeColor={(n) => (n.type === "serverNode" ? "#141828" : "#FF4D7E")}
-          maskColor="rgba(11, 14, 26, 0.7)"
-          className="bg-surface border border-border rounded-lg overflow-hidden"
+          nodeColor={(n) => (n.type === "serverNode" ? "#0c1322" : "#FF4D7E")}
+          maskColor="rgba(5, 8, 17, 0.7)"
+          className="bg-[#0c1322] border border-slate-800 rounded-lg overflow-hidden"
         />
       </ReactFlow>
     </div>

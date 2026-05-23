@@ -2,25 +2,25 @@
 
 :root {
   --font-size: 16px;
-  --background: #0B0E1A;
+  --background: #050811;
   --foreground: #F2F2F5;
-  --card: #141828;
+  --card: #0c1322;
   --card-foreground: #F2F2F5;
-  --popover: #141828;
+  --popover: #0c1322;
   --popover-foreground: #F2F2F5;
   --primary: #F2F2F5;
-  --primary-foreground: #0B0E1A;
+  --primary-foreground: #050811;
   --secondary: #7A8699;
   --secondary-foreground: #F2F2F5;
-  --muted: #141828;
+  --muted: #0c1322;
   --muted-foreground: #7A8699;
-  --accent: #141828;
+  --accent: #0c1322;
   --accent-foreground: #FF4D7E;
   --destructive: #FF4D7E;
   --destructive-foreground: #F2F2F5;
-  --border: rgba(122, 134, 153, 0.2);
+  --border: rgba(122, 134, 153, 0.1);
   --input: transparent;
-  --input-background: #141828;
+  --input-background: #0c1322;
   --switch-background: #7A8699;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
@@ -30,35 +30,35 @@
   /* Tokyo Midnight specific colors */
   --color-tertiary: #FF4D7E;
   
-  --sidebar: #0B0E1A;
+  --sidebar: #050811;
   --sidebar-foreground: #F2F2F5;
   --sidebar-primary: #FF4D7E;
-  --sidebar-primary-foreground: #0B0E1A;
-  --sidebar-accent: #141828;
+  --sidebar-primary-foreground: #050811;
+  --sidebar-accent: #0c1322;
   --sidebar-accent-foreground: #FF4D7E;
-  --sidebar-border: rgba(122, 134, 153, 0.2);
+  --sidebar-border: rgba(122, 134, 153, 0.1);
   --sidebar-ring: #FF4D7E;
 }
 
 /* Tokyo Midnight is a dark-first theme, so .dark remains similar or slightly adjusted if needed */
 .dark {
-  --background: #0B0E1A;
+  --background: #050811;
   --foreground: #F2F2F5;
-  --card: #141828;
+  --card: #0c1322;
   --card-foreground: #F2F2F5;
-  --popover: #141828;
+  --popover: #0c1322;
   --popover-foreground: #F2F2F5;
   --primary: #F2F2F5;
-  --primary-foreground: #0B0E1A;
+  --primary-foreground: #050811;
   --secondary: #7A8699;
   --secondary-foreground: #F2F2F5;
-  --muted: #141828;
+  --muted: #0c1322;
   --muted-foreground: #7A8699;
-  --accent: #141828;
+  --accent: #0c1322;
   --accent-foreground: #FF4D7E;
   --destructive: #FF4D7E;
   --destructive-foreground: #F2F2F5;
-  --border: rgba(122, 134, 153, 0.2);
+  --border: rgba(122, 134, 153, 0.1);
 }
 
 @theme inline {

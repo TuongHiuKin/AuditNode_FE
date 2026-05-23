@@ -22,8 +22,8 @@ export function Layout() {
       {/* Global Registration Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-border flex justify-between items-center bg-surface rounded-t-xl">
+          <div className="bg-surface border border-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-surface rounded-t-2xl">
               <h3 className="text-lg font-bold text-primary font-display">Register New Entity</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-secondary hover:text-primary transition-colors">
                 <X size={20} />
@@ -139,7 +139,7 @@ export function Layout() {
               )}
             </div>
 
-            <div className="p-5 border-t border-border flex justify-end gap-3 bg-surface rounded-b-xl">
+            <div className="p-5 border-t border-border flex justify-end gap-3 bg-surface rounded-b-2xl">
               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-secondary hover:text-primary hover:bg-background transition-colors">
                 Cancel
               </button>

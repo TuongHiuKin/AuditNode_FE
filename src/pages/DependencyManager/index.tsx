@@ -21,31 +21,37 @@ function DependencyManagerContent() {
 
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
-      {/* Performance Filter Bar */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3">
-        <FilterBar
-          selectedEnv={selectedEnv}
-          setSelectedEnv={setSelectedEnv}
-          selectedDatacenter={selectedDatacenter}
-          setSelectedDatacenter={setSelectedDatacenter}
-        />
-        <SubToolbar 
-          onAddServer={() => setIsRegisterModalOpen(true)}
-          onAddDatacenter={() => console.log("Add Datacenter")}
-          onAutoMap={handleAutoMap}
-        />
-      </div>
 
       <PaletteSidebar paletteApps={paletteApps} />
       
-      <div className="flex-1 relative">
-        <FlowCanvas
-          nodes={nodes} edges={edges} onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange} onConnect={onConnect}
-          onDrop={onDrop} onDragOver={onDragOver}
-          onSelectionChange={onSelectionChange} isLoading={isLoading}
-          onQuickAdd={() => setIsRegisterModalOpen(true)}
-        />
+      {/* Main Canvas Workspace */}
+      <div className="flex-1 flex flex-col relative">
+        {/* Docked Utility Toolbar */}
+        <div className="h-14 bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between px-4 z-10 shadow-sm shrink-0">
+          <div className="flex items-center gap-3">
+            <SubToolbar 
+              onAddServer={() => setIsRegisterModalOpen(true)}
+              onAddDatacenter={() => console.log("Add Datacenter")}
+              onAutoMap={handleAutoMap}
+            />
+          </div>
+          <FilterBar
+            selectedEnv={selectedEnv}
+            setSelectedEnv={setSelectedEnv}
+            selectedDatacenter={selectedDatacenter}
+            setSelectedDatacenter={setSelectedDatacenter}
+          />
+        </div>
+
+        <div className="flex-1 relative">
+          <FlowCanvas
+            nodes={nodes} edges={edges} onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange} onConnect={onConnect}
+            onDrop={onDrop} onDragOver={onDragOver}
+            onSelectionChange={onSelectionChange} isLoading={isLoading}
+            onQuickAdd={() => setIsRegisterModalOpen(true)}
+          />
+        </div>
       </div>
 
       <DetailsPanel

@@ -15,20 +15,20 @@ export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNodeData
 
   return (
     <div
-      className={`border-2 border-dashed rounded-xl transition-all relative flex flex-col ${
-        selected ? "border-tertiary bg-tertiary/5" : "border-slate-600 bg-slate-900/20"
+      className={`border border-dashed rounded-xl transition-all duration-200 ease-in-out relative flex flex-col ${
+        selected ? "border-tertiary bg-tertiary/5" : "border-slate-800 bg-[#0c1322]/30 hover:bg-[#0c1322]/50 hover:border-slate-700"
       }`}
       style={{ width: dynamicWidth, height: dynamicHeight }}
     >
       {/* Header Container */}
       <div className="absolute -top-8 left-0 flex items-center gap-2 px-1">
-        <div className="p-1 bg-surface border border-border rounded shadow-sm">
-          <ServerIcon size={14} className="text-secondary" />
+        <div className="p-1 bg-[#0c1322] border border-slate-800 rounded shadow-sm">
+          <ServerIcon size={12} className="text-secondary" />
         </div>
-        <span className="text-sm font-bold text-primary font-display whitespace-nowrap">
+        <span className="text-xs font-bold text-primary font-display whitespace-nowrap">
           {data.server.hostname}
         </span>
-        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-500/30 uppercase">
+        <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 uppercase tracking-tight">
           {data.server.ipAddress}
         </span>
       </div>

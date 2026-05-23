@@ -44,6 +44,75 @@ describe("AppTable Reproduction", () => {
     expect(screen.getByText("N/A")).toBeDefined();
   });
 
+  it("applies sub-acute rose theme for HIGH risk level", async () => {
+    const mockData = [
+      {
+        id: "2",
+        appCode: "APP-H",
+        appName: "High Risk App",
+        ownerId: "OWNER-2",
+        risk: "High",
+        servers: []
+      }
+    ];
+
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
+
+    render(
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      // Find specifically the span that contains High/Medium to avoid matching app names
+      const badges = screen.getAllByText(/High|Medium/i);
+      const riskBadge = badges.find(el => el.tagName === "SPAN" && el.className.includes("border"));
+      expect(riskBadge).toBeDefined();
+      if (riskBadge) {
+        expect(riskBadge.className).toContain("text-rose-400");
+        expect(riskBadge.className).toContain("bg-rose-500/10");
+      }
+    });
+  });
+
+  it("applies amber theme for MEDIUM risk level", async () => {
+    const mockData = [
+      {
+        id: "3",
+        appCode: "APP-M",
+        appName: "Medium Risk App",
+        ownerId: "OWNER-3",
+        risk: "Medium",
+        servers: []
+      }
+    ];
+
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
+
+    render(
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      const badges = screen.getAllByText(/High|Medium/i);
+      const riskBadge = badges.find(el => el.tagName === "SPAN" && el.className.includes("border"));
+      expect(riskBadge).toBeDefined();
+      if (riskBadge) {
+        expect(riskBadge.className).toContain("text-amber-400");
+        expect(riskBadge.className).toContain("bg-amber-500/10");
+      }
+    });
+  });
+
   it("renders 'UNKNOWN' when srv.environment is undefined", async () => {
     const mockData = [
       {
