@@ -1,11 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Grid, Search, ChevronDown, ChevronRight } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
-import apiClient, { Schemas } from "../../shared/api/client";
+import { API_BASE } from "../../core/api";
 
-type ServerRow = Schemas["ServerResponseDto"];
+type App = {
+  id: string;
+  appCode: string;
+  appName: string;
+  portNumber: number;
+  protocol: string;
+  ownerId: string;
+  status: string;
+};
+
+type ServerRow = {
+  id: string;
+  ipAddress: string;
+  hostname: string;
+  osType: string;
+  environment: string;
+  status: string;
+  apps: App[];
+};
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
 function TableSkeleton() {
@@ -20,16 +37,22 @@ function TableSkeleton() {
 
 // ── ServerTable ───────────────────────────────────────────────────────────────
 export function ServerTable() {
+  const [servers, setServers] = useState<ServerRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
 
-  const { data: servers = [], isLoading } = useQuery({
-    queryKey: ["servers"],
-    queryFn: async () => {
-      const response = await apiClient.get<ServerRow[]>("/api/Servers");
-      return response.data;
-    },
-  });
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`${API_BASE}/api/servers`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: ServerRow[]) => setServers(data))
+      .catch((err) => console.error("[ServerTable] Failed to fetch servers:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -80,8 +103,8 @@ export function ServerTable() {
                   <ServerRowItem
                     key={server.id}
                     server={server}
-                    expanded={!!expandedRows[server.id || ""]}
-                    onToggle={() => toggleRow(server.id || "")}
+                    expanded={!!expandedRows[server.id]}
+                    onToggle={() => toggleRow(server.id)}
                     onDepClick={(id) => goToDep(id)}
                   />
                 ))
@@ -122,7 +145,7 @@ function ServerRowItem({
           </span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-          <ActionButtons onDepClick={() => onDepClick(server.id || "")} />
+          <ActionButtons onDepClick={() => onDepClick(server.id)} />
         </td>
       </tr>
 
@@ -133,7 +156,7 @@ function ServerRowItem({
               <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Grid size={12} /> DEPLOYED APPLICATIONS
               </h4>
-              {(server.applications?.length || 0) > 0 ? (
+              {(server.apps?.length || 0) > 0 ? (
                 <table className="w-full text-left bg-[#0c1322]/40 rounded-lg overflow-hidden border border-slate-800/50">
                   <thead className="bg-[#0c1322] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
                     <tr>
@@ -146,7 +169,7 @@ function ServerRowItem({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
-                    {server.applications?.map((app) => (
+                    {server.apps.map((app) => (
                       <tr key={app.id} className="hover:bg-slate-900/30 transition-colors text-primary/80">
                         <td className="px-4 py-2 font-mono text-[11px] font-bold tracking-tight">{app.appCode}</td>
                         <td className="px-4 py-2 text-sm">{app.appName}</td>
@@ -154,7 +177,7 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-[10px] font-mono font-bold text-secondary/70 uppercase">{app.protocol}</td>
                         <td className="px-4 py-2 text-xs text-secondary/70">{app.ownerId}</td>
                         <td className="px-4 py-2 text-right">
-                          <ActionButtons onDepClick={() => onDepClick(app.id || "")} />
+                          <ActionButtons onDepClick={() => onDepClick(app.id)} />
                         </td>
                       </tr>
                     ))}

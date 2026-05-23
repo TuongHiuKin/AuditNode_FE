@@ -1,28 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppTable } from "../app/components/AppTable";
-import apiClient from "../shared/api/client";
 
-// Mock the apiClient
-vi.mock("../shared/api/client", () => ({
-  default: {
-    get: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn(), eject: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn() },
-    },
-  },
-}));
-
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-});
+// Mock fetch
+global.fetch = vi.fn();
 
 describe("AppTable Reproduction", () => {
   beforeEach(() => {
@@ -42,15 +24,15 @@ describe("AppTable Reproduction", () => {
       }
     ];
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
 
-    const queryClient = createTestQueryClient();
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <AppTable />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
     );
 
     // Wait for the skeleton to disappear and the data to render
@@ -74,15 +56,15 @@ describe("AppTable Reproduction", () => {
       }
     ];
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
 
-    const queryClient = createTestQueryClient();
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <AppTable />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
     );
 
     await waitFor(() => {
@@ -109,15 +91,15 @@ describe("AppTable Reproduction", () => {
       }
     ];
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
 
-    const queryClient = createTestQueryClient();
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <AppTable />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
     );
 
     await waitFor(() => {
@@ -153,15 +135,15 @@ describe("AppTable Reproduction", () => {
       }
     ];
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockData,
+    });
 
-    const queryClient = createTestQueryClient();
     render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <AppTable />
-        </MemoryRouter>
-      </QueryClientProvider>
+      <MemoryRouter>
+        <AppTable />
+      </MemoryRouter>
     );
 
     await waitFor(() => {
@@ -176,4 +158,7 @@ describe("AppTable Reproduction", () => {
       expect(screen.getByText("UNKNOWN")).toBeDefined();
     });
   });
+
+
+
 });
