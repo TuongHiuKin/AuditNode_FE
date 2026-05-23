@@ -4,18 +4,9 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerGroupNode } from "../features/dependency-graph/components/ServerGroupNode";
 import { DependencyManager } from "../pages/DependencyManager";
-import apiClient from "../shared/api/client";
 
-// Mock the apiClient
-vi.mock("../shared/api/client", () => ({
-  default: {
-    get: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn(), eject: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn() },
-    },
-  },
-}));
+// Mock fetch
+global.fetch = vi.fn();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,20 +41,26 @@ describe("DependencyManager Integration", () => {
 
   it("renders ServerGroupNode via DependencyManager fetching", async () => {
     const mockGraph = {
-      servers: [
+      nodes: [
         {
           id: "srv-1",
-          hostname: "api-srv-01",
-          ipAddress: "192.168.1.10",
-          applications: []
+          type: "serverNode",
+          position: { x: 0, y: 0 },
+          data: { server: { hostname: "api-srv-01", ipAddress: "192.168.1.10" }, width: 300, height: 200 }
         }
       ],
-      connections: []
+      edges: []
     };
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockGraph });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockGraph,
+    });
     // mock applications fetch
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [],
+    });
 
     render(
       <QueryClientProvider client={queryClient}>

@@ -10,7 +10,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import apiClient, { Schemas } from "../../../shared/api/client";
+import { apiFetch } from "../../../core/api";
 import { PaletteApp, SelectedItem } from "../types";
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
@@ -33,68 +33,25 @@ export function useDependencyLogic() {
   const { isLoading: isGraphLoading, isFetching: isGraphFetching } = useQuery({
     queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-        "/api/Topology/map",
-        {
-          params: {
-            environment: selectedEnv,
-            datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
-          },
-        }
-      );
-      const data = response.data;
+      const queryParams = new URLSearchParams({
+        environment: selectedEnv,
+        datacenter: selectedDatacenter,
+      });
+      const data = await apiFetch<{ nodes: any[]; edges: any[] }>(`/api/dependency/map?${queryParams}`);
       
-      const mappedNodes: Node[] = [];
-      const mappedEdges: Edge[] = [];
+      const mappedNodes = data.nodes.map((n) => ({
+        ...n,
+        zIndex: n.type === "serverNode" ? -1 : undefined,
+      }));
 
-      // Map servers and their nested applications to flat ReactFlow nodes
-      data.servers?.forEach((srv, srvIdx) => {
-        const serverNodeId = srv.id || `srv-${srvIdx}`;
-        mappedNodes.push({
-          id: serverNodeId,
-          type: "serverNode",
-          position: { x: srvIdx * 400, y: 0 }, // Basic layout placeholder
-          data: { 
-            server: { hostname: srv.hostname, ipAddress: srv.ipAddress },
-            width: 300,
-            height: 200
-          },
-          zIndex: -1,
-        });
-
-        srv.applications?.forEach((app, appIdx) => {
-          mappedNodes.push({
-            id: app.id || `app-${appIdx}`,
-            type: "appNode",
-            position: { x: 40, y: 60 + appIdx * 60 },
-            parentId: serverNodeId,
-            extent: "parent",
-            data: { 
-              app: { 
-                id: app.id,
-                appName: app.name,
-                portNumber: app.port,
-                protocol: app.protocol,
-                risk: app.riskLevel
-              } 
-            },
-          });
-        });
-      });
-
-      // Map connections to ReactFlow edges
-      data.connections?.forEach((conn, connIdx) => {
-        mappedEdges.push({
-          id: `e-${connIdx}`,
-          source: conn.sourceAppId || "",
-          target: conn.targetAppId || "",
-          type: "default",
-          animated: true,
-          markerEnd: edgeMarker,
-          style: edgeStyle,
-          data: { protocol: "TCP" },
-        });
-      });
+      const mappedEdges = data.edges.map((e) => ({
+        ...e,
+        type: "default",
+        animated: true,
+        markerEnd: edgeMarker,
+        style: edgeStyle,
+        data: { protocol: e.data?.protocol ?? e.protocol ?? "TCP" },
+      }));
 
       setNodes(mappedNodes);
       setEdges(mappedEdges);
@@ -106,8 +63,7 @@ export function useDependencyLogic() {
   const { isLoading: isAppsLoading, isFetching: isAppsFetching } = useQuery({
     queryKey: ["applications"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
-      const data = response.data as unknown as PaletteApp[];
+      const data = await apiFetch<PaletteApp[]>("/api/applications");
       setPaletteApps(data);
       return data;
     },
