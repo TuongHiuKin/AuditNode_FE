@@ -8,19 +8,25 @@ type RegistryServer = Schemas["ServerNodeDto"];
 export function Topology() {
   const [nodeLimit, setNodeLimit] = useState(100);
 
-  const { data: topologyData = [], isLoading: isInitialLoading, isFetching } = useQuery<Schemas["TopologyTreeDto"][]>({
+  const { data: topologyData = [], isLoading: isInitialLoading } = useQuery<Schemas["TopologyTreeDto"][]>({
     queryKey: ["topology-tree"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["TopologyTreeDto"][]>("/api/Topology/tree");
-      return response.data;
+      // Safely handle direct array and wrapped response { data: [...] }
+      return Array.isArray(response.data) ? response.data : (response.data?.data || []);
     },
   });
 
-  // Flatten servers for the current tree layout, but keep datacenter info if needed
-  const registryData = topologyData.flatMap(dc => dc.servers || []);
-  const mainDatacenter = topologyData[0] || { name: "Corporate Datacenter", location: "10.0.0.0/16" };
+  // Flatten servers for the current tree layout. 
+  // Handle both hierarchical (dc.servers) and flat (ServerTopologyDto[]) structures.
+  const isFlatList = topologyData.length > 0 && !Object.prototype.hasOwnProperty.call(topologyData[0], 'servers');
+  const registryData = isFlatList ? topologyData : topologyData.flatMap(dc => dc.servers || []);
+  
+  const mainDatacenter = !isFlatList && topologyData[0] 
+    ? { name: topologyData[0].name, location: topologyData[0].location }
+    : { name: "Corporate Datacenter", location: "Global Network" };
 
-  // Only show loading on initial fetch when no data is present
+  // Clear loading once data is hydrated or initial fetch completes
   const isLoading = isInitialLoading && topologyData.length === 0;
 
 

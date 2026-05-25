@@ -30,94 +30,105 @@ export function useDependencyLogic() {
   const queryClient = useQueryClient();
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
-  const { isLoading: isGraphLoading, isFetching: isGraphFetching } = useQuery({
+  const { isLoading: isGraphLoading } = useQuery({
     queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-        "/api/Topology/map",
-        {
-          params: {
-            environment: selectedEnv,
-            datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
-          },
-        }
-      );
-      const data = response.data;
-      
-      const mappedNodes: Node[] = [];
-      const mappedEdges: Edge[] = [];
-
-      // Map servers and their nested applications to flat ReactFlow nodes
-      data.servers?.forEach((srv, srvIdx) => {
-        const serverNodeId = srv.id || `srv-${srvIdx}`;
-        mappedNodes.push({
-          id: serverNodeId,
-          type: "serverNode",
-          position: { x: srvIdx * 400, y: 0 }, // Basic layout placeholder
-          data: { 
-            server: { 
-              hostname: srv.hostname, 
-              ipAddress: srv.ipAddress,
-              osType: (srv as any).osType // Use as any in case it's in payload but not in contract
+      try {
+        const response = await apiClient.get<Schemas["DependencyMapDto"]>(
+          "/api/Topology/map",
+          {
+            params: {
+              environment: selectedEnv === "All" ? undefined : selectedEnv,
+              datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
             },
-            width: 300,
-            height: 200
-          },
-          zIndex: -1,
-        });
+          }
+        );
+        const data = response.data;
+        
+        const mappedNodes: Node[] = [];
+        const mappedEdges: Edge[] = [];
 
-        srv.applications?.forEach((app, appIdx) => {
-          mappedNodes.push({
-            id: app.id || `app-${appIdx}`,
-            type: "appNode",
-            position: { x: 40, y: 60 + appIdx * 60 },
-            parentId: serverNodeId,
-            extent: "parent",
-            data: { 
-              app: { 
-                id: app.id,
-                appName: app.name,
-                portNumber: app.port,
-                protocol: app.protocol,
-                risk: app.riskLevel
-              } 
-            },
+        // Handle ReactFlow-compatible structure directly if provided
+        if (data.nodes && Array.isArray(data.nodes)) {
+          data.nodes.forEach((n: any) => mappedNodes.push(n));
+          data.edges?.forEach((e: any) => mappedEdges.push(e));
+        } else {
+          // Fallback: Map servers and their nested applications to flat ReactFlow nodes
+          data.servers?.forEach((srv: any, srvIdx: number) => {
+            const serverNodeId = srv.id || `srv-${srvIdx}`;
+            mappedNodes.push({
+              id: serverNodeId,
+              type: "serverNode",
+              position: { x: srvIdx * 400, y: 0 },
+              data: { 
+                server: { 
+                  hostname: srv.hostname, 
+                  ipAddress: srv.ipAddress,
+                  osType: srv.osType 
+                },
+                width: 300,
+                height: 200
+              },
+              zIndex: -1,
+            });
+
+            srv.applications?.forEach((app: any, appIdx: number) => {
+              mappedNodes.push({
+                id: app.id || `app-${appIdx}`,
+                type: "appNode",
+                position: { x: 40, y: 60 + appIdx * 60 },
+                parentId: serverNodeId,
+                extent: "parent",
+                data: { 
+                  app: { 
+                    id: app.id,
+                    appName: app.name,
+                    portNumber: app.port,
+                    protocol: app.protocol,
+                    risk: app.riskLevel
+                  } 
+                },
+              });
+            });
           });
-        });
-      });
 
-      // Map connections to ReactFlow edges
-      data.connections?.forEach((conn, connIdx) => {
-        mappedEdges.push({
-          id: `e-${connIdx}`,
-          source: conn.sourceAppId || "",
-          target: conn.targetAppId || "",
-          type: "default",
-          animated: true,
-          markerEnd: edgeMarker,
-          style: edgeStyle,
-          data: { protocol: "TCP" },
-        });
-      });
+          // Map connections to ReactFlow edges
+          data.connections?.forEach((conn: any, connIdx: number) => {
+            mappedEdges.push({
+              id: `e-${connIdx}`,
+              source: conn.sourceAppId || "",
+              target: conn.targetAppId || "",
+              type: "default",
+              animated: true,
+              markerEnd: edgeMarker,
+              style: edgeStyle,
+              data: { protocol: "TCP" },
+            });
+          });
+        }
 
-      setNodes(mappedNodes);
-      setEdges(mappedEdges);
-      return { nodes: mappedNodes, edges: mappedEdges }; // Return the required top-level object
+        setNodes(mappedNodes);
+        setEdges(mappedEdges);
+        return { nodes: mappedNodes, edges: mappedEdges };
+      } catch (err) {
+        console.error("Failed to fetch dependency map", err);
+        throw err;
+      }
     },
   });
 
   // ── Fetch palette applications ────────────────────────────────────────────
-  const { isLoading: isAppsLoading, isFetching: isAppsFetching } = useQuery({
+  const { isLoading: isAppsLoading } = useQuery({
     queryKey: ["applications"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
-      const data = response.data as unknown as PaletteApp[];
-      setPaletteApps(data);
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setPaletteApps(data as unknown as PaletteApp[]);
       return data;
     },
   });
 
-  // Only show initial loading state if no nodes are present
+  // Explicitly derived loading flag that clears once data is present or queries finish
   const isLoading = (isGraphLoading || isAppsLoading) && nodes.length === 0;
 
 
