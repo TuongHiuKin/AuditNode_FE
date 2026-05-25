@@ -29,9 +29,11 @@ export function AppTable() {
   const { data: apps = [], isLoading } = useQuery({
     queryKey: ["applications"],
     queryFn: async () => {
-      const response = await apiClient.get<AppRow[]>("/api/Applications");
-      // Map techStack to description if description is missing in the payload
-      return response.data.map(app => ({
+      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
+      // Safely destructure: handle both direct array and wrapped response { data: [...] }
+      const rawData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      
+      return rawData.map((app: any) => ({
         ...app,
         description: app.description || app.techStack
       }));

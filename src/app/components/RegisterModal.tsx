@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
-import apiClient from "../../shared/api/client";
+import { useQuery } from "@tanstack/react-query";
+import apiClient, { Schemas } from "../../shared/api/client";
 
 const inputCls = "w-full bg-background border border-border rounded-lg px-3 py-2.5 text-primary text-sm focus:outline-none focus:border-tertiary transition-colors font-body";
 const selectCls = "w-full bg-background border border-border rounded-lg px-3 py-2.5 text-primary text-sm focus:outline-none focus:border-tertiary transition-colors font-body";
@@ -17,19 +18,30 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Fetch Datacenters ──────────────────────────────────────────────────────
+  const { data: datacenters = [] } = useQuery({
+    queryKey: ["datacenters"],
+    queryFn: async () => {
+      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/Datacenters");
+      return Array.isArray(response.data) ? response.data : [];
+    },
+  });
+
   // Form State
   const [infraData, setInfraData] = useState({
-    datacenterId: "Corporate Datacenter",
+    datacenterId: "",
     ipAddress: "",
     hostname: "",
     osType: "Ubuntu 22.04",
     environment: "Production",
+    status: "Active"
   });
 
   const [appData, setAppData] = useState({
     serverId: "",
     appCode: "",
     appName: "",
+    ownerId: "",
     portNumber: 443,
     protocol: "HTTPS",
   });
@@ -39,19 +51,19 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
     setError(null);
     try {
       if (formMode === "infra") {
-        if (!infraData.ipAddress || !infraData.hostname) {
-          throw new Error("IP Address and Hostname are required");
+        if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname) {
+          throw new Error("Datacenter, IP Address, and Hostname are required");
         }
         await apiClient.post("/api/Servers", infraData);
       } else {
-        if (!appData.serverId || !appData.appCode || !appData.appName) {
-          throw new Error("Server, App Code, and App Name are required");
+        if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerId) {
+          throw new Error("Server, App Code, App Name, and Owner ID are required");
         }
         await apiClient.post("/api/Applications", appData);
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to register entity");
+      setError(err.response?.data?.message || err.message || "Failed to register entity");
     } finally {
       setLoading(false);
     }
@@ -115,10 +127,10 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
                   value={infraData.datacenterId}
                   onChange={(e) => setInfraData({ ...infraData, datacenterId: e.target.value })}
                 >
-                  <option>Corporate Datacenter</option>
-                  <option>DMZ (Public Facing)</option>
-                  <option>AWS us-east-1</option>
-                  <option>Azure Edge</option>
+                  <option value="">Select Datacenter...</option>
+                  {datacenters.map(dc => (
+                    <option key={dc.id} value={dc.id}>{dc.name} ({dc.location})</option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -177,21 +189,34 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
             </>
           ) : (
             <>
-              <div>
-                <label htmlFor="serverId" className={labelCls}>Select Server</label>
-                <select 
-                  id="serverId"
-                  className={selectCls}
-                  value={appData.serverId}
-                  onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
-                >
-                  <option value="">Select existing server...</option>
-                  {servers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.hostname} — {s.ipAddress}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-1">
+                  <label htmlFor="serverId" className={labelCls}>Select Server</label>
+                  <select 
+                    id="serverId"
+                    className={selectCls}
+                    value={appData.serverId}
+                    onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
+                  >
+                    <option value="">Select server...</option>
+                    {servers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.hostname}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-1">
+                  <label htmlFor="ownerId" className={labelCls}>Owner Team/ID</label>
+                  <input 
+                    id="ownerId"
+                    type="text" 
+                    placeholder="e.g. FinOps" 
+                    className={inputCls} 
+                    value={appData.ownerId}
+                    onChange={(e) => setAppData({ ...appData, ownerId: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-1">
