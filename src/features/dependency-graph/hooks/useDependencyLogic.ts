@@ -12,6 +12,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
 import { PaletteApp, SelectedItem } from "../types";
+import { useAppPalette } from "./useAppPalette";
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
@@ -19,7 +20,7 @@ const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
 export function useDependencyLogic() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [paletteApps, setPaletteApps] = useState<PaletteApp[]>([]);
+  const { availableApps, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
   
@@ -118,18 +119,6 @@ export function useDependencyLogic() {
     },
   });
 
-  // ── Fetch palette applications ────────────────────────────────────────────
-  const { isLoading: isAppsLoading } = useQuery({
-    queryKey: ["applications"],
-    queryFn: async () => {
-      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
-      const rawResponse = response as any;
-      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
-      setPaletteApps(data as unknown as PaletteApp[]);
-      return data;
-    },
-  });
-
   // Explicitly derived loading flag that clears once data is present or queries finish
   const isLoading = (isGraphLoading || isAppsLoading) && nodes.length === 0;
 
@@ -163,7 +152,7 @@ export function useDependencyLogic() {
       const appId = event.dataTransfer.getData("application/reactflow");
       if (!appId) return;
 
-      const app = paletteApps.find((a) => a.id === appId);
+      const app = availableApps.find((a) => a.id === appId);
       if (!app) return;
 
       const position = reactFlowInstance.screenToFlowPosition({
@@ -203,8 +192,13 @@ export function useDependencyLogic() {
         data: { app },
       };
       setNodes((nds) => nds.concat(newNode));
+      
+      // Force a refetch of application status to remove it from the palette list
+      setTimeout(() => {
+        refetchApps();
+      }, 200);
     },
-    [reactFlowInstance, nodes, setNodes, paletteApps],
+    [reactFlowInstance, nodes, setNodes, availableApps, refetchApps],
   );
 
   // ── Build dependency map for a node ────────────────────────────────────────
@@ -284,7 +278,8 @@ export function useDependencyLogic() {
     onDragOver,
     onSelectionChange,
     isLoading,
-    paletteApps,
+    availableApps,
+    isAppsLoading,
     selectedItem,
     setSelectedItem,
     rightPanelData,

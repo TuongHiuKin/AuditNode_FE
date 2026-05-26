@@ -61,9 +61,15 @@ describe("DependencyManager Integration", () => {
       connections: []
     };
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockGraph });
-    // mock applications fetch
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url.includes("/api/Topology/map")) {
+        return Promise.resolve({ data: mockGraph });
+      }
+      if (url.includes("/api/Topology/status")) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(
       <QueryClientProvider client={queryClient}>

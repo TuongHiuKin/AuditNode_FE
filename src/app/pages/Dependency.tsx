@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
 import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanvas";
-import { PaletteSidebar } from "../../features/dependency-graph/components/PaletteSidebar";
+import { AppPalette } from "../../features/dependency-graph/components/AppPalette";
 import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
@@ -11,7 +11,7 @@ import { RegisterModal } from "../components/RegisterModal";
 function DependencyManagerContent() {
   const {
     nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
-    onSelectionChange, isLoading, paletteApps, selectedItem, setSelectedItem,
+    onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
     handleAutoMap,
@@ -22,7 +22,7 @@ function DependencyManagerContent() {
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
 
-      <PaletteSidebar paletteApps={paletteApps} />
+      <AppPalette availableApps={availableApps} isLoading={isAppsLoading} />
       
       {/* Main Viewport Wrapper */}
       <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
