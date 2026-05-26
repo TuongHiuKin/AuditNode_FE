@@ -12,11 +12,11 @@ export function Topology() {
     queryKey: ["topology-tree"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["TopologyTreeDto"][]>("/api/Topology/tree");
-      // Safely handle direct array and wrapped response { data: [...] }
-      return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const rawResponse = response as any;
+      // Safely handle direct array and wrapped response { data: [...] }   
+      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },
-  });
-
+    });
   // Flatten servers for the current tree layout. 
   // Handle both hierarchical (dc.servers) and flat (ServerTopologyDto[]) structures.
   const isFlatList = topologyData.length > 0 && !Object.prototype.hasOwnProperty.call(topologyData[0], 'servers');

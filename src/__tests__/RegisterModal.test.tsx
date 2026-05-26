@@ -52,14 +52,14 @@ describe("RegisterModal", () => {
 
   it("renders in infra mode by default", () => {
     renderWithProvider(<RegisterModal onClose={mockOnClose} />);
-    expect(screen.getByText("New Infrastructure")).toBeDefined();
+    expect(screen.getByText("New Server")).toBeDefined();
     expect(screen.getByLabelText(/Server IP/i)).toBeDefined();
     expect(screen.getByLabelText(/Hostname/i)).toBeDefined();
   });
 
   it("switches to app mode when toggle is clicked", () => {
     renderWithProvider(<RegisterModal onClose={mockOnClose} />);
-    fireEvent.click(screen.getByText("App Deployment"));
+    fireEvent.click(screen.getByText("New Application"));
     expect(screen.getByLabelText(/Select Server/i)).toBeDefined();
     expect(screen.getByLabelText(/App Code/i)).toBeDefined();
     expect(screen.getByLabelText(/Application Name/i)).toBeDefined();
@@ -67,7 +67,7 @@ describe("RegisterModal", () => {
 
   it("validates required fields in infra mode", async () => {
     renderWithProvider(<RegisterModal onClose={mockOnClose} />);
-    fireEvent.click(screen.getByText("Submit Server"));
+    fireEvent.click(screen.getByText("Register Server"));
     
     await waitFor(() => {
       expect(screen.getByText(/Datacenter, IP Address, and Hostname are required/i)).toBeDefined();
@@ -88,7 +88,7 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByPlaceholderText("e.g. 10.0.x.x"), { target: { value: "192.168.1.1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. web-node-01"), { target: { value: "web-01" } });
     
-    fireEvent.click(screen.getByText("Submit Server"));
+    fireEvent.click(screen.getByText("Register Server"));
     
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/Servers", expect.objectContaining({
@@ -109,7 +109,7 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByPlaceholderText("PAY-01"), { target: { value: "APP-01" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. Payment Gateway"), { target: { value: "Test App" } });
     
-    fireEvent.click(screen.getByText("Deploy Application"));
+    fireEvent.click(screen.getByText("Deploy App"));
     
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/Applications", expect.objectContaining({

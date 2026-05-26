@@ -8,6 +8,7 @@ export interface PaletteApp {
   protocol: string;
   icon: string;
   techStack: string;
+  risk?: string;
 }
 
 export interface AppNodeData extends Record<string, unknown> {
@@ -18,12 +19,15 @@ export interface ServerNodeData extends Record<string, unknown> {
   server: {
     hostname: string;
     ipAddress: string;
+    osType?: string;
   };
   width: number;
   height: number;
 }
 
 export type CustomNode = Node<AppNodeData | ServerNodeData>;
+export type ServerNode = Node<ServerNodeData, "serverNode">;
+export type AppNode = Node<AppNodeData, "appNode">;
 
 export interface DependencyMap {
   calling: string[];

@@ -49,9 +49,10 @@ export function useDependencyLogic() {
         const mappedEdges: Edge[] = [];
 
         // Handle ReactFlow-compatible structure directly if provided
-        if (data.nodes && Array.isArray(data.nodes)) {
-          data.nodes.forEach((n: any) => mappedNodes.push(n));
-          data.edges?.forEach((e: any) => mappedEdges.push(e));
+        const rawData = data as any;
+        if (rawData.nodes && Array.isArray(rawData.nodes)) {
+          rawData.nodes.forEach((n: any) => mappedNodes.push(n));
+          rawData.edges?.forEach((e: any) => mappedEdges.push(e));
         } else {
           // Fallback: Map servers and their nested applications to flat ReactFlow nodes
           data.servers?.forEach((srv: any, srvIdx: number) => {
@@ -122,7 +123,8 @@ export function useDependencyLogic() {
     queryKey: ["applications"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
-      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const rawResponse = response as any;
+      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setPaletteApps(data as unknown as PaletteApp[]);
       return data;
     },
@@ -136,7 +138,7 @@ export function useDependencyLogic() {
   // ── Connect two nodes ──────────────────────────────────────────────────────
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdge = {
+      const newEdge: Edge = {
         ...params,
         id: `e-${Date.now()}`,
         markerEnd: edgeMarker,

@@ -14,15 +14,19 @@ describe("Toolbars", () => {
 
     it("triggers setSelectedEnv on change", () => {
       render(<FilterBar {...mockProps} />);
-      const envSelect = screen.getByDisplayValue("All Environments");
-      fireEvent.change(envSelect, { target: { value: "Production" } });
+      // Open dropdown
+      fireEvent.click(screen.getByText("Environment"));
+      // Select option
+      fireEvent.click(screen.getByText("Production"));
       expect(mockProps.setSelectedEnv).toHaveBeenCalledWith("Production");
     });
 
     it("triggers setSelectedDatacenter on change", () => {
       render(<FilterBar {...mockProps} />);
-      const dcSelect = screen.getByDisplayValue("All Datacenters");
-      fireEvent.change(dcSelect, { target: { value: "AWS" } });
+      // Open dropdown
+      fireEvent.click(screen.getByText("Datacenter"));
+      // Select option
+      fireEvent.click(screen.getByText("AWS Cloud"));
       expect(mockProps.setSelectedDatacenter).toHaveBeenCalledWith("AWS");
     });
   });

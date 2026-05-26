@@ -6,7 +6,7 @@ import { PaletteSidebar } from "../../features/dependency-graph/components/Palet
 import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
-import { RegisterModal } from "../../app/components/RegisterModal";
+import { RegisterModal } from "../components/RegisterModal";
 
 function DependencyManagerContent() {
   const {
@@ -24,17 +24,17 @@ function DependencyManagerContent() {
 
       <PaletteSidebar paletteApps={paletteApps} />
       
-      {/* Main Canvas Workspace */}
-      <div className="flex-1 flex flex-col relative">
-        {/* Docked Utility Toolbar */}
-        <div className="h-14 bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between px-4 z-10 shadow-sm shrink-0">
-          <div className="flex items-center gap-3">
-            <SubToolbar 
-              onAddServer={() => setIsRegisterModalOpen(true)}
-              onAddDatacenter={() => console.log("Add Datacenter")}
-              onAutoMap={handleAutoMap}
-            />
-          </div>
+      {/* Main Viewport Wrapper */}
+      <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
+        
+        {/* Docked Utility Toolbar - always full width */}
+        <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
+          <SubToolbar 
+            onAddServer={() => setIsRegisterModalOpen(true)}
+            onAddDatacenter={() => console.log("Add Datacenter")}
+            onAutoMap={handleAutoMap}
+          />
+          <div className="w-px h-5 bg-border shrink-0"></div>
           <FilterBar
             selectedEnv={selectedEnv}
             setSelectedEnv={setSelectedEnv}
@@ -43,22 +43,27 @@ function DependencyManagerContent() {
           />
         </div>
 
-        <div className="flex-1 relative">
-          <FlowCanvas
-            nodes={nodes} edges={edges} onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange} onConnect={onConnect}
-            onDrop={onDrop} onDragOver={onDragOver}
-            onSelectionChange={onSelectionChange} isLoading={isLoading}
-            onQuickAdd={() => setIsRegisterModalOpen(true)}
+        {/* Canvas + Details Panel Row */}
+        <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
+          {/* React Flow Canvas Wrapper */}
+          <div className="flex-1 h-full relative min-w-0">
+            <FlowCanvas
+              nodes={nodes} edges={edges} onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange} onConnect={onConnect}
+              onDrop={onDrop} onDragOver={onDragOver}
+              onSelectionChange={onSelectionChange} isLoading={isLoading}
+              onQuickAdd={() => setIsRegisterModalOpen(true)}
+            />
+          </div>
+
+          {/* Details Panel */}
+          <DetailsPanel
+            selectedItem={selectedItem}
+            rightPanelData={rightPanelData}
+            onClose={() => { setSelectedItem({ type: null, id: null }); setRightPanelData(null); }}
           />
         </div>
       </div>
-
-      <DetailsPanel
-        selectedItem={selectedItem}
-        rightPanelData={rightPanelData}
-        onClose={() => { setSelectedItem({ type: null, id: null }); setRightPanelData(null); }}
-      />
 
       {isRegisterModalOpen && (
         <RegisterModal

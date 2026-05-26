@@ -45,7 +45,7 @@ describe("Topology Page", () => {
     });
 
     // Verify micro-dot background style presence
-    const canvas = screen.getByText("Corporate Datacenter").closest("div.flex-1.relative");
+    const canvas = screen.getByText("Corporate Datacenter").closest("div.flex-1.relative") as HTMLElement;
     expect(canvas?.style.backgroundImage).toContain("radial-gradient");
   });
 
