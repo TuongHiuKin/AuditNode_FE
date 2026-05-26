@@ -402,6 +402,7 @@ export interface components {
             risk?: string;
             icon?: string;
             techStack?: string;
+            servers?: components["schemas"]["ServerOnApplicationDto"][];
         };
         ConnectionDto: {
             /** Format: uuid */
@@ -486,6 +487,15 @@ export interface components {
             hostname?: string;
             ipAddress?: string;
             applications?: components["schemas"]["ApplicationNodeDto"][];
+        };
+        ServerOnApplicationDto: {
+            /** Format: uuid */
+            id?: string;
+            hostname?: string;
+            ipAddress?: string;
+            /** Format: int32 */
+            portNumber?: number | string;
+            protocol?: string;
         };
         ServerResponseDto: {
             /** Format: uuid */
