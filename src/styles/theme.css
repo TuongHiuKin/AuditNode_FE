@@ -88,6 +88,7 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
+  --color-surface: var(--card);
   
   --radius-sm: 4px;
   --radius-md: 8px;

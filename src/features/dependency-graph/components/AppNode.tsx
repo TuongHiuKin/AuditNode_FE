@@ -1,9 +1,10 @@
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
 import { CreditCard, Shield, Database, Zap, Globe } from "lucide-react";
+import { AppNode as AppNodeModel } from "../types";
 
 const ICONS: Record<string, any> = { CreditCard, Shield, Database, Zap, Globe };
 
-export function AppNode({ data, selected }: any) {
+export function AppNode({ data, selected }: NodeProps<AppNodeModel>) {
   const Icon = ICONS[data.app.icon] || Globe;
   return (
     <div

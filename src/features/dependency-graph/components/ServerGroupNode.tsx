@@ -1,8 +1,8 @@
 import { Server as ServerIcon } from "lucide-react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
-import { ServerNodeData } from "../types";
+import { ServerNode } from "../types";
 
-export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNodeData>) {
+export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNode>) {
   const { getNodes } = useReactFlow();
   
   // Dynamic Bounds: Calculate height based on child application nodes to prevent overlap

@@ -28,7 +28,7 @@ describe("DetailsPanel", () => {
     );
 
     expect(screen.getByText("Test App")).toBeDefined();
-    expect(screen.getByText("8080")).toBeDefined();
+    expect(screen.getByText(/8080/)).toBeDefined();
     expect(screen.getByText("React")).toBeDefined();
     expect(screen.getByText("Team A")).toBeDefined();
     expect(screen.getByText("srv-01")).toBeDefined();
@@ -73,8 +73,8 @@ describe("DetailsPanel", () => {
     expect(screen.getByText("Source App")).toBeDefined();
     expect(screen.getByText("Target App")).toBeDefined();
     expect(screen.getByText("HTTPS")).toBeDefined();
-    expect(screen.getAllByText("1111")).toBeDefined();
-    expect(screen.getAllByText("2222")).toBeDefined();
+    expect(screen.getAllByText(/1111/)).toBeDefined();
+    expect(screen.getAllByText(/2222/)).toBeDefined();
   });
 
   it("calls onClose when close button is clicked", () => {

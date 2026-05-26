@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ReactFlowProvider } from "@xyflow/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerGroupNode } from "../features/dependency-graph/components/ServerGroupNode";
-import { DependencyManager } from "../pages/DependencyManager";
+import { DependencyManager } from "../app/pages/Dependency";
 import apiClient from "../shared/api/client";
 
 // Mock the apiClient

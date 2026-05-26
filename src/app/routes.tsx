@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { Layout } from "./components/Layout";
 import { Inventory } from "./pages/Inventory";
 import { Topology } from "./pages/Topology";
-import { DependencyManager } from "../pages/DependencyManager";
+import { DependencyManager } from "./pages/Dependency";
 
 export const router = createBrowserRouter([
   {

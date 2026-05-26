@@ -4,6 +4,8 @@ import {
   Background,
   MiniMap,
   DefaultEdgeOptions,
+  type NodeTypes,
+  BackgroundVariant,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -42,7 +44,7 @@ export function FlowCanvas({
   isLoading,
   onQuickAdd,
 }: FlowCanvasProps) {
-  const nodeTypes = useMemo(() => ({
+  const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
   }), []);
@@ -74,7 +76,7 @@ export function FlowCanvas({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background color="#1e293b" gap={20} size={1} variant="dots" />
+        <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
         <GraphToolbar onQuickAdd={onQuickAdd} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "#0c1322" : "#FF4D7E")}
