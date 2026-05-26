@@ -3,11 +3,12 @@ import { PaletteApp } from "../types";
 
 const ICONS: Record<string, any> = { CreditCard, Shield, Database, Zap, Globe };
 
-interface PaletteSidebarProps {
-  paletteApps: PaletteApp[];
+interface AppPaletteProps {
+  availableApps: PaletteApp[];
+  isLoading: boolean;
 }
 
-export function PaletteSidebar({ paletteApps }: PaletteSidebarProps) {
+export function AppPalette({ availableApps, isLoading }: AppPaletteProps) {
   return (
     <div className="w-64 bg-surface border-r border-border flex flex-col shrink-0 z-20">
       <div className="p-4 border-b border-border bg-background">
@@ -17,14 +18,23 @@ export function PaletteSidebar({ paletteApps }: PaletteSidebarProps) {
         <p className="text-[10px] text-secondary mt-1 font-label uppercase">Drag apps onto the canvas.</p>
       </div>
       <div className="p-3 space-y-2 overflow-y-auto flex-1">
-        {paletteApps.length === 0 ? (
+        {isLoading ? (
           <div className="flex flex-col gap-2 animate-pulse">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-10 bg-background/60 rounded-lg" />
             ))}
           </div>
+        ) : availableApps.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+            <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mb-3 border border-border">
+              <Workflow size={20} className="text-secondary opacity-20" />
+            </div>
+            <p className="text-xs text-secondary font-medium font-body leading-relaxed">
+              All applications are currently mapped on the canvas.
+            </p>
+          </div>
         ) : (
-          paletteApps.map((app) => {
+          availableApps.map((app) => {
             const Icon = ICONS[app.icon] || Globe;
             return (
               <div

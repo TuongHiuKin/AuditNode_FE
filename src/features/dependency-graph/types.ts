@@ -9,6 +9,7 @@ export interface PaletteApp {
   icon: string;
   techStack: string;
   risk?: string;
+  isMapped?: boolean;
 }
 
 export interface AppNodeData extends Record<string, unknown> {

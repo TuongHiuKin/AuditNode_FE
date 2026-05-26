@@ -76,15 +76,15 @@ describe("useDependencyLogic", () => {
     };
 
     const mockApps = [
-      { id: "app-1", appName: "App 1" },
-      { id: "app-2", appName: "App 2" },
+      { id: "app-1", appName: "App 1", isMapped: false },
+      { id: "app-2", appName: "App 2", isMapped: false },
     ];
 
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
       if (url === "/api/Topology/map") {
         return Promise.resolve({ data: mockDependencyMap });
       }
-      if (url === "/api/Applications") {
+      if (url === "/api/Topology/status") {
         return Promise.resolve({ data: mockApps });
       }
       return Promise.reject(new Error("Unknown URL"));
@@ -99,7 +99,7 @@ describe("useDependencyLogic", () => {
     expect(result.current.nodes.find(n => n.type === "serverNode")).toBeDefined();
     expect(result.current.nodes.find(n => n.type === "appNode")).toBeDefined();
     expect(result.current.edges.length).toBe(1);
-    expect(result.current.paletteApps.length).toBe(2);
+    expect(result.current.availableApps.length).toBe(2);
   });
 
   it("updates rightPanelData on selection change for app node", async () => {
@@ -112,7 +112,7 @@ describe("useDependencyLogic", () => {
           connections: [] 
         }});
       }
-      if (url === "/api/Applications") {
+      if (url === "/api/Topology/status") {
         return Promise.resolve({ data: [] });
       }
       return Promise.reject(new Error("Unknown URL"));
