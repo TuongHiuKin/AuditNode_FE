@@ -38,7 +38,7 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         // risk: "High", // Intentionally omitted
         desc: "Test Description",
-        hostedServers: []
+        servers: []
       }
     ];
 
@@ -70,7 +70,7 @@ describe("AppTable Reproduction", () => {
         appName: "High Risk App",
         ownerId: "OWNER-2",
         risk: "High",
-        hostedServers: []
+        servers: []
       }
     ];
 
@@ -105,7 +105,7 @@ describe("AppTable Reproduction", () => {
         appName: "Medium Risk App",
         ownerId: "OWNER-3",
         risk: "Medium",
-        hostedServers: []
+        servers: []
       }
     ];
 
@@ -131,7 +131,7 @@ describe("AppTable Reproduction", () => {
     });
   });
 
-  it("renders 'UNKNOWN' when srv.environment is undefined", async () => {
+  it("renders 'UNKNOWN' when srv.protocol is undefined", async () => {
     const mockData = [
       {
         id: "1",
@@ -140,14 +140,13 @@ describe("AppTable Reproduction", () => {
         ownerId: "OWNER-1",
         risk: "High",
         desc: "Test Description",
-        hostedServers: [
+        servers: [
           {
             id: "s1",
             ipAddress: "1.1.1.1",
             hostname: "test-host",
-            osType: "Linux",
-            // environment: "Production", // Intentionally omitted
-            status: "Active"
+            portNumber: 8080,
+            // protocol: "http", // Intentionally omitted
           }
         ]
       }
@@ -174,6 +173,50 @@ describe("AppTable Reproduction", () => {
 
     await waitFor(() => {
       expect(screen.getByText("UNKNOWN")).toBeDefined();
+    });
+  });
+
+  it("renders nested server details correctly", async () => {
+    const mockData = [
+      {
+        id: "1",
+        appCode: "APP-001",
+        appName: "Test App",
+        ownerId: "OWNER-1",
+        risk: "Low",
+        servers: [
+          {
+            id: "s1",
+            ipAddress: "10.0.0.1",
+            hostname: "prod-server-01",
+            portNumber: 443,
+            protocol: "https"
+          }
+        ]
+      }
+    ];
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("Test App")).toBeDefined());
+
+    // Expand
+    screen.getByText("APP-001").click();
+
+    await waitFor(() => {
+      expect(screen.getByText("prod-server-01")).toBeDefined();
+      expect(screen.getByText("10.0.0.1")).toBeDefined();
+      expect(screen.getByText("443")).toBeDefined();
+      expect(screen.getByText("HTTPS")).toBeDefined();
     });
   });
 });

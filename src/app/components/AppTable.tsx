@@ -7,7 +7,6 @@ import apiClient, { Schemas } from "../../shared/api/client";
 
 type AppRow = Schemas["ApplicationResponseDto"] & {
   description?: string;
-  hostedServers?: Schemas["ServerResponseDto"][];
 };
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
@@ -30,8 +29,9 @@ export function AppTable() {
     queryKey: ["applications"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
+      const rawResponse = response as any;
       // Safely destructure: handle both direct array and wrapped response { data: [...] }
-      const rawData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const rawData = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       
       return rawData.map((app: any) => ({
         ...app,
@@ -82,7 +82,7 @@ export function AppTable() {
                   </td>
                 </tr>
               ) : (
-                apps.map((app) => (
+                apps.map((app: AppRow) => (
                   <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id!]}
                     onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} />
                 ))
@@ -131,33 +131,26 @@ function AppRowItem({
               <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Server size={12} /> DEPLOYED SERVERS
               </h4>
-              {(app.hostedServers?.length || 0) > 0 ? (
+              {(app.servers?.length || 0) > 0 ? (
                 <table className="w-full text-left bg-[#0c1322]/40 rounded-lg overflow-hidden border border-slate-800/50">
                   <thead className="bg-[#0c1322] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
                     <tr>
-                      <th className="px-4 py-2 font-bold">IP Address</th>
                       <th className="px-4 py-2 font-bold">Hostname</th>
-                      <th className="px-4 py-2 font-bold">OS Type</th>
-                      <th className="px-4 py-2 font-bold">Env</th>
-                      <th className="px-4 py-2 font-bold">Status</th>
+                      <th className="px-4 py-2 font-bold">IP Address</th>
+                      <th className="px-4 py-2 font-bold">Port</th>
+                      <th className="px-4 py-2 font-bold">Protocol</th>
                       <th className="px-4 py-2 text-right font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
-                    {app.hostedServers?.map((srv) => (
+                    {app.servers?.map((srv) => (
                       <tr key={srv.id} className="hover:bg-slate-900/30 transition-colors text-primary/80">
-                        <td className="px-4 py-2 font-mono text-[11px]">{srv.ipAddress}</td>
                         <td className="px-4 py-2 text-sm">{srv.hostname}</td>
-                        <td className="px-4 py-2 text-xs text-secondary/70">{srv.osType}</td>
+                        <td className="px-4 py-2 font-mono text-[11px]">{srv.ipAddress}</td>
+                        <td className="px-4 py-2 font-mono text-[11px]">{srv.portNumber}</td>
                         <td className="px-4 py-2">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border ${
-                            srv.environment === "Production" ? "text-tertiary bg-tertiary/10 border-tertiary/20" : "text-slate-400 bg-slate-500/10 border-slate-500/20"
-                          }`}>{srv.environment?.toUpperCase() ?? "UNKNOWN"}</span>
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-tight">
-                            <span className={`w-1.5 h-1.5 rounded-full ${srv.status === "Active" ? "bg-emerald-500" : "bg-slate-600"}`} />
-                            {srv.status || "Unknown"}
+                          <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border text-slate-400 bg-slate-500/10 border-slate-500/20">
+                            {srv.protocol?.toUpperCase() ?? "UNKNOWN"}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right">
@@ -177,3 +170,4 @@ function AppRowItem({
     </>
   );
 }
+
