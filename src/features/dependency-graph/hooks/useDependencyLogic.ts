@@ -30,6 +30,72 @@ export function useDependencyLogic() {
   const reactFlowInstance = useReactFlow();
   const queryClient = useQueryClient();
 
+  // ── Draw to Create Server Logic ──────────────────────────────────────────
+  const [isDrawingServer, setIsDrawingServer] = useState(false);
+  const [drawBox, setDrawBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+
+  const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
+    if (!isDrawingServer) return;
+    
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    
+    setDrawBox({
+      startX: position.x,
+      startY: position.y,
+      currentX: position.x,
+      currentY: position.y,
+    });
+  }, [isDrawingServer, reactFlowInstance]);
+
+  const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
+    if (!drawBox) return;
+    
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    
+    setDrawBox((prev) => prev ? ({
+      ...prev,
+      currentX: position.x,
+      currentY: position.y,
+    }) : null);
+  }, [drawBox, reactFlowInstance]);
+
+  const onPaneMouseUp = useCallback(() => {
+    if (!drawBox) return;
+
+    const width = Math.abs(drawBox.currentX - drawBox.startX);
+    const height = Math.abs(drawBox.currentY - drawBox.startY);
+    const x = Math.min(drawBox.startX, drawBox.currentX);
+    const y = Math.min(drawBox.startY, drawBox.currentY);
+
+    if (width > 50 && height > 50) {
+      const newNode: Node = {
+        id: `srv-${Date.now()}`,
+        type: "serverNode",
+        position: { x, y },
+        data: {
+          server: {
+            hostname: "New Server Container",
+            ipAddress: "0.0.0.0",
+            osType: "Unknown"
+          },
+          width,
+          height
+        },
+        zIndex: -1,
+      };
+      setNodes((nds) => nds.concat(newNode));
+    }
+
+    setDrawBox(null);
+    setIsDrawingServer(false);
+  }, [drawBox, setNodes]);
+
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
     queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
@@ -289,6 +355,12 @@ export function useDependencyLogic() {
     selectedDatacenter,
     setSelectedDatacenter,
     handleAutoMap,
+    isDrawingServer,
+    setIsDrawingServer,
+    drawBox,
+    onPaneMouseDown,
+    onPaneMouseMove,
+    onPaneMouseUp,
   };
 }
 

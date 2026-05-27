@@ -15,24 +15,27 @@ function DependencyManagerContent() {
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
     handleAutoMap,
-  } = useDependencyLogic();
+    isDrawingServer, setIsDrawingServer, drawBox,
+    onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
+    } = useDependencyLogic();
 
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
-  return (
+    return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
 
       <AppPalette availableApps={availableApps} isLoading={isAppsLoading} />
-      
+
       {/* Main Viewport Wrapper */}
       <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
-        
+
         {/* Docked Utility Toolbar - always full width */}
         <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
-          <SubToolbar 
-            onAddServer={() => setIsRegisterModalOpen(true)}
+          <SubToolbar
+            onAddServer={() => setIsDrawingServer(true)}
             onAddDatacenter={() => console.log("Add Datacenter")}
             onAutoMap={handleAutoMap}
+            isDrawingServer={isDrawingServer}
           />
           <div className="w-px h-5 bg-border shrink-0"></div>
           <FilterBar
@@ -52,7 +55,11 @@ function DependencyManagerContent() {
               onEdgesChange={onEdgesChange} onConnect={onConnect}
               onDrop={onDrop} onDragOver={onDragOver}
               onSelectionChange={onSelectionChange} isLoading={isLoading}
-              onQuickAdd={() => setIsRegisterModalOpen(true)}
+              isDrawingServer={isDrawingServer}
+              drawBox={drawBox}
+              onPaneMouseDown={onPaneMouseDown}
+              onPaneMouseMove={onPaneMouseMove}
+              onPaneMouseUp={onPaneMouseUp}
             />
           </div>
 
