@@ -5,14 +5,17 @@ interface SubToolbarProps {
   onAddDatacenter: () => void;
   onAutoMap: () => void;
   isDrawingServer?: boolean;
+  canDrawServer?: boolean;
 }
 
-export function SubToolbar({ onAddServer, onAddDatacenter, onAutoMap, isDrawingServer }: SubToolbarProps) {
+export function SubToolbar({ onAddServer, onAddDatacenter, onAutoMap, isDrawingServer, canDrawServer = true }: SubToolbarProps) {
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={onAddServer}
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold transition-all border rounded-md ${
+        onClick={() => canDrawServer && onAddServer()}
+        disabled={!canDrawServer && !isDrawingServer}
+        title={!canDrawServer ? "No available servers. Please register a new server first." : ""}
+        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold transition-all border rounded-md disabled:opacity-50 disabled:cursor-not-allowed ${
           isDrawingServer 
             ? "bg-tertiary/20 border-tertiary text-tertiary shadow-[0_0_10px_rgba(255,77,126,0.2)]" 
             : "text-secondary hover:text-primary hover:bg-background bg-surface border-border"

@@ -17,6 +17,7 @@ function DependencyManagerContent() {
     handleAutoMap,
     isDrawingServer, setIsDrawingServer, drawBox,
     onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
+    canDrawServer,
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -36,6 +37,7 @@ function DependencyManagerContent() {
             onAddDatacenter={() => console.log("Add Datacenter")}
             onAutoMap={handleAutoMap}
             isDrawingServer={isDrawingServer}
+            canDrawServer={canDrawServer}
           />
           <div className="w-px h-5 bg-border shrink-0"></div>
           <FilterBar

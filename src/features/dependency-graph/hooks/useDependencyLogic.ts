@@ -30,12 +30,28 @@ export function useDependencyLogic() {
   const reactFlowInstance = useReactFlow();
   const queryClient = useQueryClient();
 
+  // ── Fetch all servers to determine mapping status ────────────────────────
+  const { data: allServers = [] } = useQuery({
+    queryKey: ["all-servers"],
+    queryFn: async () => {
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const rawResponse = response as any;
+      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+    },
+  });
+
+  const unmappedServers = allServers.filter(
+    (srv) => !nodes.some((n) => n.id === srv.id && n.type === "serverNode")
+  );
+
+  const canDrawServer = unmappedServers.length > 0;
+
   // ── Draw to Create Server Logic ──────────────────────────────────────────
   const [isDrawingServer, setIsDrawingServer] = useState(false);
   const [drawBox, setDrawBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
 
   const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
-    if (!isDrawingServer) return;
+    if (!isDrawingServer || !canDrawServer) return;
     
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
@@ -48,7 +64,7 @@ export function useDependencyLogic() {
       currentX: position.x,
       currentY: position.y,
     });
-  }, [isDrawingServer, reactFlowInstance]);
+  }, [isDrawingServer, canDrawServer, reactFlowInstance]);
 
   const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
     if (!drawBox) return;
@@ -73,16 +89,17 @@ export function useDependencyLogic() {
     const x = Math.min(drawBox.startX, drawBox.currentX);
     const y = Math.min(drawBox.startY, drawBox.currentY);
 
-    if (width > 50 && height > 50) {
+    if (width > 50 && height > 50 && unmappedServers.length > 0) {
+      const targetServer = unmappedServers[0];
       const newNode: Node = {
-        id: `srv-${Date.now()}`,
+        id: targetServer.id!,
         type: "serverNode",
         position: { x, y },
         data: {
           server: {
-            hostname: "New Server Container",
-            ipAddress: "0.0.0.0",
-            osType: "Unknown"
+            hostname: targetServer.hostname,
+            ipAddress: targetServer.ipAddress,
+            osType: targetServer.osType
           },
           width,
           height
@@ -94,7 +111,7 @@ export function useDependencyLogic() {
 
     setDrawBox(null);
     setIsDrawingServer(false);
-  }, [drawBox, setNodes]);
+  }, [drawBox, unmappedServers, setNodes]);
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
@@ -357,6 +374,7 @@ export function useDependencyLogic() {
     handleAutoMap,
     isDrawingServer,
     setIsDrawingServer,
+    canDrawServer,
     drawBox,
     onPaneMouseDown,
     onPaneMouseMove,
