@@ -67,7 +67,7 @@ describe("RegisterModal", () => {
 
   it("validates required fields in infra mode", async () => {
     renderWithProvider(<RegisterModal onClose={mockOnClose} />);
-    fireEvent.click(screen.getByText("Register Server"));
+    fireEvent.click(screen.getByText("Submit Server"));
     
     await waitFor(() => {
       expect(screen.getByText(/Datacenter, IP Address, and Hostname are required/i)).toBeDefined();
@@ -88,7 +88,7 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByPlaceholderText("e.g. 10.0.x.x"), { target: { value: "192.168.1.1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. web-node-01"), { target: { value: "web-01" } });
     
-    fireEvent.click(screen.getByText("Register Server"));
+    fireEvent.click(screen.getByText("Submit Server"));
     
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/Servers", expect.objectContaining({

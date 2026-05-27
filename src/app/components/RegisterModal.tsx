@@ -70,230 +70,257 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
   };
 
   return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 p-4">
-      <div className="bg-[#0f172a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200">
-        {/* Modal Header */}
-        <div className="flex justify-between items-center p-5 border-b border-gray-800">
-          <h3 className="text-xl font-bold text-white">Register New Entity</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors focus:outline-none">
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="px-5 pt-5">
-          <div className="flex flex-row bg-[#111827] border border-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setFormMode("infra")}
-              className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
-                formMode === "infra"
-                  ? "bg-[#1f2937] text-white shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
-              }`}
-            >
-              New Server
-            </button>
-            <button
-              onClick={() => setFormMode("app")}
-              className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
-                formMode === "app"
-                  ? "bg-[#1f2937] text-white shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
-              }`}
-            >
-              New Application
+    <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 p-4" onClick={onClose}>
+      <div
+        id="register-modal-wrapper"
+        className="bg-[#0f172a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+        style={{ minWidth: '420px' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+          {/* ── Modal Header ── */}
+          <div className="flex justify-between items-center p-5 border-b border-gray-800">
+            <h3 className="text-xl font-bold text-white">Register New Entity</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors focus:outline-none">
+              <X size={24} />
             </button>
           </div>
-        </div>
 
-        {/* Form Body */}
-        <div className="p-5 flex flex-col gap-5">
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-              {error}
+          {/* ── Tab Switcher ── */}
+          <div className="px-5 pt-5">
+            <div className="flex flex-row bg-[#111827] border border-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setFormMode("infra")}
+                className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
+                  formMode === "infra"
+                    ? "bg-[#1f2937] text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                New Server
+              </button>
+              <button
+                onClick={() => setFormMode("app")}
+                className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
+                  formMode === "app"
+                    ? "bg-[#1f2937] text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                New Application
+              </button>
             </div>
-          )}
+          </div>
 
-          {formMode === "infra" ? (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="datacenterId" className={labelCls}>Zone / Datacenter</label>
-                <select 
-                  id="datacenterId"
-                  className={inputCls}
-                  value={infraData.datacenterId}
-                  onChange={(e) => setInfraData({ ...infraData, datacenterId: e.target.value })}
-                >
-                  <option value="" className="bg-[#0b1120]">Select Datacenter...</option>
-                  {datacenters.map(dc => (
-                    <option key={dc.id} value={dc.id} className="bg-[#0b1120]">{dc.name} ({dc.location})</option>
-                  ))}
-                </select>
+          {/* ── Form Body ── */}
+          <div className="p-5 flex flex-col gap-5">
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                {error}
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-4 w-full">
+            {formMode === "infra" ? (
+              <div className="flex flex-col gap-5">
+                {/* Zone / Datacenter */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="ipAddress" className={labelCls}>Server IP</label>
-                  <input 
-                    id="ipAddress"
-                    type="text" 
-                    placeholder="e.g. 10.0.x.x" 
-                    className={inputCls} 
-                    value={infraData.ipAddress}
-                    onChange={(e) => setInfraData({ ...infraData, ipAddress: e.target.value })}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="hostname" className={labelCls}>Hostname</label>
-                  <input 
-                    id="hostname"
-                    type="text" 
-                    placeholder="e.g. web-node-01" 
-                    className={inputCls} 
-                    value={infraData.hostname}
-                    onChange={(e) => setInfraData({ ...infraData, hostname: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="osType" className={labelCls}>OS Type</label>
-                  <select 
-                    id="osType"
+                  <label htmlFor="datacenterId" className={labelCls}>Zone / Datacenter</label>
+                  <select
+                    id="datacenterId"
                     className={inputCls}
-                    value={infraData.osType}
-                    onChange={(e) => setInfraData({ ...infraData, osType: e.target.value })}
+                    value={infraData.datacenterId}
+                    onChange={(e) => setInfraData({ ...infraData, datacenterId: e.target.value })}
                   >
-                    <option className="bg-[#0b1120]">Ubuntu 22.04</option>
-                    <option className="bg-[#0b1120]">RHEL 8</option>
-                    <option className="bg-[#0b1120]">CentOS 7</option>
-                    <option className="bg-[#0b1120]">Windows Server 2022</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="environment" className={labelCls}>Environment</label>
-                  <select 
-                    id="environment"
-                    className={inputCls}
-                    value={infraData.environment}
-                    onChange={(e) => setInfraData({ ...infraData, environment: e.target.value })}
-                  >
-                    <option className="bg-[#0b1120]">Production</option>
-                    <option className="bg-[#0b1120]">Staging</option>
-                    <option className="bg-[#0b1120]">Development</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="serverId" className={labelCls}>Select Server</label>
-                  <select 
-                    id="serverId"
-                    className={inputCls}
-                    value={appData.serverId}
-                    onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
-                  >
-                    <option value="" className="bg-[#0b1120]">Select server...</option>
-                    {servers.map((s) => (
-                      <option key={s.id} value={s.id} className="bg-[#0b1120]">
-                        {s.hostname}
-                      </option>
+                    <option value="" className="bg-[#0b1120]">Select Datacenter...</option>
+                    {datacenters.map(dc => (
+                      <option key={dc.id} value={dc.id} className="bg-[#0b1120]">{dc.name} ({dc.location})</option>
                     ))}
                   </select>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="ownerId" className={labelCls}>Owner Team/ID</label>
-                  <input 
-                    id="ownerId"
-                    type="text" 
-                    placeholder="e.g. FinOps" 
-                    className={inputCls} 
-                    value={appData.ownerId}
-                    onChange={(e) => setAppData({ ...appData, ownerId: e.target.value })}
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="appCode" className={labelCls}>App Code</label>
-                  <input 
-                    id="appCode"
-                    type="text" 
-                    placeholder="PAY-01" 
-                    className={inputCls} 
-                    value={appData.appCode}
-                    onChange={(e) => setAppData({ ...appData, appCode: e.target.value })}
-                  />
+                {/* Server IP + Hostname */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ipAddress" className={labelCls}>Server IP</label>
+                    <input
+                      id="ipAddress"
+                      type="text"
+                      placeholder="e.g. 10.0.x.x"
+                      className={inputCls}
+                      value={infraData.ipAddress}
+                      onChange={(e) => setInfraData({ ...infraData, ipAddress: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="hostname" className={labelCls}>Hostname</label>
+                    <input
+                      id="hostname"
+                      type="text"
+                      placeholder="e.g. web-node-01"
+                      className={inputCls}
+                      value={infraData.hostname}
+                      onChange={(e) => setInfraData({ ...infraData, hostname: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="appName" className={labelCls}>Application Name</label>
-                  <input 
-                    id="appName"
-                    type="text" 
-                    placeholder="e.g. Payment Gateway" 
-                    className={inputCls} 
-                    value={appData.appName}
-                    onChange={(e) => setAppData({ ...appData, appName: e.target.value })}
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="portNumber" className={labelCls}>Port</label>
-                  <input 
-                    id="portNumber"
-                    type="number" 
-                    placeholder="443" 
-                    className={inputCls} 
-                    value={appData.portNumber}
-                    onChange={(e) => setAppData({ ...appData, portNumber: parseInt(e.target.value) || 0 })}
-                  />
+                {/* OS Type + Environment */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="osType" className={labelCls}>OS Type</label>
+                    <select
+                      id="osType"
+                      className={inputCls}
+                      value={infraData.osType}
+                      onChange={(e) => setInfraData({ ...infraData, osType: e.target.value })}
+                    >
+                      <option className="bg-[#0b1120]">Ubuntu 22.04</option>
+                      <option className="bg-[#0b1120]">RHEL 8</option>
+                      <option className="bg-[#0b1120]">CentOS 7</option>
+                      <option className="bg-[#0b1120]">Windows Server 2022</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="environment" className={labelCls}>Environment</label>
+                    <select
+                      id="environment"
+                      className={inputCls}
+                      value={infraData.environment}
+                      onChange={(e) => setInfraData({ ...infraData, environment: e.target.value })}
+                    >
+                      <option className="bg-[#0b1120]">Production</option>
+                      <option className="bg-[#0b1120]">Staging</option>
+                      <option className="bg-[#0b1120]">Development</option>
+                    </select>
+                  </div>
                 </div>
+
+                {/* Initial Status */}
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="protocol" className={labelCls}>Protocol</label>
-                  <select 
-                    id="protocol"
+                  <label htmlFor="status" className={labelCls}>Initial Status</label>
+                  <select
+                    id="status"
                     className={inputCls}
-                    value={appData.protocol}
-                    onChange={(e) => setAppData({ ...appData, protocol: e.target.value })}
+                    value={infraData.status}
+                    onChange={(e) => setInfraData({ ...infraData, status: e.target.value })}
                   >
-                    <option className="bg-[#0b1120]">HTTPS</option>
-                    <option className="bg-[#0b1120]">TCP</option>
-                    <option className="bg-[#0b1120]">UDP</option>
-                    <option className="bg-[#0b1120]">HTTP</option>
-                    <option className="bg-[#0b1120]">gRPC</option>
+                    <option className="bg-[#0b1120]">Active</option>
+                    <option className="bg-[#0b1120]">Inactive</option>
+                    <option className="bg-[#0b1120]">Maintenance</option>
                   </select>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {/* Server + Owner */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="serverId" className={labelCls}>Select Server</label>
+                    <select
+                      id="serverId"
+                      className={inputCls}
+                      value={appData.serverId}
+                      onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
+                    >
+                      <option value="" className="bg-[#0b1120]">Select server...</option>
+                      {servers.map((s) => (
+                        <option key={s.id} value={s.id} className="bg-[#0b1120]">
+                          {s.hostname}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ownerId" className={labelCls}>Owner Team/ID</label>
+                    <input
+                      id="ownerId"
+                      type="text"
+                      placeholder="e.g. FinOps"
+                      className={inputCls}
+                      value={appData.ownerId}
+                      onChange={(e) => setAppData({ ...appData, ownerId: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-        {/* Modal Footer */}
-        <div className="flex justify-end items-center gap-4 p-5 border-t border-gray-800 bg-[#0f172a] rounded-b-xl">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="text-sm font-medium text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-50 active:scale-95"
-          >
-            {loading ? "Submitting..." : (formMode === "infra" ? "Register Server" : "Deploy App")}
-          </button>
+                {/* App Code + App Name */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="appCode" className={labelCls}>App Code</label>
+                    <input
+                      id="appCode"
+                      type="text"
+                      placeholder="PAY-01"
+                      className={inputCls}
+                      value={appData.appCode}
+                      onChange={(e) => setAppData({ ...appData, appCode: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="appName" className={labelCls}>Application Name</label>
+                    <input
+                      id="appName"
+                      type="text"
+                      placeholder="e.g. Payment Gateway"
+                      className={inputCls}
+                      value={appData.appName}
+                      onChange={(e) => setAppData({ ...appData, appName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* Port + Protocol */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="portNumber" className={labelCls}>Port</label>
+                    <input
+                      id="portNumber"
+                      type="number"
+                      placeholder="443"
+                      className={inputCls}
+                      value={appData.portNumber}
+                      onChange={(e) => setAppData({ ...appData, portNumber: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="protocol" className={labelCls}>Protocol</label>
+                    <select
+                      id="protocol"
+                      className={inputCls}
+                      value={appData.protocol}
+                      onChange={(e) => setAppData({ ...appData, protocol: e.target.value })}
+                    >
+                      <option className="bg-[#0b1120]">HTTPS</option>
+                      <option className="bg-[#0b1120]">TCP</option>
+                      <option className="bg-[#0b1120]">UDP</option>
+                      <option className="bg-[#0b1120]">HTTP</option>
+                      <option className="bg-[#0b1120]">gRPC</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Modal Footer ── */}
+          <div className="flex justify-end items-center gap-4 p-5 border-t border-gray-800">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-50 active:scale-95"
+            >
+              {loading ? "Submitting..." : (formMode === "infra" ? "Submit Server" : "Deploy App")}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>,
+      </div>,
     document.body
   );
 }
+
