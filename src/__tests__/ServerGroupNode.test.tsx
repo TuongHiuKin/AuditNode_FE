@@ -35,7 +35,7 @@ describe("ServerGroupNode", () => {
     </ReactFlowProvider>
   );
 
-  it("renders server hostname, IP, and OS type", () => {
+  it("renders server hostname, IP, and Auto-fit button", () => {
     vi.mocked(useReactFlow).mockReturnValue({
       getNodes: () => [],
     } as any);
@@ -43,11 +43,11 @@ describe("ServerGroupNode", () => {
     wrap(<ServerGroupNode {...mockProps} />);
     expect(screen.getByText("prod-web-01")).toBeDefined();
     expect(screen.getByText("10.0.4.15")).toBeDefined();
-    expect(screen.getByText("Ubuntu 22.04")).toBeDefined();
+    expect(screen.getByTitle("Auto-fit to children")).toBeDefined();
   });
 
-  it("calculates dynamic height based on child apps", () => {
-    // Mock 3 child apps
+  it("prioritizes data.height over automatic calculation", () => {
+    // Mock 3 child apps (which would usually trigger 260px height)
     vi.mocked(useReactFlow).mockReturnValue({
       getNodes: () => [
         { id: "app-1", parentId: "srv-1" },
@@ -56,12 +56,11 @@ describe("ServerGroupNode", () => {
       ],
     } as any);
 
+    // If data.height is provided (e.g. from a previous resize), it should be used
     const { container } = wrap(<ServerGroupNode {...mockProps} />);
     const nodeDiv = container.querySelector("div") as HTMLElement;
     
-    // appCount = 3
-    // dynamicHeight = Math.max(120, 80 + (3 * 60)) = 260
-    expect(nodeDiv.style.height).toBe("260px");
+    expect(nodeDiv.style.height).toBe("120px");
   });
 
   it("applies selected styles when selected prop is true", () => {

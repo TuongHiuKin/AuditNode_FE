@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerGroupNode } from "../features/dependency-graph/components/ServerGroupNode";
 import { DependencyManager } from "../app/pages/Dependency";
 import apiClient from "../shared/api/client";
+import { HeaderProvider } from "../app/hooks/useHeader";
 
 // Mock the apiClient
 vi.mock("../shared/api/client", () => ({
@@ -73,7 +74,9 @@ describe("DependencyManager Integration", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <DependencyManager />
+        <HeaderProvider>
+          <DependencyManager />
+        </HeaderProvider>
       </QueryClientProvider>
     );
 

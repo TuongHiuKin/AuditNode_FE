@@ -12,16 +12,18 @@
 - **Backend:** Strictly enforce .NET Clean Architecture standards. Keep clear separation between Domain, Application, Infrastructure, and API layers.
 - **Frontend:** Adhere strictly to the FSD-Lite (Feature-Driven) folder structure convention. Keep components modular and single-responsibility focused.
 
-## 4. ⚠️ MAIN BRANCH PROTECTION RULES (STRICT BRANCHING & ANTI-FORCE POLICY)
+## 4. ⚠️ GIT OPERATIONS & PROTECTION RULES (STRICT MANUAL TRIGGER & PROTECTION)
 
-To ensure absolute system safety and prevent source code conflicts, you MUST strictly adhere to the following rules when performing Git operations:
+To ensure absolute system safety and prevent unauthorized source code modifications, you MUST strictly adhere to the following rules:
 
-1. **No Direct Push to `main`:** - NEVER use commands like `git push origin main` or `git push origin master`. The `main` branch only accepts code via Pull Requests/Merge Requests after proper review.
-   
-2. **Always Use Isolated Branches:** - All changes must be pushed to a fresh branch (automatically created via `git checkout -b <new-branch-name>`).
+1. **No Automatic Git Operations:** - DO NOT perform any Git operations (add, commit, push, branch, etc.) automatically after completing a task. You must skip all Git commands unless the user explicitly initiates the flow by typing exactly **"push code"**.
 
-3. **Absolute Prohibition of Push Force:** - DO NOT use the `-f` or `--force` flags when pushing to the `main` branch (`git push origin main --force`). This action destroys the project's commit history and breaks the synchronization flow for other team members.
+2. **Trigger-Based Workflow:** - Only when the user inputs **"push code"**, you may begin the Git workflow. This workflow MUST still follow these protection rules:
+   - **No Direct Push to `main`:** NEVER push to `main` or `master`.
+   - **Always Use Isolated Branches:** Create a fresh branch for changes.
+   - **No Force Push:** Absolute prohibition of `-f` or `--force`.
+   - **Mandatory Final Pre-Push Testing:** Immediately before the actual push (and after user confirmation), you MUST run all project tests. Only push if 100% of tests pass.
 
-4. **Mandatory Pre-Push Testing:** - Before pushing any code, you MUST run all project tests to ensure no regressions are introduced. Only push the code if all tests pass.
+3. **Explicit User Approval for Each Step:** - Even after the "push code" trigger, you MUST ask for and receive explicit confirmation before executing the final `git push` command.
 
 *Note: Read and follow this file before initiating any code modification or generation task in this workspace.*

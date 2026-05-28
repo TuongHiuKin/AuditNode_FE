@@ -30,6 +30,11 @@ interface FlowCanvasProps {
   onSelectionChange: any;
   isLoading: boolean;
   onQuickAdd?: () => void;
+  isDrawingServer?: boolean;
+  drawBox?: { startX: number; startY: number; currentX: number; currentY: number } | null;
+  onPaneMouseDown?: (event: React.MouseEvent) => void;
+  onPaneMouseMove?: (event: React.MouseEvent) => void;
+  onPaneMouseUp?: () => void;
 }
 
 export function FlowCanvas({
@@ -43,6 +48,11 @@ export function FlowCanvas({
   onSelectionChange,
   isLoading,
   onQuickAdd,
+  isDrawingServer,
+  drawBox,
+  onPaneMouseDown,
+  onPaneMouseMove,
+  onPaneMouseUp,
 }: FlowCanvasProps) {
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
@@ -50,7 +60,7 @@ export function FlowCanvas({
   }), []);
 
   return (
-    <div className="relative w-full h-full bg-background">
+    <div className={`relative w-full h-full bg-background ${isDrawingServer ? "cursor-crosshair" : ""}`}>
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-secondary">
@@ -59,6 +69,21 @@ export function FlowCanvas({
           </div>
         </div>
       )}
+
+      {/* Drawing Box Overlay */}
+      {drawBox && (
+        <div
+          className="absolute z-50 border-2 border-tertiary bg-tertiary/10 pointer-events-none rounded-lg"
+          style={{
+            left: Math.min(drawBox.startX, drawBox.currentX),
+            top: Math.min(drawBox.startY, drawBox.currentY),
+            width: Math.abs(drawBox.currentX - drawBox.startX),
+            height: Math.abs(drawBox.currentY - drawBox.startY),
+            transform: 'none', // Ensure it stays in flow space if wrapped, but here we need to handle coordinate mapping carefully if it's absolute to the viewport
+          }}
+        />
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -68,6 +93,9 @@ export function FlowCanvas({
         onSelectionChange={onSelectionChange}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onPaneMouseDown={onPaneMouseDown}
+        onPaneMouseMove={onPaneMouseMove}
+        onPaneMouseUp={onPaneMouseUp}
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
@@ -75,6 +103,8 @@ export function FlowCanvas({
         colorMode="dark"
         minZoom={0.2}
         maxZoom={2}
+        panOnDrag={!isDrawingServer}
+        selectionOnDrag={!isDrawingServer}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
         <GraphToolbar onQuickAdd={onQuickAdd} />

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
+import { Network } from "lucide-react";
 import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
 import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanvas";
 import { AppPalette } from "../../features/dependency-graph/components/AppPalette";
@@ -7,6 +8,7 @@ import { DetailsPanel } from "../../features/dependency-graph/components/Details
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
 import { RegisterModal } from "../components/RegisterModal";
+import { useHeader } from "../hooks/useHeader";
 
 function DependencyManagerContent() {
   const {
@@ -15,24 +17,38 @@ function DependencyManagerContent() {
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
     handleAutoMap,
-  } = useDependencyLogic();
+    isDrawingServer, setIsDrawingServer, drawBox,
+    onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
+    canDrawServer,
+    } = useDependencyLogic();
 
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const { setHeader } = useHeader();
 
-  return (
+    useEffect(() => {
+      setHeader(
+        "Dependency Graph Manager",
+        "Visualize and manage inter-service dependencies and network flows.",
+        <Network size={20} />
+      );
+    }, [setHeader]);
+
+    return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
 
       <AppPalette availableApps={availableApps} isLoading={isAppsLoading} />
-      
+
       {/* Main Viewport Wrapper */}
       <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
-        
+
         {/* Docked Utility Toolbar - always full width */}
         <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
-          <SubToolbar 
-            onAddServer={() => setIsRegisterModalOpen(true)}
+          <SubToolbar
+            onAddServer={() => setIsDrawingServer(true)}
             onAddDatacenter={() => console.log("Add Datacenter")}
             onAutoMap={handleAutoMap}
+            isDrawingServer={isDrawingServer}
+            canDrawServer={canDrawServer}
           />
           <div className="w-px h-5 bg-border shrink-0"></div>
           <FilterBar
@@ -52,7 +68,11 @@ function DependencyManagerContent() {
               onEdgesChange={onEdgesChange} onConnect={onConnect}
               onDrop={onDrop} onDragOver={onDragOver}
               onSelectionChange={onSelectionChange} isLoading={isLoading}
-              onQuickAdd={() => setIsRegisterModalOpen(true)}
+              isDrawingServer={isDrawingServer}
+              drawBox={drawBox}
+              onPaneMouseDown={onPaneMouseDown}
+              onPaneMouseMove={onPaneMouseMove}
+              onPaneMouseUp={onPaneMouseUp}
             />
           </div>
 

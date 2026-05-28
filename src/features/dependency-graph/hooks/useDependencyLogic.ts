@@ -30,6 +30,89 @@ export function useDependencyLogic() {
   const reactFlowInstance = useReactFlow();
   const queryClient = useQueryClient();
 
+  // ── Fetch all servers to determine mapping status ────────────────────────
+  const { data: allServers = [] } = useQuery({
+    queryKey: ["all-servers"],
+    queryFn: async () => {
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const rawResponse = response as any;
+      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+    },
+  });
+
+  const unmappedServers = allServers.filter(
+    (srv) => !nodes.some((n) => n.id === srv.id && n.type === "serverNode")
+  );
+
+  const canDrawServer = unmappedServers.length > 0;
+
+  // ── Draw to Create Server Logic ──────────────────────────────────────────
+  const [isDrawingServer, setIsDrawingServer] = useState(false);
+  const [drawBox, setDrawBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+
+  const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
+    if (!isDrawingServer || !canDrawServer) return;
+    
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    
+    setDrawBox({
+      startX: position.x,
+      startY: position.y,
+      currentX: position.x,
+      currentY: position.y,
+    });
+  }, [isDrawingServer, canDrawServer, reactFlowInstance]);
+
+  const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
+    if (!drawBox) return;
+    
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    
+    setDrawBox((prev) => prev ? ({
+      ...prev,
+      currentX: position.x,
+      currentY: position.y,
+    }) : null);
+  }, [drawBox, reactFlowInstance]);
+
+  const onPaneMouseUp = useCallback(() => {
+    if (!drawBox) return;
+
+    const width = Math.abs(drawBox.currentX - drawBox.startX);
+    const height = Math.abs(drawBox.currentY - drawBox.startY);
+    const x = Math.min(drawBox.startX, drawBox.currentX);
+    const y = Math.min(drawBox.startY, drawBox.currentY);
+
+    if (width > 50 && height > 50 && unmappedServers.length > 0) {
+      const targetServer = unmappedServers[0];
+      const newNode: Node = {
+        id: targetServer.id!,
+        type: "serverNode",
+        position: { x, y },
+        data: {
+          server: {
+            hostname: targetServer.hostname,
+            ipAddress: targetServer.ipAddress,
+            osType: targetServer.osType
+          },
+          width,
+          height
+        },
+        zIndex: -1,
+      };
+      setNodes((nds) => nds.concat(newNode));
+    }
+
+    setDrawBox(null);
+    setIsDrawingServer(false);
+  }, [drawBox, unmappedServers, setNodes]);
+
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
     queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
@@ -289,6 +372,13 @@ export function useDependencyLogic() {
     selectedDatacenter,
     setSelectedDatacenter,
     handleAutoMap,
+    isDrawingServer,
+    setIsDrawingServer,
+    canDrawServer,
+    drawBox,
+    onPaneMouseDown,
+    onPaneMouseMove,
+    onPaneMouseUp,
   };
 }
 

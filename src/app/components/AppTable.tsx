@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Server, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Server, Search, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
@@ -21,8 +21,9 @@ function TableSkeleton() {
 }
 
 // ── AppTable ──────────────────────────────────────────────────────────────────
-export function AppTable() {
+export function AppTable({ onRegister }: { onRegister: () => void }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const { data: apps = [], isLoading } = useQuery({
@@ -40,6 +41,15 @@ export function AppTable() {
     },
   });
 
+  const filteredApps = useMemo(() => {
+    return apps.filter((app: AppRow) => 
+      app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.risk?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [apps, searchQuery]);
+
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -48,16 +58,30 @@ export function AppTable() {
 
   return (
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
-      {/* Toolbar */}
-      <div className="p-4 border-b border-slate-900 bg-[#0c1322] flex justify-between items-center shrink-0">
-        <div className="relative w-72">
+      {/* Table Action Header */}
+      <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
+        <div className="w-72 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input type="text" placeholder="Search applications..."
-            className="w-full bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-1.5 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search Server/App..."
+            className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
+          />
         </div>
-        <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1 rounded-full border border-slate-800 uppercase tracking-widest">
-          {isLoading ? "…" : `${apps.length} TOTAL`}
-        </span>
+
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
+            {isLoading ? "…" : `${filteredApps.length} TOTAL`}
+          </span>
+          <button
+            onClick={onRegister}
+            className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
+          >
+            <Plus size={16} /> Register New Entity
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -75,14 +99,14 @@ export function AppTable() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-900/50">
-              {apps.length === 0 ? (
+              {filteredApps.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-sm text-secondary italic">
-                    No applications found. Check your backend connection.
+                    {searchQuery ? "No applications match your search." : "No applications found. Check your backend connection."}
                   </td>
                 </tr>
               ) : (
-                apps.map((app: AppRow) => (
+                filteredApps.map((app: AppRow) => (
                   <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id!]}
                     onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} />
                 ))

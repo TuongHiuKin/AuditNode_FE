@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
@@ -18,7 +18,7 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch Datacenters ──────────────────────────────────────────────────────
+  // ── Fetch Datacenters ──────────────────────────────────────────────────────────────────
   const { data: datacenters = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
@@ -26,6 +26,23 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
       return Array.isArray(response.data) ? response.data : [];
     },
   });
+
+  // ── Fetch Servers (Dynamic Fetch) ────────────────────────────────────────────────────────
+  const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
+
+  useEffect(() => {
+    const fetchServers = async () => {
+      try {
+        const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+        if (Array.isArray(response.data)) {
+          setAvailableServers(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch servers:", err);
+      }
+    };
+    fetchServers();
+  }, []);
 
   // Form State
   const [infraData, setInfraData] = useState({
@@ -41,7 +58,7 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
     serverId: "",
     appCode: "",
     appName: "",
-    ownerId: "",
+    ownerTeam: "",
     portNumber: 443,
     protocol: "HTTPS",
   });
@@ -56,8 +73,8 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
         }
         await apiClient.post("/api/Servers", infraData);
       } else {
-        if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerId) {
-          throw new Error("Server, App Code, App Name, and Owner ID are required");
+        if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerTeam) {
+          throw new Error("Server, App Code, App Name, and Owner Team are required");
         }
         await apiClient.post("/api/Applications", appData);
       }
@@ -222,22 +239,22 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
                       onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
                     >
                       <option value="" className="bg-[#0b1120]">Select server...</option>
-                      {servers.map((s) => (
+                      {availableServers.map((s) => (
                         <option key={s.id} value={s.id} className="bg-[#0b1120]">
-                          {s.hostname}
+                          {s.hostname} ({s.ipAddress})
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="ownerId" className={labelCls}>Owner Team/ID</label>
+                    <label htmlFor="ownerTeam" className={labelCls}>Owner Team</label>
                     <input
-                      id="ownerId"
+                      id="ownerTeam"
                       type="text"
-                      placeholder="e.g. FinOps"
+                      placeholder="e.g. FinOps Team"
                       className={inputCls}
-                      value={appData.ownerId}
-                      onChange={(e) => setAppData({ ...appData, ownerId: e.target.value })}
+                      value={appData.ownerTeam}
+                      onChange={(e) => setAppData({ ...appData, ownerTeam: e.target.value })}
                     />
                   </div>
                 </div>
@@ -323,4 +340,3 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
     document.body
   );
 }
-
