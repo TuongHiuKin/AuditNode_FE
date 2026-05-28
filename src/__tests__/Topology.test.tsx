@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Topology } from "../app/pages/Topology";
 import apiClient from "../shared/api/client";
+import { HeaderProvider } from "../app/hooks/useHeader";
 
 // Mock the apiClient
 vi.mock("../shared/api/client", () => ({
@@ -32,12 +33,11 @@ describe("Topology Page", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <Topology />
+        <HeaderProvider>
+          <Topology />
+        </HeaderProvider>
       </QueryClientProvider>
     );
-
-    // Verify header
-    expect(screen.getByText("Topology Network Map")).toBeDefined();
 
     // Verify Datacenter node after loading
     await waitFor(() => {
@@ -71,7 +71,9 @@ describe("Topology Page", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <Topology />
+        <HeaderProvider>
+          <Topology />
+        </HeaderProvider>
       </QueryClientProvider>
     );
 

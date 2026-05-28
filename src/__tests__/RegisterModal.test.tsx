@@ -38,6 +38,9 @@ describe("RegisterModal", () => {
       if (url === "/api/Datacenters") {
         return Promise.resolve({ data: mockDatacenters });
       }
+      if (url === "/api/Servers") {
+        return Promise.resolve({ data: mockServers });
+      }
       return Promise.reject(new Error("Unknown URL"));
     });
   });
@@ -102,10 +105,15 @@ describe("RegisterModal", () => {
 
   it("successfully submits application data", async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
-    renderWithProvider(<RegisterModal onClose={mockOnClose} servers={mockServers} defaultMode="app" />);
+    renderWithProvider(<RegisterModal onClose={mockOnClose} defaultMode="app" />);
     
+    // Wait for servers to load and check display format
+    await waitFor(() => {
+      expect(screen.getByText(/server-1 \(10.0.0.1\)/i)).toBeDefined();
+    });
+
     fireEvent.change(screen.getByLabelText(/Select Server/i), { target: { value: "1" } });
-    fireEvent.change(screen.getByPlaceholderText("e.g. FinOps"), { target: { value: "Team-A" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. FinOps Team"), { target: { value: "Team-A" } });
     fireEvent.change(screen.getByPlaceholderText("PAY-01"), { target: { value: "APP-01" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. Payment Gateway"), { target: { value: "Test App" } });
     
@@ -114,7 +122,7 @@ describe("RegisterModal", () => {
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/Applications", expect.objectContaining({
         serverId: "1",
-        ownerId: "Team-A",
+        ownerTeam: "Team-A",
         appCode: "APP-01",
         appName: "Test App",
       }));

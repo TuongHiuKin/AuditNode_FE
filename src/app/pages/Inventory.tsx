@@ -1,27 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Search, Plus } from "lucide-react";
 import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
+import { useHeader } from "../hooks/useHeader";
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState<"servers" | "applications">("servers");
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const { setHeader } = useHeader();
+
+  useEffect(() => {
+    setHeader(
+      "Infrastructure Inventory",
+      "Manage expected state of servers and registered applications.",
+      <Server size={20} />
+    );
+  }, [setHeader]);
 
   return (
-    <div className="p-8 space-y-6 animate-in fade-in duration-500 relative h-full flex flex-col bg-background font-body">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-primary flex items-center gap-2 font-display">
-            <Server className="text-secondary" />
-            Infrastructure Inventory
-          </h2>
-          <p className="text-secondary mt-1 text-sm">Manage expected state of servers and registered applications.</p>
-        </div>
-      </div>
-
+    <div className="p-8 space-y-6 animate-in fade-in duration-500 relative min-h-full flex flex-col bg-background font-body">
       {/* Tabs & Export Row */}
       <div className="flex justify-between items-center w-full shrink-0">
         <div className="flex items-center gap-1 bg-surface p-1 rounded-xl w-max border border-border">
@@ -89,7 +88,7 @@ export function Inventory() {
       </div>
 
       {/* Conditional Table */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1">
         {activeTab === "servers" 
           ? <ServerTable onRegister={() => setIsRegisterModalOpen(true)} /> 
           : <AppTable onRegister={() => setIsRegisterModalOpen(true)} />}

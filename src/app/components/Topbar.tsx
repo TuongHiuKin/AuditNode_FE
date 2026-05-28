@@ -1,8 +1,25 @@
 import { User } from "lucide-react";
+import { useHeader } from "../hooks/useHeader";
 
 export function Topbar() {
+  const { title, subtitle, icon } = useHeader();
+
   return (
-    <header className="h-20 bg-background/80 backdrop-blur-md border-b border-border px-8 flex items-center justify-end z-20 shrink-0">
+    <header className="h-20 bg-background/80 backdrop-blur-md border-b border-border px-8 flex items-center justify-between z-20 shrink-0">
+      {/* Left side: Dynamic Title */}
+      <div className="flex flex-col">
+        {title && (
+          <h1 className="text-xl font-bold text-primary flex items-center gap-2 font-display">
+            {icon && <span className="text-secondary">{icon}</span>}
+            {title}
+          </h1>
+        )}
+        {subtitle && (
+          <span className="text-xs text-secondary font-label">{subtitle}</span>
+        )}
+      </div>
+
+      {/* Right side: User Profile */}
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
           <div className="text-right hidden md:block">

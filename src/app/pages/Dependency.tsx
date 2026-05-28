@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
+import { Network } from "lucide-react";
 import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
 import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanvas";
 import { AppPalette } from "../../features/dependency-graph/components/AppPalette";
@@ -7,6 +8,7 @@ import { DetailsPanel } from "../../features/dependency-graph/components/Details
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
 import { RegisterModal } from "../components/RegisterModal";
+import { useHeader } from "../hooks/useHeader";
 
 function DependencyManagerContent() {
   const {
@@ -21,6 +23,15 @@ function DependencyManagerContent() {
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const { setHeader } = useHeader();
+
+    useEffect(() => {
+      setHeader(
+        "Dependency Graph Manager",
+        "Visualize and manage inter-service dependencies and network flows.",
+        <Network size={20} />
+      );
+    }, [setHeader]);
 
     return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">

@@ -1,12 +1,22 @@
 import { Network, Server as ServerIcon, Plug, Building, Filter } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { useHeader } from "../hooks/useHeader";
 
 type RegistryServer = Schemas["ServerNodeDto"];
 
 export function Topology() {
   const [nodeLimit, setNodeLimit] = useState(100);
+  const { setHeader } = useHeader();
+
+  useEffect(() => {
+    setHeader(
+      "Topology Network Map",
+      "Hierarchical view of datacenters, servers, and active services.",
+      <Network size={20} />
+    );
+  }, [setHeader]);
 
   const { data: topologyData = [], isLoading: isInitialLoading } = useQuery<Schemas["TopologyTreeDto"][]>({
     queryKey: ["topology-tree"],
@@ -32,17 +42,6 @@ export function Topology() {
 
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-500 h-full flex flex-col bg-background font-body relative">
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-primary flex items-center gap-2 font-display">
-            <Network className="text-secondary" />
-            Topology Network Map
-          </h2>
-          <p className="text-secondary mt-1 text-sm">Hierarchical view of datacenters, servers, and active services.</p>
-        </div>
-      </div>
 
       {/* Main Dashboard Container */}
       <div className="flex-1 border border-border rounded-xl overflow-hidden flex flex-col bg-surface shadow-2xl relative z-10">
@@ -176,4 +175,3 @@ function ServerNode({ server }: { server: RegistryServer }) {
     </div>
   );
 }
-

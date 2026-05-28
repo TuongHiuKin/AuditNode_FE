@@ -51,14 +51,14 @@ export function ServerTable({ onRegister }: { onRegister: () => void }) {
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
       {/* Table Action Header */}
       <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-        <div className="flex-1 max-w-md relative">
+        <div className="w-72 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search servers..."
-            className="w-full bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
+            placeholder="Search Server/App..."
+            className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
           />
         </div>
 
