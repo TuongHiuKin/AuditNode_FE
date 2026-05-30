@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Network } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
 import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanvas";
 import { AppPalette } from "../../features/dependency-graph/components/AppPalette";
@@ -24,6 +25,13 @@ function DependencyManagerContent() {
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const { setHeader } = useHeader();
+    const queryClient = useQueryClient();
+
+    const refreshData = () => {
+      queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
+      queryClient.invalidateQueries({ queryKey: ["all-servers"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    };
 
     useEffect(() => {
       setHeader(
@@ -88,6 +96,7 @@ function DependencyManagerContent() {
       {isRegisterModalOpen && (
         <RegisterModal
           onClose={() => setIsRegisterModalOpen(false)}
+          onSuccess={refreshData}
           defaultMode="infra"
         />
       )}

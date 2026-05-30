@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Search, Plus } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
@@ -10,6 +11,12 @@ export function Inventory() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const { setHeader } = useHeader();
+  const queryClient = useQueryClient();
+
+  const refreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ["servers"] });
+    queryClient.invalidateQueries({ queryKey: ["applications"] });
+  };
 
   useEffect(() => {
     setHeader(
@@ -97,6 +104,7 @@ export function Inventory() {
       {isRegisterModalOpen && (
         <RegisterModal 
           onClose={() => setIsRegisterModalOpen(false)} 
+          onSuccess={refreshData}
           defaultMode={activeTab === "servers" ? "infra" : "app"}
         />
       )}
