@@ -129,4 +129,25 @@ describe("RegisterModal", () => {
     });
     expect(mockOnClose).toHaveBeenCalled();
   });
+
+  it("calls onSuccess after successful submission", async () => {
+    const mockOnSuccess = vi.fn();
+    vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
+    renderWithProvider(<RegisterModal onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/HCMC - Region 1/i)).toBeDefined();
+    });
+
+    fireEvent.change(screen.getByLabelText(/Zone \/ Datacenter/i), { target: { value: "dc-1" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. 10.0.x.x"), { target: { value: "192.168.1.1" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. web-node-01"), { target: { value: "web-01" } });
+    
+    fireEvent.click(screen.getByText("Submit Server"));
+    
+    await waitFor(() => {
+      expect(mockOnSuccess).toHaveBeenCalled();
+    });
+    expect(mockOnClose).toHaveBeenCalled();
+  });
 });

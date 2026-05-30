@@ -9,11 +9,12 @@ const labelCls = "text-sm font-medium text-gray-300";
 
 export interface RegisterModalProps {
   onClose: () => void;
+  onSuccess?: () => void;
   servers?: { id: string; hostname: string; ipAddress: string }[];
   defaultMode?: "infra" | "app";
 }
 
-export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: RegisterModalProps) {
+export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = "infra" }: RegisterModalProps) {
   const [formMode, setFormMode] = useState<"infra" | "app">(defaultMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export function RegisterModal({ onClose, servers = [], defaultMode = "infra" }: 
         }
         await apiClient.post("/api/Applications", appData);
       }
+      onSuccess?.();
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Failed to register entity");
