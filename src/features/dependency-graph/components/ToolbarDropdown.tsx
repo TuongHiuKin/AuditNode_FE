@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 
 interface DropdownOption {
@@ -15,26 +16,68 @@ interface ToolbarDropdownProps {
 
 export function ToolbarDropdown({ label, value, options, onChange }: ToolbarDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, minWidth: 0 });
+
+  // Calculate menu position when opening
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      minWidth: rect.width,
+    });
+  }, []);
+
+  // Recalculate on open and on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, updatePosition]);
 
   // Close on outside click
   useEffect(() => {
+    if (!isOpen) return;
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        buttonRef.current && !buttonRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isOpen]);
 
   // Display text: show label when "All", otherwise show selected option label
   const selectedOption = options.find((o) => o.value === value);
   const displayText = value === "All" ? label : selectedOption?.label ?? label;
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen((prev) => !prev)}
         className={`
           flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-body
@@ -53,8 +96,18 @@ export function ToolbarDropdown({ label, value, options, onChange }: ToolbarDrop
         />
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-1 min-w-full w-max bg-surface border border-border rounded-lg shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+      {isOpen && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed bg-surface border border-border rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            top: menuPos.top,
+            left: menuPos.left,
+            minWidth: menuPos.minWidth,
+            zIndex: 9999,
+            animation: "fadeSlideIn 150ms ease-out",
+          }}
+        >
           {options.map((option) => (
             <button
               key={option.value}
@@ -73,7 +126,8 @@ export function ToolbarDropdown({ label, value, options, onChange }: ToolbarDrop
               {option.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

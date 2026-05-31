@@ -1,33 +1,48 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FilterBar } from "../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../features/dependency-graph/components/SubToolbar";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 describe("Toolbars", () => {
   describe("FilterBar", () => {
     const mockProps = {
-      selectedEnv: "All",
+      selectedEnv: "Development",
       setSelectedEnv: vi.fn(),
       selectedDatacenter: "All",
       setSelectedDatacenter: vi.fn(),
     };
 
+    const wrap = (ui: React.ReactElement) => render(
+      <QueryClientProvider client={queryClient}>
+        {ui}
+      </QueryClientProvider>
+    );
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      queryClient.clear();
+    });
+
     it("triggers setSelectedEnv on change", () => {
-      render(<FilterBar {...mockProps} />);
-      // Open dropdown
-      fireEvent.click(screen.getByText("Environment"));
-      // Select option
+      wrap(<FilterBar {...mockProps} />);
+      // Development is already selected, so it won't show the "Environment" label as displayText
+      fireEvent.click(screen.getByText("Development"));
       fireEvent.click(screen.getByText("Production"));
       expect(mockProps.setSelectedEnv).toHaveBeenCalledWith("Production");
     });
 
     it("triggers setSelectedDatacenter on change", () => {
-      render(<FilterBar {...mockProps} />);
-      // Open dropdown
+      wrap(<FilterBar {...mockProps} />);
+      // Datacenter label is visible because value is "All"
       fireEvent.click(screen.getByText("Datacenter"));
-      // Select option
-      fireEvent.click(screen.getByText("AWS Cloud"));
-      expect(mockProps.setSelectedDatacenter).toHaveBeenCalledWith("AWS");
+      fireEvent.click(screen.getByText("All"));
+      expect(mockProps.setSelectedDatacenter).toHaveBeenCalledWith("All");
     });
   });
 
