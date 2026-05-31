@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import apiClient, { Schemas } from "../../../shared/api/client";
 import { ToolbarDropdown } from "./ToolbarDropdown";
 
 interface FilterBarProps {
@@ -13,19 +15,30 @@ const envOptions = [
   { value: "Development", label: "Development" },
 ];
 
-const datacenterOptions = [
-  { value: "All", label: "All" },
-  { value: "Corporate", label: "Corporate DC" },
-  { value: "DMZ", label: "DMZ Zone" },
-  { value: "AWS", label: "AWS Cloud" },
-];
-
 export function FilterBar({
   selectedEnv,
   setSelectedEnv,
   selectedDatacenter,
   setSelectedDatacenter,
 }: FilterBarProps) {
+  // Fetch real datacenters from the API
+  const { data: datacenterData = [] } = useQuery({
+    queryKey: ["datacenters"],
+    queryFn: async () => {
+      const response = await apiClient.get<Schemas["DatacenterResponseDto"][]>("/api/Datacenters");
+      const rawResponse = response as any;
+      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+    },
+  });
+
+  const datacenterOptions = [
+    { value: "All", label: "All" },
+    ...datacenterData.map((dc: any) => ({
+      value: dc.id,
+      label: dc.name,
+    })),
+  ];
+
   return (
     <div className="flex gap-2 items-center">
       <ToolbarDropdown
