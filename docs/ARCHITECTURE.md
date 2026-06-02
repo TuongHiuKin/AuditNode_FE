@@ -6,20 +6,22 @@ The Audit System is a full-stack application designed for infrastructure trackin
 ## 🏗️ System Components
 
 ### 1. Backend (`/BE/AuditNode.Backend`)
-Built with **ASP.NET Core 10.0**, following **Clean Architecture** principles to ensure separation of concerns and maintainability.
+Built with **ASP.NET Core 10.0**, following **Clean Architecture** principles.
 
-- **Presentation Layer (`AuditNode.API`)**: RESTful controllers and API configuration.
-- **Application Layer (`AuditNode.Application`)**: Core business logic, DTOs, and repository interfaces.
-- **Domain Layer (`AuditNode.Domain`)**: Pure domain entities and shared models.
-- **Infrastructure Layer (`AuditNode.Infrastructure`)**: Data persistence using **Entity Framework Core** and **PostgreSQL**.
+- **Transaction-based Upsert Pattern**: The Application Registration logic uses a robust transaction pattern to handle "Insert or Update" operations. This ensures that even in high-concurrency scenarios, the `AppCode` UNIQUE constraint is respected, and the internal `port_mappings` are synchronized without creating orphans or duplicates.
+- **Presentation Layer (`AuditNode.API`)**: RESTful controllers.
+- **Application Layer (`AuditNode.Application`)**: Business logic and DTOs.
+- **Infrastructure Layer (`AuditNode.Infrastructure`)**: EF Core with PostgreSQL.
 
 ### 2. Frontend (`/Interface/Build UI for Audit System`)
-Built with **React 18** and **TypeScript**, optimized with **Vite**.
+Built with **React 18**, **TypeScript**, and **Vite**.
 
-- **State Management**: React Hooks (useState, useEffect, useCallback).
-- **Visualization**: **XYFlow (React Flow)** for interactive topology and dependency graphs.
-- **Styling**: **Tailwind CSS** for a modern, dark-themed utility-first UI.
-- **Icons**: **Lucide React** for consistent iconography.
+- **Topology Map (Static Resource Inventory)**: 
+  - **Design**: Uses **XYFlow (React Flow)** with a custom `topologyServerNode` that acts as a nested container for applications.
+  - **Auto-layout**: Implements a symmetrical Grid Auto-layout algorithm that re-calculates node positions when containers expand or collapse.
+  - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
+- **State Management**: React Hooks and TanStack Query for efficient caching.
+- **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.
 
 ## 🔄 Communication Flow
 1. The **React Frontend** sends HTTP requests to the **.NET API**.

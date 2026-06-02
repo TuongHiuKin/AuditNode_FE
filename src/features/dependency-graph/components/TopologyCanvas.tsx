@@ -9,7 +9,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { AppNode } from "./AppNode";
 import { TopologyServerNode } from "./TopologyServerNode";
 import { GraphToolbar } from "./GraphToolbar";
 
@@ -39,7 +38,6 @@ export function TopologyCanvas({
   isLoading,
 }: TopologyCanvasProps) {
   const nodeTypes: NodeTypes = useMemo(() => ({
-    topologyAppNode: AppNode,
     topologyServerNode: TopologyServerNode,
   }), []);
 

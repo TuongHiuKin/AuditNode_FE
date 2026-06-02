@@ -18,12 +18,12 @@ Tracks physical or virtual infrastructure units.
 #### 2. Applications (`applications`)
 Tracks software entities deployed across the infrastructure.
 - `id` (UUID, PK)
-- `app_code` (string)
+- `app_code` (string, **UNIQUE**) - Unique identifier for business logic tracking.
 - `app_name` (string)
 - `owner_id` (UUID: Keycloak User ID)
 
 #### 3. Port Mappings (`port_mappings`)
-Connects applications to specific servers and ports.
+**The primary bridge** connecting applications to specific servers. This table enables the many-to-many relationship between infrastructure and software.
 - `id` (UUID, PK)
 - `server_id` (FK -> servers)
 - `app_id` (FK -> applications)

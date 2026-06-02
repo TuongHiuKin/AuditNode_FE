@@ -21,10 +21,24 @@ export function useTopologyLogic() {
 
   const reactFlowInstance = useReactFlow();
 
+  // ── Listen for app double-click events from TopologyServerNode ────────
+  useEffect(() => {
+    const handleAppDblClick = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setSelectedItem({ type: "node", id: detail.app.id });
+      setRightPanelData({
+        app: detail.app,
+        server: detail.server,
+      });
+    };
+
+    window.addEventListener("topology-app-dblclick", handleAppDblClick);
+    return () => window.removeEventListener("topology-app-dblclick", handleAppDblClick);
+  }, []);
+
   // ── Auto-Layout Logic ──────────────────────────────────────────────────
   const performLayout = useCallback((currentNodes: Node[]) => {
     const servers = currentNodes.filter(n => n.type === "topologyServerNode");
-    const apps = currentNodes.filter(n => n.type === "topologyAppNode");
 
     const GRID_GAP = 60;
     const COLUMNS = 3;
@@ -34,8 +48,8 @@ export function useTopologyLogic() {
 
     const layoutedServers = servers.map((srv, index) => {
       const data = srv.data as any;
-      const width = data.isExpanded ? 420 : 240;
-      const height = data.isExpanded ? 320 : 90;
+      const width = data.isExpanded ? (data.width || 400) : 280;
+      const height = data.isExpanded ? (data.height || 200) : 80;
 
       if (index > 0 && index % COLUMNS === 0) {
         currentX = 0;
@@ -55,28 +69,13 @@ export function useTopologyLogic() {
       };
     });
 
-    const layoutedApps = apps.map(app => {
-      const parent = layoutedServers.find(s => s.id === app.parentId);
-      if (parent && (parent.data as any).isExpanded) {
-        const siblingApps = apps.filter(a => a.parentId === parent.id);
-        const appIndex = siblingApps.indexOf(app);
-        const appCol = appIndex % 2;
-        const appRow = Math.floor(appIndex / 2);
-        
-        return {
-          ...app,
-          position: { x: 30 + appCol * 190, y: 80 + appRow * 75 },
-          hidden: false
-        };
-      }
-      return { ...app, hidden: true };
-    });
-
-    return [...layoutedServers, ...layoutedApps];
+    return layoutedServers;
   }, []);
 
   // Re-layout when nodes change (expansion toggle)
   useEffect(() => {
+    if (nodes.length === 0) return;
+    
     const layouted = performLayout(nodes);
     const needsUpdate = layouted.some((node, i) => 
       node.position.x !== nodes[i]?.position.x || 
@@ -107,10 +106,25 @@ export function useTopologyLogic() {
         const data = response.data;
         
         const mappedNodes: Node[] = [];
-        const mappedEdges: Edge[] = []; // No edges for Topology view as per requirements
+        const mappedEdges: Edge[] = []; // No edges for Topology view
 
         data.servers?.forEach((srv: any, srvIdx: number) => {
           const serverNodeId = srv.id || `srv-${srvIdx}`;
+          
+          // Map apps data to embed directly in server node
+          const apps = (srv.applications || []).map((app: any, appIdx: number) => ({
+            id: app.id || `app-${srvIdx}-${appIdx}`,
+            appName: app.name,
+            portNumber: app.port,
+            protocol: app.protocol,
+            risk: app.riskLevel,
+            icon: app.icon,
+          }));
+
+          const appCount = apps.length;
+          const rows = Math.ceil(appCount / 2);
+          const expandedHeight = Math.max(200, 100 + rows * 72 + 16);
+
           mappedNodes.push({
             id: serverNodeId,
             type: "topologyServerNode",
@@ -122,37 +136,18 @@ export function useTopologyLogic() {
                 osType: srv.osType,
                 environment: srv.environment || "PROD"
               },
-              appCount: srv.applications?.length || 0,
+              apps,        // Embed apps data directly
+              appCount,
               isExpanded: false,
-              width: 240,
-              height: 90
+              width: 280,
+              height: 80
             },
-            zIndex: -1,
-          });
-
-          srv.applications?.forEach((app: any, appIdx: number) => {
-            mappedNodes.push({
-              id: app.id || `app-${appIdx}`,
-              type: "topologyAppNode",
-              position: { x: 0, y: 0 },
-              parentId: serverNodeId,
-              extent: "parent",
-              data: { 
-                app: { 
-                  id: app.id,
-                  appName: app.name,
-                  portNumber: app.port,
-                  protocol: app.protocol,
-                  risk: app.riskLevel
-                } 
-              },
-            });
           });
         });
 
         const layoutedNodes = performLayout(mappedNodes);
         setNodes(layoutedNodes);
-        setEdges(mappedEdges); // Always empty array for Topology
+        setEdges(mappedEdges);
         return { nodes: layoutedNodes, edges: mappedEdges };
       } catch (err) {
         console.error("Failed to fetch topology inventory", err);
@@ -162,18 +157,11 @@ export function useTopologyLogic() {
   });
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    if (node.type === "topologyAppNode") {
-      const serverNode = node.parentId ? nodes.find((n) => n.id === node.parentId) : null;
-      setSelectedItem({ type: "node", id: node.id });
-      setRightPanelData({
-        app: (node.data as any).app,
-        server: serverNode?.data?.server,
-      });
-    } else if (node.type === "topologyServerNode") {
+    if (node.type === "topologyServerNode") {
       setSelectedItem({ type: "server", id: node.id });
       setRightPanelData({ server: (node.data as any).server });
     }
-  }, [nodes]);
+  }, []);
 
   const onSelectionChange = useCallback(({ nodes: selNodes }: { nodes: Node[] }) => {
     if (selNodes.length === 0) {

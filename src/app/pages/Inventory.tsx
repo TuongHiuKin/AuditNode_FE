@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Search, Plus } from "lucide-react";
+import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Search, Plus, FileSpreadsheet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
+import { BulkImportModal } from "../components/BulkImportModal";
 import { useHeader } from "../hooks/useHeader";
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState<"servers" | "applications">("servers");
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const { setHeader } = useHeader();
   const queryClient = useQueryClient();
 
@@ -53,44 +55,55 @@ export function Inventory() {
           </button>
         </div>
 
-        {/* Export View Dropdown */}
-        <div className="relative">
+        <div className="flex items-center gap-3">
+          {/* Bulk Import Button */}
           <button
-            onClick={() => setIsExportOpen(!isExportOpen)}
+            onClick={() => setIsBulkImportOpen(true)}
             className="flex items-center gap-2 bg-surface hover:bg-surface/80 border border-border px-4 py-2 rounded-lg text-sm font-medium text-primary transition-colors shadow-sm"
           >
-            <Download size={16} className="text-tertiary" />
-            Export View
-            <ChevronDown size={14} className="text-secondary" />
+            <FileSpreadsheet size={16} className="text-blue-500" />
+            Bulk Import
           </button>
-          {isExportOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <button
-                  onClick={() => setIsExportOpen(false)}
-                  className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors border-b border-border/50"
-                >
-                  <ImageIcon size={16} className="mr-3 text-tertiary" />
-                  Export as PNG Image
-                </button>
-                <button
-                  onClick={() => setIsExportOpen(false)}
-                  className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors border-b border-border/50"
-                >
-                  <ImageIcon size={16} className="mr-3 text-tertiary" />
-                  Export as JPEG
-                </button>
-                <button
-                  onClick={() => setIsExportOpen(false)}
-                  className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors"
-                >
-                  <FileText size={16} className="mr-3 text-tertiary" />
-                  Export Raw Data (.csv)
-                </button>
-              </div>
-            </>
-          )}
+
+          {/* Export View Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              className="flex items-center gap-2 bg-surface hover:bg-surface/80 border border-border px-4 py-2 rounded-lg text-sm font-medium text-primary transition-colors shadow-sm"
+            >
+              <Download size={16} className="text-tertiary" />
+              Export View
+              <ChevronDown size={14} className="text-secondary" />
+            </button>
+            {isExportOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
+                <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button
+                    onClick={() => setIsExportOpen(false)}
+                    className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors border-b border-border/50"
+                  >
+                    <ImageIcon size={16} className="mr-3 text-tertiary" />
+                    Export as PNG Image
+                  </button>
+                  <button
+                    onClick={() => setIsExportOpen(false)}
+                    className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors border-b border-border/50"
+                  >
+                    <ImageIcon size={16} className="mr-3 text-tertiary" />
+                    Export as JPEG
+                  </button>
+                  <button
+                    onClick={() => setIsExportOpen(false)}
+                    className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors"
+                  >
+                    <FileText size={16} className="mr-3 text-tertiary" />
+                    Export Raw Data (.csv)
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -106,6 +119,13 @@ export function Inventory() {
           onClose={() => setIsRegisterModalOpen(false)} 
           onSuccess={refreshData}
           defaultMode={activeTab === "servers" ? "infra" : "app"}
+        />
+      )}
+
+      {isBulkImportOpen && (
+        <BulkImportModal
+          onClose={() => setIsBulkImportOpen(false)}
+          onSuccess={refreshData}
         />
       )}
     </div>

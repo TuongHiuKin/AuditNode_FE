@@ -60,7 +60,7 @@ describe("useTopologyLogic (Isolated)", () => {
     const srv2 = result.current.nodes.find(n => n.id === "s2");
 
     expect(srv1?.position.x).toBe(0);
-    expect(srv2?.position.x).toBe(240 + 60); // width + gap
+    expect(srv2?.position.x).toBe(280 + 60); // width + gap
   });
 
   it("opens panel strictly on double click (mocked via logic test)", async () => {
