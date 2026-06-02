@@ -1,5 +1,13 @@
 import { type Node, type Edge } from "@xyflow/react";
-import { PaletteApp } from "./types";
+
+export interface TopologyAppData {
+  id: string;
+  appName: string;
+  portNumber: number;
+  protocol: string;
+  risk?: string;
+  icon?: string;
+}
 
 export interface TopologyServerNodeData extends Record<string, unknown> {
   server: {
@@ -8,6 +16,7 @@ export interface TopologyServerNodeData extends Record<string, unknown> {
     osType?: string;
     environment?: string;
   };
+  apps: TopologyAppData[];
   isExpanded?: boolean;
   appCount?: number;
   width: number;
@@ -15,5 +24,4 @@ export interface TopologyServerNodeData extends Record<string, unknown> {
 }
 
 export type TopologyServerNode = Node<TopologyServerNodeData, "topologyServerNode">;
-export type TopologyAppNode = Node<{ app: PaletteApp }, "topologyAppNode">;
-export type TopologyNode = TopologyServerNode | TopologyAppNode;
+export type TopologyNode = TopologyServerNode;

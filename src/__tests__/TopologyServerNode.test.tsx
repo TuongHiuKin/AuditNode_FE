@@ -46,20 +46,20 @@ describe("TopologyServerNode (Isolated)", () => {
   it("renders in collapsed state with blue PROD border", () => {
     wrap(<TopologyServerNode {...mockProps} />);
     expect(screen.getByText("iso-srv-01")).toBeDefined();
-    expect(screen.getByText("5 Apps")).toBeDefined();
+    expect(screen.getByText("5")).toBeDefined();
     
     const nodeDiv = screen.getByText("iso-srv-01").closest("div.bg-\\[\\#0c1322\\]");
-    expect(nodeDiv?.className).toContain("border-blue-500");
+    expect(nodeDiv?.className).toContain("border-blue-500/60");
   });
 
   it("toggles expansion state in data on click", () => {
     wrap(<TopologyServerNode {...mockProps} />);
-    fireEvent.click(screen.getByText("5 Apps"));
+    fireEvent.click(screen.getByText("iso-srv-01"));
     
     expect(setNodesMock).toHaveBeenCalled();
     const updateFn = setNodesMock.mock.calls[0][0];
     const result = updateFn([{ id: "srv-1", data: mockProps.data }]);
     expect(result[0].data.isExpanded).toBe(true);
-    expect(result[0].data.width).toBe(420);
+    expect(result[0].data.width).toBe(400);
   });
 });

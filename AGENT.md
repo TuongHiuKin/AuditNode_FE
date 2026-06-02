@@ -26,4 +26,8 @@ To ensure absolute system safety and prevent unauthorized source code modificati
 
 3. **Explicit User Approval for Each Step:** - Even after the "push code" trigger, you MUST ask for and receive explicit confirmation before executing the final `git push` command.
 
+## 5. Core Rule: Continuous Documentation
+- Whenever a major change is successfully implemented in the project—such as creating a new API endpoint, adding a new feature, modifying existing core logic, altering the database schema, or performing a significant UI refactor—you (the Agent) MUST automatically update the corresponding files in the `docs/` folder (e.g., `API.md`, `DATABASE.md`, `ARCHITECTURE.md`, `HISTORY.md`) and the `README.md`.
+- Do not wait for explicit user prompts to update the docs. Treat documentation synchronization as the mandatory final step of any feature development or major bug fix.
+
 *Note: Read and follow this file before initiating any code modification or generation task in this workspace.*

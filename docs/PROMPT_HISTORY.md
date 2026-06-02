@@ -38,36 +38,41 @@ Integrate live backend REST APIs into the ReactFlow Dependency Canvas and Topolo
 3. VITEST SUITE COMPLIANCE:
 - Update 'src/__tests__/DependencyManager.test.tsx' using MSW (Mock Service Worker) or standard Vitest spy network mocks to simulate active API loading and success states. Assert that the 'ServerGroupNode' container safely parses the real IP string and prints it without throwing TypeErrors.
 
-## [2026-05-31] Refactor Topology Network Map to Static Resource Inventory
-**Context:** Refactoring the Topology UI to use isolated React Flow components with auto-layout and expandable nested nodes, while keeping Dependency Manager untouched.
+## [2026-06-01] Stabilize Registration and Finalize Topology UI
+**Context:** Finalizing the infrastructure inventory UI and ensuring data integrity on the backend.
 **Prompt:**
-Completely refactor the Topology Network Map UI to follow a "Static Resource Inventory" approach using Nested Nodes (Group Nodes) and an Auto-layout Grid.
+Refactor UI Topology for Static Inventory, implement DB transaction upsert to prevent duplicate keys, fix UI z-index bugs, and implement on-navigate state synchronization.
 
-1. ARCHITECTURAL ISOLATION:
-- Create dedicated components (`TopologyCanvas`, `TopologyServerNode`) and logic (`useTopologyLogic`) to ensure the Dependency Manager remains completely untouched and functional.
-- Re-implement the 'Static Resource Inventory' layout for the Topology page using a strictly isolated approach.
+1. DATA INTEGRITY (Backend):
+- Implement a Transaction-based Upsert pattern for Application Registration.
+- Add a UNIQUE constraint to 'AppCode' in the database.
 
-2. CANVAS & GLOBAL CONFIGURATION:
-- Disable manual dragging by setting `nodesDraggable={false}` on the `<ReactFlow />` component.
-- Inject the `<MiniMap position="bottom-right" />` component.
-- Eliminate the hierarchical "Root Node" (Datacenter) from the graph data. Handle Datacenter context via a dynamic dropdown filter fetching from `/api/Datacenters`.
-- Default the Environment dropdown to "Development".
+2. UI REFINEMENT (Frontend):
+- Finalize the 'Static Resource Inventory' layout in the Topology Map.
+- Ensure React Flow uses Nested Nodes/Containers for Servers and Apps.
+- Implement a symmetrical Grid Auto-layout that prevents node overlap.
+- Disable manual node dragging in the Topology view.
+- Implement automatic data refresh on-navigation using 'useLocation'.
+- Fix Z-index collisions between navigation dropdowns and the Sidebar.
 
-3. EXPANDABLE SERVER CONTAINERS:
-- Refactor the Custom Server Node to support `collapsed` and `expanded` states.
-- **Collapsed State:** Display IP Address, Hostname, and an environment-based border (e.g., Blue for PROD). Include a toggle button showing the app count (`[+] X Apps`).
-- **Expanded State:** Visually expand dimensions to act as a Parent Container. Child Applications must be registered as nodes with the `parentNode` property. The toggle button changes to `[-] Collapse`.
-- Reposition the expansion toggle button to a fixed bottom-center location on both states.
+## [2026-06-02] Build Bulk Import Modal UI and Logic
+**Context:** Implementing Excel bulk import with template download, multipart upload, and result visualization.
+**Prompt:**
+Build the UI for the Bulk Import Modal with Download Template and Upload & Process actions.
 
-4. DYNAMIC AUTO-LAYOUT ALGORITHM:
-- Implement a custom symmetrical grid algorithm to align Server nodes.
-- Re-trigger layout whenever a Server node toggles between states to automatically push away neighboring nodes and avoid overlaps.
-- Remove all containment-related edges (lines) for visual clarity in the expanded view.
+1. DOWNLOAD TEMPLATE:
+- Implement `onClick` to call `GET /api/inventory/import-template`.
+- Use `blob()` response to trigger download of `Inventory_Import_Template.xlsx`.
 
-5. UX & TECHNICAL HARDENING:
-- Open the Side Details Panel strictly on `onNodeDoubleClick`.
-- Implement automatic data refresh (`refetch`) every time the user navigates to the Topology page using `useLocation`.
-- Fix Z-index collisions between the filter bar dropdowns and the left sidebar.
+2. UPLOAD & PROCESS:
+- Add file input for `.xlsx` and "Upload & Process" button using `POST /api/inventory/import` with `multipart/form-data`.
 
-6. VITEST COMPLIANCE:
-- Update and add unit tests to validate the isolated implementation (`Topology.test.tsx`, `TopologyServerNode.test.tsx`, `useTopologyLogic.test.tsx`). Ensure 100% pass rate.
+3. RESULT VISUALIZATION:
+- Handle response: `{ totalProcessed, savedCount, errors, conflicts }`.
+- Render success alert for `savedCount > 0`.
+- Render red table for `errors` and amber/yellow table for `conflicts`.
+- Provide "Done/Close" button with `onSuccess` callback to refresh parent grid.
+
+4. TDD & INTEGRATION:
+- Create `src/__tests__/BulkImportModal.test.tsx`.
+- Integrate into `Inventory.tsx`.

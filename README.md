@@ -11,14 +11,28 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 🚀 Features
 
 - **Inventory Tracking**: Manage servers, applications, and their port mappings across multiple environments.
-- **Infrastructure Registry View**: A hierarchical visualization of Datacenters → Servers → Applications.
+- **Topology Map (Static Inventory)**: A rigid, auto-layout grid visualization of Servers containing their hosted Applications.
 - **Dependency Manager**: 
-  - Interactive graph using **React Flow**.
+  - Interactive graph using **XYFlow**.
   - **Performance Filters**: Slice data by Environment or Datacenter.
-  - **Drag & Drop**: Easily add applications from the palette to the canvas.
   - **Image Export**: Capture and download graph snapshots as PNG.
   - **Quick Add**: Direct infrastructure registration from the visualization viewport.
-- **Clean Architecture**: Decoupled backend layers for scalability and testability.
+- **Clean Architecture**: Decoupled backend layers with transaction-based data integrity.
+
+---
+
+## 📈 Current Status
+
+### Recent Progress
+- ✅ **Topology Refactoring**: Migrated to a "Static Resource Inventory" approach with nested nodes and auto-grid layout.
+- ✅ **Data Integrity**: Implemented a **Transaction-based Upsert pattern** for Application registration to prevent duplicate `AppCode` entries.
+- ✅ **UX Stabilization**: Fixed Z-index collisions and implemented automatic data refresh upon page navigation.
+- ✅ **API Alignment**: Updated contracts to support Datacenter management and flat Inventory Map retrieval.
+
+### Next Steps
+- 🔐 **Keycloak IAM Integration**: Implementing centralized Authentication and Authorization for secure access.
+- 🎨 **UI Polishing**: Refining the Details Panel and enhancing interactive feedback for graph nodes.
+- 📊 **Advanced Analytics**: Developing deeper insights into application risk levels and dependency chains.
 
 ---
 
