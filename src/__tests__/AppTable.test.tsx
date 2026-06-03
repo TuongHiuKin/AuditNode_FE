@@ -48,7 +48,11 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable onRegister={vi.fn()} />
+                  <AppTable 
+          onRegister={vi.fn()} 
+          onSelectResult={vi.fn()} 
+          onClearFilter={vi.fn()} 
+        />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -80,7 +84,11 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable onRegister={vi.fn()} />
+                  <AppTable 
+          onRegister={vi.fn()} 
+          onSelectResult={vi.fn()} 
+          onClearFilter={vi.fn()} 
+        />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -115,7 +123,11 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable onRegister={vi.fn()} />
+                  <AppTable 
+          onRegister={vi.fn()} 
+          onSelectResult={vi.fn()} 
+          onClearFilter={vi.fn()} 
+        />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -158,7 +170,11 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable onRegister={vi.fn()} />
+                  <AppTable 
+          onRegister={vi.fn()} 
+          onSelectResult={vi.fn()} 
+          onClearFilter={vi.fn()} 
+        />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -202,7 +218,11 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable onRegister={vi.fn()} />
+                  <AppTable 
+          onRegister={vi.fn()} 
+          onSelectResult={vi.fn()} 
+          onClearFilter={vi.fn()} 
+        />
         </MemoryRouter>
       </QueryClientProvider>
     );

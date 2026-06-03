@@ -1,13 +1,16 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Server, Search, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Server, ChevronDown, ChevronRight, Plus, Filter, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
+import UniversalSearch from "./UniversalSearch";
 
 type AppRow = Schemas["ApplicationResponseDto"] & {
   description?: string;
 };
+
+const RISK_OPTIONS = ["All", "Critical", "High", "Medium", "Low"];
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
 function TableSkeleton() {
@@ -21,9 +24,20 @@ function TableSkeleton() {
 }
 
 // ── AppTable ──────────────────────────────────────────────────────────────────
-export function AppTable({ onRegister, filterId }: { onRegister: () => void; filterId?: string }) {
+export function AppTable({
+  onRegister,
+  filterId,
+  onSelectResult,
+  onClearFilter,
+}: {
+  onRegister: () => void;
+  filterId?: string;
+  onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
+  onClearFilter: () => void;
+}) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [riskFilter, setRiskFilter] = useState("All");
   const navigate = useNavigate();
 
   const { data: apps = [], isLoading } = useQuery({
@@ -45,13 +59,20 @@ export function AppTable({ onRegister, filterId }: { onRegister: () => void; fil
     if (filterId) {
       return apps.filter((app: AppRow) => app.id === filterId);
     }
-    return apps.filter((app: AppRow) => 
-      app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      app.risk?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [apps, searchQuery, filterId]);
+    return apps.filter((app: AppRow) => {
+      const matchesRisk = riskFilter === "All" ||
+        app.risk?.toLowerCase() === riskFilter.toLowerCase();
+
+      const matchesSearch = !searchQuery ||
+        app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (app as any).ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.risk?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return matchesRisk && matchesSearch;
+    });
+  }, [apps, searchQuery, riskFilter, filterId]);
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -63,24 +84,41 @@ export function AppTable({ onRegister, filterId }: { onRegister: () => void; fil
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
       {/* Table Action Header */}
       <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-        <div className="w-72 relative">
-          {!filterId && (
+        <div className="flex items-center gap-3">
+          {!filterId ? (
             <>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Server/App..."
-                className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
-              />
+              <div className="w-72 relative">
+                <UniversalSearch
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onSelectResult={onSelectResult}
+                  placeholder="Search Server/App..."
+                />
+              </div>
+              <div className="w-48 relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                <select
+                  value={riskFilter}
+                  onChange={(e) => setRiskFilter(e.target.value)}
+                  className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
+                >
+                  {RISK_OPTIONS.map(opt => (
+                    <option key={opt} value={opt} className="bg-[#050811]">
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              </div>
             </>
-          )}
-          {filterId && (
-            <div className="flex items-center gap-2 text-xs text-secondary bg-surface px-3 py-2 rounded-lg border border-border">
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
               <span className="font-semibold text-tertiary">FILTERED VIEW</span>
               <span className="opacity-50">|</span>
               <span className="truncate max-w-[150px]">ID: {filterId}</span>
+              <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
+                <X size={12} />
+              </button>
             </div>
           )}
         </div>
@@ -153,7 +191,7 @@ function AppRowItem({
           <div>{app.appName}</div>
           {app.description && <div className="text-[10px] text-secondary/60 font-normal mt-0.5">{app.description}</div>}
         </td>
-        <td className="px-6 py-4 text-sm text-secondary/80">{app.ownerId}</td>
+        <td className="px-6 py-4 text-sm text-secondary/80">{(app as any).ownerTeam || app.ownerId}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>
@@ -208,4 +246,3 @@ function AppRowItem({
     </>
   );
 }
-

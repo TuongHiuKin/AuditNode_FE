@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Plus, FileSpreadsheet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerTable } from "../components/ServerTable";
@@ -6,14 +6,13 @@ import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
 import { BulkImportModal } from "../components/BulkImportModal";
 import { useHeader } from "../hooks/useHeader";
-import UniversalSearch, { SearchResultType } from "../components/UniversalSearch";
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState<"servers" | "applications">("servers");
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
-  const [filteredSelection, setFilteredSelection] = useState<{ id: string; type: SearchResultType } | null>(null);
+  const [filterId, setFilterId] = useState<string | undefined>(undefined);
 
   const { setHeader } = useHeader();
   const queryClient = useQueryClient();
@@ -31,14 +30,15 @@ export function Inventory() {
     );
   }, [setHeader]);
 
-  const handleSelectResult = useCallback((id: string, type: SearchResultType) => {
-    setFilteredSelection({ id, type });
-    if (type === "SERVER") {
-      setActiveTab("servers");
-    } else if (type === "APP") {
-      setActiveTab("applications");
-    }
-  }, []);
+  const handleTabChange = (tab: "servers" | "applications") => {
+    setActiveTab(tab);
+    setFilterId(undefined); // Clear active search filter when switching tabs manually
+  };
+
+  const handleSelectResult = (id: string, type: 'SERVER' | 'APP') => {
+    setFilterId(id);
+    setActiveTab(type === 'SERVER' ? 'servers' : 'applications');
+  };
 
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-500 relative min-h-full flex flex-col bg-background font-body">
@@ -47,7 +47,7 @@ export function Inventory() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 bg-surface p-1 rounded-xl w-max border border-border">
             <button
-              onClick={() => { setActiveTab("servers"); setFilteredSelection(null); }}
+              onClick={() => handleTabChange("servers")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "servers"
                   ? "bg-background text-primary shadow-sm border border-border"
@@ -57,7 +57,7 @@ export function Inventory() {
               <Server size={16} /> Servers
             </button>
             <button
-              onClick={() => { setActiveTab("applications"); setFilteredSelection(null); }}
+              onClick={() => handleTabChange("applications")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "applications"
                   ? "bg-background text-primary shadow-sm border border-border"
@@ -67,11 +67,6 @@ export function Inventory() {
               <Grid size={16} /> Applications
             </button>
           </div>
-
-          <UniversalSearch 
-            onSelectResult={handleSelectResult} 
-            className="w-80"
-          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -131,11 +126,15 @@ export function Inventory() {
         {activeTab === "servers" 
           ? <ServerTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
-              filterId={filteredSelection?.type === "SERVER" ? filteredSelection.id : undefined}
+              filterId={filterId}
+              onSelectResult={handleSelectResult}
+              onClearFilter={() => setFilterId(undefined)}
             /> 
           : <AppTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
-              filterId={filteredSelection?.type === "APP" ? filteredSelection.id : undefined}
+              filterId={filterId}
+              onSelectResult={handleSelectResult}
+              onClearFilter={() => setFilterId(undefined)}
             />}
       </div>
 
