@@ -11,6 +11,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 🚀 Features
 
 - **Inventory Tracking**: Manage servers, applications, and their port mappings across multiple environments.
+- **Universal Search**: Intelligent search with debounce and autocomplete to quickly locate servers or applications globally.
 - **Topology Map (Static Inventory)**: A rigid, auto-layout grid visualization of Servers containing their hosted Applications.
 - **Dependency Manager**: 
   - Interactive graph using **XYFlow**.

@@ -16,6 +16,9 @@ Built with **ASP.NET Core 10.0**, following **Clean Architecture** principles.
 ### 2. Frontend (`/Interface/Build UI for Audit System`)
 Built with **React 18**, **TypeScript**, and **Vite**.
 
+- **Universal Search**: 
+  - **Design**: Implements a controlled search component with 500ms debounce.
+  - **Functionality**: Fetches global results (Servers/Apps) and provides deep-linking navigation to the Inventory module with active filtering.
 - **Topology Map (Static Resource Inventory)**: 
   - **Design**: Uses **XYFlow (React Flow)** with a custom `topologyServerNode` that acts as a nested container for applications.
   - **Auto-layout**: Implements a symmetrical Grid Auto-layout algorithm that re-calculates node positions when containers expand or collapse.
