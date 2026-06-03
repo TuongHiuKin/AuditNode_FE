@@ -48,7 +48,7 @@ describe("ServerTable", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <ServerTable />
+          <ServerTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -74,7 +74,7 @@ describe("ServerTable", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <ServerTable />
+          <ServerTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -92,7 +92,7 @@ describe("ServerTable", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <ServerTable />
+          <ServerTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
