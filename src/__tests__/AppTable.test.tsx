@@ -48,7 +48,7 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable />
+          <AppTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -80,7 +80,7 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable />
+          <AppTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -115,7 +115,7 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable />
+          <AppTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -158,7 +158,7 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable />
+          <AppTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -202,7 +202,7 @@ describe("AppTable Reproduction", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <AppTable />
+          <AppTable onRegister={vi.fn()} />
         </MemoryRouter>
       </QueryClientProvider>
     );

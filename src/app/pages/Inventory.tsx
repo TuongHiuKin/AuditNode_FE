@@ -1,17 +1,20 @@
-import { useState, useEffect } from "react";
-import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Search, Plus, FileSpreadsheet } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Server, Grid, Download, ChevronDown, Image as ImageIcon, FileText, Plus, FileSpreadsheet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
 import { BulkImportModal } from "../components/BulkImportModal";
 import { useHeader } from "../hooks/useHeader";
+import UniversalSearch, { SearchResultType } from "../components/UniversalSearch";
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState<"servers" | "applications">("servers");
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [filteredSelection, setFilteredSelection] = useState<{ id: string; type: SearchResultType } | null>(null);
+
   const { setHeader } = useHeader();
   const queryClient = useQueryClient();
 
@@ -28,31 +31,47 @@ export function Inventory() {
     );
   }, [setHeader]);
 
+  const handleSelectResult = useCallback((id: string, type: SearchResultType) => {
+    setFilteredSelection({ id, type });
+    if (type === "SERVER") {
+      setActiveTab("servers");
+    } else if (type === "APP") {
+      setActiveTab("applications");
+    }
+  }, []);
+
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-500 relative min-h-full flex flex-col bg-background font-body">
-      {/* Tabs & Export Row */}
-      <div className="flex justify-between items-center w-full shrink-0">
-        <div className="flex items-center gap-1 bg-surface p-1 rounded-xl w-max border border-border">
-          <button
-            onClick={() => setActiveTab("servers")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "servers"
-                ? "bg-background text-primary shadow-sm border border-border"
-                : "text-secondary hover:text-primary hover:bg-background/50"
-            }`}
-          >
-            <Server size={16} /> Servers
-          </button>
-          <button
-            onClick={() => setActiveTab("applications")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "applications"
-                ? "bg-background text-primary shadow-sm border border-border"
-                : "text-secondary hover:text-primary hover:bg-background/50"
-            }`}
-          >
-            <Grid size={16} /> Applications
-          </button>
+      {/* Search & Tabs Row */}
+      <div className="flex justify-between items-center w-full shrink-0 gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 bg-surface p-1 rounded-xl w-max border border-border">
+            <button
+              onClick={() => { setActiveTab("servers"); setFilteredSelection(null); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "servers"
+                  ? "bg-background text-primary shadow-sm border border-border"
+                  : "text-secondary hover:text-primary hover:bg-background/50"
+              }`}
+            >
+              <Server size={16} /> Servers
+            </button>
+            <button
+              onClick={() => { setActiveTab("applications"); setFilteredSelection(null); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "applications"
+                  ? "bg-background text-primary shadow-sm border border-border"
+                  : "text-secondary hover:text-primary hover:bg-background/50"
+              }`}
+            >
+              <Grid size={16} /> Applications
+            </button>
+          </div>
+
+          <UniversalSearch 
+            onSelectResult={handleSelectResult} 
+            className="w-80"
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -110,8 +129,14 @@ export function Inventory() {
       {/* Conditional Table */}
       <div className="flex-1">
         {activeTab === "servers" 
-          ? <ServerTable onRegister={() => setIsRegisterModalOpen(true)} /> 
-          : <AppTable onRegister={() => setIsRegisterModalOpen(true)} />}
+          ? <ServerTable 
+              onRegister={() => setIsRegisterModalOpen(true)} 
+              filterId={filteredSelection?.type === "SERVER" ? filteredSelection.id : undefined}
+            /> 
+          : <AppTable 
+              onRegister={() => setIsRegisterModalOpen(true)} 
+              filterId={filteredSelection?.type === "APP" ? filteredSelection.id : undefined}
+            />}
       </div>
 
       {isRegisterModalOpen && (

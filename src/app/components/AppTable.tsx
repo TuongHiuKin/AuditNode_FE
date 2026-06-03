@@ -21,7 +21,7 @@ function TableSkeleton() {
 }
 
 // ── AppTable ──────────────────────────────────────────────────────────────────
-export function AppTable({ onRegister }: { onRegister: () => void }) {
+export function AppTable({ onRegister, filterId }: { onRegister: () => void; filterId?: string }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -42,13 +42,16 @@ export function AppTable({ onRegister }: { onRegister: () => void }) {
   });
 
   const filteredApps = useMemo(() => {
+    if (filterId) {
+      return apps.filter((app: AppRow) => app.id === filterId);
+    }
     return apps.filter((app: AppRow) => 
       app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.risk?.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [apps, searchQuery]);
+  }, [apps, searchQuery, filterId]);
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -61,14 +64,25 @@ export function AppTable({ onRegister }: { onRegister: () => void }) {
       {/* Table Action Header */}
       <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
         <div className="w-72 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search Server/App..."
-            className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
-          />
+          {!filterId && (
+            <>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Server/App..."
+                className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
+              />
+            </>
+          )}
+          {filterId && (
+            <div className="flex items-center gap-2 text-xs text-secondary bg-surface px-3 py-2 rounded-lg border border-border">
+              <span className="font-semibold text-tertiary">FILTERED VIEW</span>
+              <span className="opacity-50">|</span>
+              <span className="truncate max-w-[150px]">ID: {filterId}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
