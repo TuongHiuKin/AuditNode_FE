@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UniversalSearch from '../app/components/UniversalSearch';
@@ -10,6 +11,19 @@ vi.mock('../shared/api/client', () => ({
   },
 }));
 
+// Wrapper to manage state for controlled component
+const UniversalSearchWrapper = ({ onSelectResult }: any) => {
+  const [value, setValue] = useState('');
+  return (
+    <UniversalSearch 
+      value={value} 
+      onChange={setValue} 
+      onSelectResult={onSelectResult} 
+      placeholder="Search Server/App..."
+    />
+  );
+};
+
 describe('UniversalSearch Component', () => {
   const mockOnSelectResult = vi.fn();
 
@@ -18,8 +32,8 @@ describe('UniversalSearch Component', () => {
   });
 
   it('renders the search input', () => {
-    render(<UniversalSearch onSelectResult={mockOnSelectResult} />);
-    expect(screen.getByPlaceholderText(/search servers or apps/i)).toBeDefined();
+    render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
+    expect(screen.getByPlaceholderText(/search server\/app/i)).toBeDefined();
   });
 
   it('triggers API call after debounce delay', async () => {
@@ -28,8 +42,8 @@ describe('UniversalSearch Component', () => {
     ];
     (apiClient.get as any).mockResolvedValue({ data: mockResults });
 
-    render(<UniversalSearch onSelectResult={mockOnSelectResult} />);
-    const input = screen.getByPlaceholderText(/search servers or apps/i);
+    render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
+    const input = screen.getByPlaceholderText(/search server\/app/i);
 
     fireEvent.change(input, { target: { value: 'alpha' } });
 
@@ -54,8 +68,8 @@ describe('UniversalSearch Component', () => {
     ];
     (apiClient.get as any).mockResolvedValue({ data: mockResults });
 
-    render(<UniversalSearch onSelectResult={mockOnSelectResult} />);
-    const input = screen.getByPlaceholderText(/search servers or apps/i) as HTMLInputElement;
+    render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
+    const input = screen.getByPlaceholderText(/search server\/app/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: 'payment' } });
 
@@ -79,11 +93,11 @@ describe('UniversalSearch Component', () => {
     render(
       <div>
         <div data-testid="outside">Outside</div>
-        <UniversalSearch onSelectResult={mockOnSelectResult} />
+        <UniversalSearchWrapper onSelectResult={mockOnSelectResult} />
       </div>
     );
 
-    const input = screen.getByPlaceholderText(/search servers or apps/i);
+    const input = screen.getByPlaceholderText(/search server\/app/i);
     fireEvent.change(input, { target: { value: 'res' } });
 
     await waitFor(() => {

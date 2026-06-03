@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Grid, Search, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Grid, ChevronDown, ChevronRight, Plus, Filter, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
+import UniversalSearch from "./UniversalSearch";
 
 type ServerRow = Schemas["ServerResponseDto"];
+
+const ENV_OPTIONS = ["All", "Production", "Staging", "Development"];
 
 // ── Loading Skeleton ──────────────────────────────────────────────────────────
 function TableSkeleton() {
@@ -19,9 +22,20 @@ function TableSkeleton() {
 }
 
 // ── ServerTable ───────────────────────────────────────────────────────────────
-export function ServerTable({ onRegister, filterId }: { onRegister: () => void; filterId?: string }) {
+export function ServerTable({
+  onRegister,
+  filterId,
+  onSelectResult,
+  onClearFilter,
+}: {
+  onRegister: () => void;
+  filterId?: string;
+  onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
+  onClearFilter: () => void;
+}) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [envFilter, setEnvFilter] = useState("All");
   const navigate = useNavigate();
 
   const { data: servers = [], isLoading } = useQuery({
@@ -36,13 +50,19 @@ export function ServerTable({ onRegister, filterId }: { onRegister: () => void; 
     if (filterId) {
       return servers.filter(s => s.id === filterId);
     }
-    return servers.filter(s => 
-      s.hostname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.ipAddress?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.environment?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [servers, searchQuery, filterId]);
+    return servers.filter(s => {
+      const matchesEnv = envFilter === "All" ||
+        s.environment?.toLowerCase() === envFilter.toLowerCase();
+
+      const matchesSearch = !searchQuery ||
+        s.hostname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.ipAddress?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return matchesEnv && matchesSearch;
+    });
+  }, [servers, searchQuery, envFilter, filterId]);
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -54,24 +74,41 @@ export function ServerTable({ onRegister, filterId }: { onRegister: () => void; 
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
       {/* Table Action Header */}
       <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-        <div className="w-72 relative">
-          {!filterId && (
+        <div className="flex items-center gap-3">
+          {!filterId ? (
             <>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Server/App..."
-                className="w-full bg-[#050811] border border-slate-800 text-sm text-primary placeholder-slate-500 rounded-lg py-2 pl-9 pr-4 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all"
-              />
+              <div className="w-72 relative">
+                <UniversalSearch
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onSelectResult={onSelectResult}
+                  placeholder="Search Server/App..."
+                />
+              </div>
+              <div className="w-48 relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                <select
+                  value={envFilter}
+                  onChange={(e) => setEnvFilter(e.target.value)}
+                  className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
+                >
+                  {ENV_OPTIONS.map(opt => (
+                    <option key={opt} value={opt} className="bg-[#050811]">
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+              </div>
             </>
-          )}
-          {filterId && (
-            <div className="flex items-center gap-2 text-xs text-secondary bg-surface px-3 py-2 rounded-lg border border-border">
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
               <span className="font-semibold text-tertiary">FILTERED VIEW</span>
               <span className="opacity-50">|</span>
               <span className="truncate max-w-[150px]">ID: {filterId}</span>
+              <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
+                <X size={12} />
+              </button>
             </div>
           )}
         </div>
@@ -187,7 +224,7 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-sm">{app.appName}</td>
                         <td className="px-4 py-2 font-mono text-[11px] font-bold text-tertiary tracking-tighter">{app.portNumber}</td>
                         <td className="px-4 py-2 text-[10px] font-mono font-bold text-secondary/70 uppercase">{app.protocol}</td>
-                        <td className="px-4 py-2 text-xs text-secondary/70">{app.ownerId}</td>
+                        <td className="px-4 py-2 text-xs text-secondary/70">{(app as any).ownerTeam || app.ownerId}</td>
                         <td className="px-4 py-2 text-right">
                           <ActionButtons onDepClick={() => onDepClick(app.id || "")} />
                         </td>
