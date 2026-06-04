@@ -60,7 +60,12 @@ export function FlowCanvas({
   }), []);
 
   return (
-    <div className={`relative w-full h-full bg-background ${isDrawingServer ? "cursor-crosshair" : ""}`}>
+    <div
+      className={`relative w-full h-full bg-background ${isDrawingServer ? "cursor-crosshair" : ""}`}
+      onMouseDown={onPaneMouseDown}
+      onMouseMove={onPaneMouseMove}
+      onMouseUp={onPaneMouseUp}
+    >
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-secondary">
@@ -93,9 +98,7 @@ export function FlowCanvas({
         onSelectionChange={onSelectionChange}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        onPaneMouseDown={onPaneMouseDown}
-        onPaneMouseMove={onPaneMouseMove}
-        onPaneMouseUp={onPaneMouseUp}
+
         nodeTypes={nodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
@@ -103,8 +106,8 @@ export function FlowCanvas({
         colorMode="dark"
         minZoom={0.2}
         maxZoom={2}
-        panOnDrag={!isDrawingServer}
-        selectionOnDrag={!isDrawingServer}
+        panOnDrag={true}
+        selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
         <GraphToolbar onQuickAdd={onQuickAdd} />

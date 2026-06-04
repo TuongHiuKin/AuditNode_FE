@@ -35,7 +35,7 @@ describe("ServerTable", () => {
       ipAddress: "10.0.4.15",
       hostname: "prod-web-01",
       osType: "Ubuntu 22.04",
-      environment: "Production",
+      environment: "Development",
       status: "Active",
       apps: []
     }

@@ -73,7 +73,7 @@ describe("RegisterModal", () => {
     fireEvent.click(screen.getByText("Submit Server"));
     
     await waitFor(() => {
-      expect(screen.getByText(/Datacenter, IP Address, and Hostname are required/i)).toBeDefined();
+      expect(screen.getByText(/Datacenter, IP Address, Hostname, and OS Type are required/i)).toBeDefined();
     });
     expect(apiClient.post).not.toHaveBeenCalled();
   });
@@ -90,6 +90,7 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByLabelText(/Zone \/ Datacenter/i), { target: { value: "dc-1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. 10.0.x.x"), { target: { value: "192.168.1.1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. web-node-01"), { target: { value: "web-01" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. Ubuntu 22.04"), { target: { value: "Ubuntu 22.04" } });
     
     fireEvent.click(screen.getByText("Submit Server"));
     
@@ -98,6 +99,7 @@ describe("RegisterModal", () => {
         datacenterId: "dc-1",
         ipAddress: "192.168.1.1",
         hostname: "web-01",
+        osType: "Ubuntu 22.04",
       }));
     });
     expect(mockOnClose).toHaveBeenCalled();
@@ -142,6 +144,7 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByLabelText(/Zone \/ Datacenter/i), { target: { value: "dc-1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. 10.0.x.x"), { target: { value: "192.168.1.1" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. web-node-01"), { target: { value: "web-01" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. Ubuntu 22.04"), { target: { value: "Ubuntu 22.04" } });
     
     fireEvent.click(screen.getByText("Submit Server"));
     

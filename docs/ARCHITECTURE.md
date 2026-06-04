@@ -27,6 +27,9 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
   - **Collapsible App Palette**: Features a flyout drawer design that slides over the canvas, maximizing workspace. Implemented with Tailwind CSS animations and absolute positioning.
   - **Interaction**: Supports Drag-and-Drop (DnD) of unmapped applications from the palette onto the canvas to create new nodes.
+- **EditEntityDrawer**: 
+  - **Design**: Uses **React Portals** (`ReactDOM.createPortal`) to render at the root of the DOM tree (`document.body`).
+  - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.
 - **State Management**: React Hooks and TanStack Query for efficient caching.
 - **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.
 

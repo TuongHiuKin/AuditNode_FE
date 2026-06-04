@@ -26,11 +26,13 @@ function TableSkeleton() {
 // ── AppTable ──────────────────────────────────────────────────────────────────
 export function AppTable({
   onRegister,
+  onEditClick,
   filterId,
   onSelectResult,
   onClearFilter,
 }: {
   onRegister: () => void;
+  onEditClick: (id: string, type: "SERVER" | "APP") => void;
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
@@ -104,7 +106,7 @@ export function AppTable({
                 >
                   {RISK_OPTIONS.map(opt => (
                     <option key={opt} value={opt} className="bg-[#050811]">
-                      {opt}
+                      {opt === "All" ? "Risk Level" : opt}
                     </option>
                   ))}
                 </select>
@@ -160,7 +162,9 @@ export function AppTable({
               ) : (
                 filteredApps.map((app: AppRow) => (
                   <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id!]}
-                    onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} />
+                    onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} 
+                    onEditClick={onEditClick}
+                  />
                 ))
               )}
             </tbody>
@@ -173,8 +177,14 @@ export function AppTable({
 
 // ── AppRowItem ────────────────────────────────────────────────────────────────
 function AppRowItem({
-  app, expanded, onToggle, onDepClick,
-}: { app: AppRow; expanded: boolean; onToggle: () => void; onDepClick: (id: string) => void }) {
+  app, expanded, onToggle, onDepClick, onEditClick,
+}: { 
+  app: AppRow; 
+  expanded: boolean; 
+  onToggle: () => void; 
+  onDepClick: (id: string) => void;
+  onEditClick: (id: string, type: "SERVER" | "APP") => void;
+}) {
   const riskStyle =
     app.risk === "Critical" || app.risk === "High" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" :
     app.risk === "Medium"   ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
@@ -196,7 +206,10 @@ function AppRowItem({
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-          <ActionButtons onDepClick={() => onDepClick(app.id!)} />
+          <ActionButtons 
+            onDepClick={() => onDepClick(app.id!)} 
+            onEditClick={() => onEditClick(app.id!, "APP")}
+          />
         </td>
       </tr>
 
@@ -230,7 +243,10 @@ function AppRowItem({
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <ActionButtons onDepClick={() => onDepClick(srv.id || "")} />
+                          <ActionButtons 
+                            onDepClick={() => onDepClick(srv.id || "")} 
+                            onEditClick={() => onEditClick(srv.id || "", "SERVER")}
+                          />
                         </td>
                       </tr>
                     ))}

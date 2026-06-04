@@ -50,7 +50,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
     datacenterId: "",
     ipAddress: "",
     hostname: "",
-    osType: "Ubuntu 22.04",
+    osType: "",
     environment: "Production",
     status: "Active"
   });
@@ -69,8 +69,8 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
     setError(null);
     try {
       if (formMode === "infra") {
-        if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname) {
-          throw new Error("Datacenter, IP Address, and Hostname are required");
+        if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname || !infraData.osType) {
+          throw new Error("Datacenter, IP Address, Hostname, and OS Type are required");
         }
         await apiClient.post("/api/Servers", infraData);
       } else {
@@ -186,17 +186,14 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="osType" className={labelCls}>OS Type</label>
-                    <select
+                    <input
                       id="osType"
+                      type="text"
+                      placeholder="e.g. Ubuntu 22.04"
                       className={inputCls}
                       value={infraData.osType}
                       onChange={(e) => setInfraData({ ...infraData, osType: e.target.value })}
-                    >
-                      <option className="bg-[#0b1120]">Ubuntu 22.04</option>
-                      <option className="bg-[#0b1120]">RHEL 8</option>
-                      <option className="bg-[#0b1120]">CentOS 7</option>
-                      <option className="bg-[#0b1120]">Windows Server 2022</option>
-                    </select>
+                    />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="environment" className={labelCls}>Environment</label>

@@ -76,3 +76,44 @@ Build the UI for the Bulk Import Modal with Download Template and Upload & Proce
 4. TDD & INTEGRATION:
 - Create `src/__tests__/BulkImportModal.test.tsx`.
 - Integrate into `Inventory.tsx`.
+
+## [2026-06-04] Implement Edit Entity Drawer (Flyout)
+**Context:** Implementing a side drawer for updating servers and applications with live data fetching and form binding.
+**Prompt:**
+Implement the "Update" feature for the Infrastructure Inventory page using a Side Drawer (Flyout) to maintain user context.
+
+1. DRAWER UI (Tailwind & Motion):
+- Create a sliding side drawer anchored to the right with backdrop-blur.
+- Style with dark theme (`bg-[#0f172a]`) and include header/close button.
+
+2. DATA FETCHING & BINDING:
+- Accept `entityId` and `entityType` ("APP" or "SERVER") as props.
+- Call `GET /api/applications/{id}` (or servers) on open to fetch latest data.
+- Bind to React Hook Form with `App Code` and `IP Address` as read-only fields.
+
+3. SUBMISSION & FEEDBACK:
+- Call `PUT /api/applications/{id}` (or servers) on submit.
+- On success: close drawer, show toast (sonner), and refresh grid via `onUpdateSuccess` callback.
+
+4. TDD & INTEGRATION:
+- Create `src/__tests__/EditEntityDrawer.test.tsx`.
+- Integrate into `Inventory.tsx`, `ServerTable.tsx`, and `AppTable.tsx` via `ActionButtons`.
+
+## [2026-06-04] Refactor Dependency Manager App Palette to Flyout Drawer
+**Context:** Optimizing canvas space by converting the permanent sidebar into a collapsible flyout drawer.
+**Prompt:**
+Refactor the Dependency Graph Manager's App Palette into a collapsible flyout drawer to maximize canvas space.
+
+1. COLLAPSIBLE STATE & FLYOUT LOGIC:
+- Implement `isPaletteOpen` state in `DependencyManagerContent`.
+- Wrap `AppPalette` in an absolute container with Tailwind CSS transition classes (`-translate-x-full` to `translate-x-0`).
+- Add a sleek close button (`X`) inside the palette and a floating toggle button (`+ Apps`) on the canvas to reopen it.
+
+2. UI & ANIMATION:
+- Style the drawer with glass-morphic effects, shadows (`shadow-2xl`), and a larger width (`w-72`).
+- Ensure the React Flow canvas expands to 100% width while the palette overlaps when active.
+
+3. DND PRESERVATION & TESTING:
+- Maintain 100% integrity of Drag-and-Drop (DnD) functionality from the palette to the canvas.
+- Update `AppPalette.test.tsx` and `DependencyManager.test.tsx` with new test cases for toggle logic, visibility transitions, and accessibility (aria-labels).
+- Update `docs/ARCHITECTURE.md` to reflect the new interactive design.
