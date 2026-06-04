@@ -43,6 +43,14 @@ describe("AppPalette", () => {
     expect(screen.getByText(/All applications are currently mapped on the canvas/i)).toBeDefined();
   });
 
+  it("calls onClose when the close button is clicked", () => {
+    const onClose = vi.fn();
+    render(<AppPalette availableApps={mockAvailableApps} isLoading={false} onClose={onClose} />);
+    const closeButton = screen.getByRole("button");
+    fireEvent.click(closeButton);
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("sets dataTransfer on drag start", () => {
     render(<AppPalette availableApps={mockAvailableApps} isLoading={false} />);
     const appItem = screen.getByText("Payment Gateway").closest("div[draggable]");

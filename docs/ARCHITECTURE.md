@@ -23,6 +23,10 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Design**: Uses **XYFlow (React Flow)** with a custom `topologyServerNode` that acts as a nested container for applications.
   - **Auto-layout**: Implements a symmetrical Grid Auto-layout algorithm that re-calculates node positions when containers expand or collapse.
   - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
+- **Dependency Graph Manager (Dynamic Service Mapping)**:
+  - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
+  - **Collapsible App Palette**: Features a flyout drawer design that slides over the canvas, maximizing workspace. Implemented with Tailwind CSS animations and absolute positioning.
+  - **Interaction**: Supports Drag-and-Drop (DnD) of unmapped applications from the palette onto the canvas to create new nodes.
 - **State Management**: React Hooks and TanStack Query for efficient caching.
 - **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.
 
