@@ -24,33 +24,38 @@ function TableSkeleton() {
 // ── ServerTable ───────────────────────────────────────────────────────────────
 export function ServerTable({
   onRegister,
+  onEditClick,
   filterId,
   onSelectResult,
   onClearFilter,
 }: {
   onRegister: () => void;
+  onEditClick: (id: string, type: "SERVER" | "APP") => void;
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [envFilter, setEnvFilter] = useState("All");
+  const [envFilter, setEnvFilter] = useState("Development");
   const navigate = useNavigate();
 
-  const { data: servers = [], isLoading } = useQuery({
+  const { data: servers = [], isLoading } = useQuery<ServerRow[]>({
     queryKey: ["servers"],
     queryFn: async () => {
       const response = await apiClient.get<ServerRow[]>("/api/Servers");
-      return response.data;
+      const rawResponse = response as any;
+      // Safely handle both direct array and wrapped response { data: [...] }
+      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      return data as ServerRow[];
     },
   });
 
   const filteredServers = useMemo(() => {
     if (filterId) {
-      return servers.filter(s => s.id === filterId);
+      return servers.filter((s: ServerRow) => s.id === filterId);
     }
-    return servers.filter(s => {
+    return servers.filter((s: ServerRow) => {
       const matchesEnv = envFilter === "All" ||
         s.environment?.toLowerCase() === envFilter.toLowerCase();
 
@@ -94,7 +99,7 @@ export function ServerTable({
                 >
                   {ENV_OPTIONS.map(opt => (
                     <option key={opt} value={opt} className="bg-[#050811]">
-                      {opt}
+                      {opt === "All" ? "Environment" : opt}
                     </option>
                   ))}
                 </select>
@@ -155,6 +160,7 @@ export function ServerTable({
                     expanded={!!expandedRows[server.id!]}
                     onToggle={() => toggleRow(server.id!)}
                     onDepClick={(id) => goToDep(id)}
+                    onEditClick={onEditClick}
                   />
                 ))
               )}
@@ -168,8 +174,14 @@ export function ServerTable({
 
 // ── ServerRowItem ─────────────────────────────────────────────────────────────
 function ServerRowItem({
-  server, expanded, onToggle, onDepClick,
-}: { server: ServerRow; expanded: boolean; onToggle: () => void; onDepClick: (id: string) => void }) {
+  server, expanded, onToggle, onDepClick, onEditClick,
+}: { 
+  server: ServerRow; 
+  expanded: boolean; 
+  onToggle: () => void; 
+  onDepClick: (id: string) => void;
+  onEditClick: (id: string, type: "SERVER" | "APP") => void;
+}) {
   return (
     <>
       <tr
@@ -194,7 +206,10 @@ function ServerRowItem({
           </span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-          <ActionButtons onDepClick={() => onDepClick(server.id || "")} />
+          <ActionButtons 
+            onDepClick={() => onDepClick(server.id || "")} 
+            onEditClick={() => onEditClick(server.id || "", "SERVER")}
+          />
         </td>
       </tr>
 
@@ -226,7 +241,10 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-[10px] font-mono font-bold text-secondary/70 uppercase">{app.protocol}</td>
                         <td className="px-4 py-2 text-xs text-secondary/70">{(app as any).ownerTeam || app.ownerId}</td>
                         <td className="px-4 py-2 text-right">
-                          <ActionButtons onDepClick={() => onDepClick(app.id || "")} />
+                          <ActionButtons 
+                            onDepClick={() => onDepClick(app.id || "")} 
+                            onEditClick={() => onEditClick(app.id || "", "APP")}
+                          />
                         </td>
                       </tr>
                     ))}

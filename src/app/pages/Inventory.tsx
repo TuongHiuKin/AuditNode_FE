@@ -5,6 +5,7 @@ import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
 import { BulkImportModal } from "../components/BulkImportModal";
+import { EditEntityDrawer } from "../components/EditEntityDrawer";
 import { useHeader } from "../hooks/useHeader";
 
 export function Inventory() {
@@ -13,6 +14,12 @@ export function Inventory() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [filterId, setFilterId] = useState<string | undefined>(undefined);
+
+  // Edit State
+  const [editEntity, setEditEntity] = useState<{ id: string | null; type: "SERVER" | "APP" | null }>({
+    id: null,
+    type: null,
+  });
 
   const { setHeader } = useHeader();
   const queryClient = useQueryClient();
@@ -38,6 +45,10 @@ export function Inventory() {
   const handleSelectResult = (id: string, type: 'SERVER' | 'APP') => {
     setFilterId(id);
     setActiveTab(type === 'SERVER' ? 'servers' : 'applications');
+  };
+
+  const handleEditClick = (id: string, type: "SERVER" | "APP") => {
+    setEditEntity({ id, type });
   };
 
   return (
@@ -126,12 +137,14 @@ export function Inventory() {
         {activeTab === "servers" 
           ? <ServerTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
+              onEditClick={handleEditClick}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
             /> 
           : <AppTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
+              onEditClick={handleEditClick}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
@@ -152,6 +165,13 @@ export function Inventory() {
           onSuccess={refreshData}
         />
       )}
+
+      <EditEntityDrawer
+        entityId={editEntity.id}
+        entityType={editEntity.type}
+        onClose={() => setEditEntity({ id: null, type: null })}
+        onUpdateSuccess={refreshData}
+      />
     </div>
   );
 }

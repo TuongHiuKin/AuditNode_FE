@@ -2,12 +2,17 @@ import { Edit2, Network, Trash2 } from "lucide-react";
 
 interface ActionButtonsProps {
   onDepClick?: () => void;
+  onEditClick?: () => void;
 }
 
-export function ActionButtons({ onDepClick }: ActionButtonsProps) {
+export function ActionButtons({ onDepClick, onEditClick }: ActionButtonsProps) {
   return (
     <div className="flex items-center justify-end gap-1">
       <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEditClick?.();
+        }}
         className="p-1.5 text-secondary hover:text-primary hover:bg-surface rounded-md transition-colors"
         title="Edit"
       >

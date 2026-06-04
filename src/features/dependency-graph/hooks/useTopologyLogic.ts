@@ -15,7 +15,7 @@ export function useTopologyLogic() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
-  
+
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
 
@@ -58,7 +58,7 @@ export function useTopologyLogic() {
       }
 
       const position = { x: currentX, y: currentY };
-      
+
       currentX += width + GRID_GAP;
       currentRowHeight = Math.max(currentRowHeight, height);
 
@@ -75,10 +75,10 @@ export function useTopologyLogic() {
   // Re-layout when nodes change (expansion toggle)
   useEffect(() => {
     if (nodes.length === 0) return;
-    
+
     const layouted = performLayout(nodes);
-    const needsUpdate = layouted.some((node, i) => 
-      node.position.x !== nodes[i]?.position.x || 
+    const needsUpdate = layouted.some((node, i) =>
+      node.position.x !== nodes[i]?.position.x ||
       node.position.y !== nodes[i]?.position.y ||
       node.hidden !== nodes[i]?.hidden
     );
@@ -104,13 +104,13 @@ export function useTopologyLogic() {
           }
         );
         const data = response.data;
-        
+
         const mappedNodes: Node[] = [];
         const mappedEdges: Edge[] = []; // No edges for Topology view
 
         data.servers?.forEach((srv: any, srvIdx: number) => {
           const serverNodeId = srv.id || `srv-${srvIdx}`;
-          
+
           // Map apps data to embed directly in server node
           const apps = (srv.applications || []).map((app: any, appIdx: number) => ({
             id: app.id || `app-${srvIdx}-${appIdx}`,
@@ -129,9 +129,9 @@ export function useTopologyLogic() {
             id: serverNodeId,
             type: "topologyServerNode",
             position: { x: 0, y: 0 },
-            data: { 
-              server: { 
-                hostname: srv.hostname, 
+            data: {
+              server: {
+                hostname: srv.hostname,
                 ipAddress: srv.ipAddress,
                 osType: srv.osType,
                 environment: srv.environment || "PROD"

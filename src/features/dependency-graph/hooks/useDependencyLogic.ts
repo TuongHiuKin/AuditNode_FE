@@ -31,17 +31,18 @@ export function useDependencyLogic() {
   const queryClient = useQueryClient();
 
   // ── Fetch all servers to determine mapping status ────────────────────────
-  const { data: allServers = [] } = useQuery({
+  const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
     queryKey: ["all-servers"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
       const rawResponse = response as any;
-      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      return data as Schemas["ServerResponseDto"][];
     },
   });
 
   const unmappedServers = allServers.filter(
-    (srv) => !nodes.some((n) => n.id === srv.id && n.type === "serverNode")
+    (srv: Schemas["ServerResponseDto"]) => !nodes.some((n) => n.id === srv.id && n.type === "serverNode")
   );
 
   const canDrawServer = unmappedServers.length > 0;
