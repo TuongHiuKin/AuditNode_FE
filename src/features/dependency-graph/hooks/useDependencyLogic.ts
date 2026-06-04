@@ -23,8 +23,8 @@ export function useDependencyLogic() {
   const { availableApps, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
-  
-  const [selectedEnv, setSelectedEnv] = useState("All");
+
+  const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
 
   const reactFlowInstance = useReactFlow();
@@ -52,12 +52,12 @@ export function useDependencyLogic() {
 
   const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
     if (!isDrawingServer || !canDrawServer) return;
-    
+
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
-    
+
     setDrawBox({
       startX: position.x,
       startY: position.y,
@@ -68,12 +68,12 @@ export function useDependencyLogic() {
 
   const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
     if (!drawBox) return;
-    
+
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
-    
+
     setDrawBox((prev) => prev ? ({
       ...prev,
       currentX: position.x,
@@ -128,7 +128,7 @@ export function useDependencyLogic() {
           }
         );
         const data = response.data;
-        
+
         const mappedNodes: Node[] = [];
         const mappedEdges: Edge[] = [];
 
@@ -145,11 +145,11 @@ export function useDependencyLogic() {
               id: serverNodeId,
               type: "serverNode",
               position: { x: srvIdx * 400, y: 0 },
-              data: { 
-                server: { 
-                  hostname: srv.hostname, 
+              data: {
+                server: {
+                  hostname: srv.hostname,
                   ipAddress: srv.ipAddress,
-                  osType: srv.osType 
+                  osType: srv.osType
                 },
                 width: 300,
                 height: 200
@@ -164,14 +164,14 @@ export function useDependencyLogic() {
                 position: { x: 40, y: 60 + appIdx * 60 },
                 parentId: serverNodeId,
                 extent: "parent",
-                data: { 
-                  app: { 
+                data: {
+                  app: {
                     id: app.id,
                     appName: app.name,
                     portNumber: app.port,
                     protocol: app.protocol,
                     risk: app.riskLevel
-                  } 
+                  }
                 },
               });
             });
@@ -275,7 +275,7 @@ export function useDependencyLogic() {
         data: { app },
       };
       setNodes((nds) => nds.concat(newNode));
-      
+
       // Force a refetch of application status to remove it from the palette list
       setTimeout(() => {
         refetchApps();

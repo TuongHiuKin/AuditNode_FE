@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ReactFlowProvider } from "@xyflow/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -90,6 +90,41 @@ describe("DependencyManager Integration", () => {
 
     expect(screen.getByText("192.168.1.10")).toBeDefined();
   });
+
+  it("toggles App Palette visibility", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <HeaderProvider>
+          <DependencyManager />
+        </HeaderProvider>
+      </QueryClientProvider>
+    );
+
+    // Initially open (by default in our implementation)
+    expect(screen.getByText("App Palette")).toBeDefined();
+
+    // Find and click the close button inside AppPalette using its aria-label
+    const closeButton = screen.getByLabelText("Close Palette");
+    fireEvent.click(closeButton);
+
+    // Palette should be translated out
+    const drawer = screen.getByText("App Palette").closest(".absolute");
+    await waitFor(() => {
+      expect(drawer?.className).toContain("-translate-x-full");
+    });
+
+    // Toggle button should appear
+    const openButton = await screen.findByRole("button", { name: /Apps/i });
+    expect(openButton).toBeDefined();
+
+    // Click to reopen
+    fireEvent.click(openButton);
+    await waitFor(() => {
+      expect(drawer?.className).toContain("translate-x-0");
+    });
+  });
 });
 
 describe("ServerGroupNode", () => {
@@ -116,4 +151,3 @@ describe("ServerGroupNode", () => {
     expect(container?.className).toContain("border-slate-800");
   });
 });
-
