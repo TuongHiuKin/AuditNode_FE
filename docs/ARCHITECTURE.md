@@ -22,6 +22,8 @@ Built with **React 18**, **TypeScript**, and **Vite**.
 - **Topology Map (Static Resource Inventory)**: 
   - **Design**: Uses **XYFlow (React Flow)** with a custom `topologyServerNode` that acts as a nested container for applications.
   - **Auto-layout**: Implements a symmetrical Grid Auto-layout algorithm that re-calculates node positions when containers expand or collapse.
+  - **Local Canvas Search**: Features a 2-tier matching system that scans both Server metadata (hostname/IP) and Application attributes (name/port).
+  - **Canvas Panning**: Selecting a search result triggers a smooth, animated camera pan and zoom (`setCenter`) to the target node, providing immediate visual context.
   - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
 - **Dependency Graph Manager (Dynamic Service Mapping)**:
   - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.

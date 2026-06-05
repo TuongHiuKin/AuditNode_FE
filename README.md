@@ -25,15 +25,14 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Intelligent Search**: Expanded Topology search logic to match both Servers (Hostname/IP) and Applications.
+- ✅ **Canvas Panning UX**: Implemented smooth camera animation to center on search results within the Topology view.
 - ✅ **Topology Refactoring**: Migrated to a "Static Resource Inventory" approach with nested nodes and auto-grid layout.
-- ✅ **Data Integrity**: Implemented a **Transaction-based Upsert pattern** for Application registration to prevent duplicate `AppCode` entries.
-- ✅ **UX Stabilization**: Fixed Z-index collisions and implemented automatic data refresh upon page navigation.
-- ✅ **API Alignment**: Updated contracts to support Datacenter management and flat Inventory Map retrieval.
+- ✅ **Data Integrity**: Implemented a **Transaction-based Upsert pattern** for Application registration.
 
 ### Next Steps
-- 🔐 **Keycloak IAM Integration**: Implementing centralized Authentication and Authorization for secure access.
-- 🎨 **UI Polishing**: Refining the Details Panel and enhancing interactive feedback for graph nodes.
-- 📊 **Advanced Analytics**: Developing deeper insights into application risk levels and dependency chains.
+- 🔐 **Keycloak IAM Integration**: Implementing centralized Authentication and Authorization.
+- 📊 **Advanced Analytics**: Developing deeper insights into dependency chains.
 
 ---
 
@@ -50,7 +49,7 @@ AuditSystem/
 │   ├── src/features/          # FSD-Lite Feature Modules
 │   └── src/core/              # Shared API Client
 ├── DB_Project/                # Database SQL Scripts
-├── doc/                      # Comprehensive Documentation
+├── docs/                      # Comprehensive Documentation
 └── README.md                  # This file
 ```
 
@@ -82,11 +81,11 @@ npm run dev
 
 ## 📖 Documentation
 
-For detailed guides, please refer to the `doc/` folder:
+For detailed guides, please refer to the `docs/` folder:
 
-- 🏛️ [Architecture Overview](./doc/ARCHITECTURE.md)
-- 🔌 [API Endpoints](./doc/API.md)
-- 🗄️ [Database Schema](./doc/DATABASE.md)
+- 🏛️ [Architecture Overview](./docs/ARCHITECTURE.md)
+- 🔌 [API Endpoints](./docs/API.md)
+- 🗄️ [Database Schema](./docs/DATABASE.md)
 
 ---
 
@@ -98,5 +97,5 @@ Please follow the project's coding standards:
 
 ---
 
-**Last Updated:** May 18, 2026  
+**Last Updated:** June 5, 2026  
 **Project Lead:** Gemini CLI

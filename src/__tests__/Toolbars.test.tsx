@@ -16,6 +16,7 @@ describe("Toolbars", () => {
       setSelectedEnv: vi.fn(),
       selectedDatacenter: "All",
       setSelectedDatacenter: vi.fn(),
+      onQueryChange: vi.fn(),
     };
 
     const wrap = (ui: React.ReactElement) => render(
@@ -43,6 +44,11 @@ describe("Toolbars", () => {
       fireEvent.click(screen.getByText("Datacenter"));
       fireEvent.click(screen.getByText("All"));
       expect(mockProps.setSelectedDatacenter).toHaveBeenCalledWith("All");
+    });
+
+    it("renders search input with correct placeholder", () => {
+      wrap(<FilterBar {...mockProps} />);
+      expect(screen.getByPlaceholderText(/search servers & apps/i)).toBeDefined();
     });
   });
 

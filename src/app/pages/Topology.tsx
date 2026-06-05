@@ -1,12 +1,13 @@
 import { Network } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { ReactFlowProvider } from "@xyflow/react";
+import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { useTopologyLogic } from "../../features/dependency-graph/hooks/useTopologyLogic";
 import { TopologyCanvas } from "../../features/dependency-graph/components/TopologyCanvas";
 import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
 import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
 import { useHeader } from "../hooks/useHeader";
+import { SearchResultType } from "../components/UniversalSearch";
 
 function TopologyContent() {
   const {
@@ -14,7 +15,33 @@ function TopologyContent() {
     onSelectionChange, onNodeDoubleClick, refetch, isLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
+    appSearchQuery, setAppSearchQuery,
   } = useTopologyLogic();
+
+  const { setCenter, getNodes } = useReactFlow();
+
+  const handleSelectResult = (id: string, _type: SearchResultType) => {
+    const targetNode = getNodes().find(n => n.id === id);
+    if (targetNode) {
+      // Calculate center based on position and dimensions
+      const width = targetNode.measured?.width ?? (targetNode.data as any).width ?? 280;
+      const height = targetNode.measured?.height ?? (targetNode.data as any).height ?? 80;
+      
+      const centerX = targetNode.position.x + width / 2;
+      const centerY = targetNode.position.y + height / 2;
+
+      // Animated pan to the node
+      setCenter(centerX, centerY, { zoom: 1.2, duration: 800 });
+
+      // Highlight the node by selecting it
+      setSelectedItem({ type: 'server', id: targetNode.id });
+      setRightPanelData({ server: (targetNode.data as any).server });
+
+      // Update search input to match selected node name
+      const nodeName = (targetNode.data as any).server?.hostname || "Selected Node";
+      setAppSearchQuery(nodeName);
+    }
+  };
 
   const { setHeader } = useHeader();
   const location = useLocation();
@@ -43,6 +70,9 @@ function TopologyContent() {
             setSelectedEnv={setSelectedEnv}
             selectedDatacenter={selectedDatacenter}
             setSelectedDatacenter={setSelectedDatacenter}
+            query={appSearchQuery}
+            onQueryChange={setAppSearchQuery}
+            onSelectResult={handleSelectResult}
           />
           <div className="ml-auto text-[10px] font-mono text-secondary bg-slate-900/50 px-2 py-1 rounded border border-border">
             Inventory Assets: {nodes.filter(n => n.type === "topologyServerNode").length}

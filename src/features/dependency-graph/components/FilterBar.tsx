@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
 import { ToolbarDropdown } from "./ToolbarDropdown";
+import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
 
 interface FilterBarProps {
   selectedEnv: string;
   setSelectedEnv: (env: string) => void;
   selectedDatacenter: string;
   setSelectedDatacenter: (dc: string) => void;
+  query?: string;
+  onQueryChange?: (query: string) => void;
+  onSelectResult?: (id: string, type: SearchResultType) => void;
 }
 
 const envOptions = [
@@ -20,12 +24,15 @@ export function FilterBar({
   setSelectedEnv,
   selectedDatacenter,
   setSelectedDatacenter,
+  query = "",
+  onQueryChange,
+  onSelectResult,
 }: FilterBarProps) {
   // Fetch real datacenters from the API
   const { data: datacenterData = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["DatacenterResponseDto"][]>("/api/Datacenters");
+      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/Datacenters");
       const rawResponse = response as any;
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },
@@ -40,19 +47,35 @@ export function FilterBar({
   ];
 
   return (
-    <div className="flex gap-2 items-center">
-      <ToolbarDropdown
-        label="Environment"
-        value={selectedEnv}
-        options={envOptions}
-        onChange={setSelectedEnv}
-      />
-      <ToolbarDropdown
-        label="Datacenter"
-        value={selectedDatacenter}
-        options={datacenterOptions}
-        onChange={setSelectedDatacenter}
-      />
+    <div className="flex gap-4 items-center">
+      <div className="flex gap-2 items-center">
+        <ToolbarDropdown
+          label="Environment"
+          value={selectedEnv}
+          options={envOptions}
+          onChange={setSelectedEnv}
+        />
+        <ToolbarDropdown
+          label="Datacenter"
+          value={selectedDatacenter}
+          options={datacenterOptions}
+          onChange={setSelectedDatacenter}
+        />
+      </div>
+
+      <div className="h-4 w-px bg-border mx-1" />
+
+      {/* Search Bar - matches Inventory page style */}
+      {(onQueryChange || onSelectResult) && (
+        <div className="w-64">
+          <UniversalSearch
+            value={query}
+            onChange={onQueryChange ?? (() => {})}
+            onSelectResult={onSelectResult ?? (() => {})}
+            placeholder="Search servers & apps..."
+          />
+        </div>
+      )}
     </div>
   );
 }

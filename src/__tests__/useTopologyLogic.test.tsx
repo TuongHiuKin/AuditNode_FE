@@ -17,6 +17,8 @@ vi.mock("@xyflow/react", async () => {
     useReactFlow: () => ({
       fitView: vi.fn(),
       screenToFlowPosition: vi.fn(({ x, y }) => ({ x, y })),
+      setCenter: vi.fn(),
+      getNodes: vi.fn(() => []),
     }),
   };
 });
@@ -85,5 +87,54 @@ describe("useTopologyLogic (Isolated)", () => {
         result.current.onNodeDoubleClick({} as any, result.current.nodes[0]);
     });
     expect(result.current.rightPanelData).not.toBeNull();
+  });
+
+  it("highlights nodes based on appSearchQuery", async () => {
+    const mockData = {
+      servers: [
+        { id: "s1", hostname: "h1", ipAddress: "i1", applications: [{ id: "a1", name: "Auth Service", port: 8080 }] },
+        { id: "s2", hostname: "h2", ipAddress: "i2", applications: [{ id: "a2", name: "Payment Service", port: 9090 }] },
+      ],
+      connections: [],
+    };
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockData });
+
+    const { result } = renderHook(() => useTopologyLogic(), { wrapper });
+
+    await waitFor(() => expect(result.current.nodes.length).toBe(2));
+
+    // Search for "Auth" (App match)
+    act(() => {
+      result.current.setAppSearchQuery("Auth");
+    });
+
+    // Wait for useEffect to trigger
+    await waitFor(() => {
+      const s1 = result.current.nodes.find(n => n.id === "s1");
+      const s2 = result.current.nodes.find(n => n.id === "s2");
+      expect(s1?.style?.opacity).toBe(1);
+      expect(s2?.style?.opacity).toBe(0.3);
+    });
+
+    // Search for "h2" (Server hostname match)
+    act(() => {
+      result.current.setAppSearchQuery("h2");
+    });
+
+    await waitFor(() => {
+      const s1 = result.current.nodes.find(n => n.id === "s1");
+      const s2 = result.current.nodes.find(n => n.id === "s2");
+      expect(s1?.style?.opacity).toBe(0.3);
+      expect(s2?.style?.opacity).toBe(1);
+    });
+
+    // Clear search
+    act(() => {
+      result.current.setAppSearchQuery("");
+    });
+
+    await waitFor(() => {
+      expect(result.current.nodes.every(n => n.style?.opacity === 1)).toBe(true);
+    });
   });
 });
