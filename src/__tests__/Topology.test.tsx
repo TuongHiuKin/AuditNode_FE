@@ -31,7 +31,12 @@ vi.mock("@xyflow/react", async () => {
     MiniMap: () => <div data-testid="rf-minimap" />,
     Controls: () => <div data-testid="rf-controls" />,
     ReactFlowProvider: ({ children }: any) => <div>{children}</div>,
-    useReactFlow: () => ({ fitView: vi.fn(), screenToFlowPosition: vi.fn() }),
+    useReactFlow: () => ({ 
+      fitView: vi.fn(), 
+      screenToFlowPosition: vi.fn(),
+      setCenter: vi.fn(),
+      getNodes: vi.fn(() => []),
+    }),
     useNodesState: (initial: any) => [initial, vi.fn(), vi.fn()],
     useEdgesState: (initial: any) => [initial, vi.fn(), vi.fn()],
   };
@@ -70,6 +75,8 @@ describe("Topology Page (Isolated Refactor)", () => {
       setSelectedEnv: vi.fn(),
       selectedDatacenter: "All",
       setSelectedDatacenter: vi.fn(),
+      appSearchQuery: "",
+      setAppSearchQuery: vi.fn(),
     } as any);
   });
 

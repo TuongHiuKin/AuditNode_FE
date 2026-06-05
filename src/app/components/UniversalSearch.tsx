@@ -31,7 +31,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
   value,
   onChange,
   onSelectResult,
-  placeholder = "Search Server/App...",
+  placeholder = "Search servers & apps...",
   className,
   inputClassName,
 }) => {
@@ -90,7 +90,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
 
   const handleSelect = (result: SearchResult) => {
     onSelectResult(result.id, result.type);
-    onChange(''); // Clear the search field after selection
+    onChange(result.title); // Set search input to the clicked item's name
     setIsOpen(false);
   };
 

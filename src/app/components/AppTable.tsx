@@ -94,7 +94,7 @@ export function AppTable({
                   value={searchQuery}
                   onChange={setSearchQuery}
                   onSelectResult={onSelectResult}
-                  placeholder="Search Server/App..."
+                  placeholder="Search servers & apps..."
                 />
               </div>
               <div className="w-48 relative">

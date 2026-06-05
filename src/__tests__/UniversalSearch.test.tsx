@@ -19,7 +19,7 @@ const UniversalSearchWrapper = ({ onSelectResult }: any) => {
       value={value} 
       onChange={setValue} 
       onSelectResult={onSelectResult} 
-      placeholder="Search Server/App..."
+      placeholder="Search servers & apps..."
     />
   );
 };
@@ -33,7 +33,7 @@ describe('UniversalSearch Component', () => {
 
   it('renders the search input', () => {
     render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
-    expect(screen.getByPlaceholderText(/search server\/app/i)).toBeDefined();
+    expect(screen.getByPlaceholderText(/search servers & apps/i)).toBeDefined();
   });
 
   it('triggers API call after debounce delay', async () => {
@@ -43,7 +43,7 @@ describe('UniversalSearch Component', () => {
     (apiClient.get as any).mockResolvedValue({ data: mockResults });
 
     render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
-    const input = screen.getByPlaceholderText(/search server\/app/i);
+    const input = screen.getByPlaceholderText(/search servers & apps/i);
 
     fireEvent.change(input, { target: { value: 'alpha' } });
 
@@ -69,7 +69,7 @@ describe('UniversalSearch Component', () => {
     (apiClient.get as any).mockResolvedValue({ data: mockResults });
 
     render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
-    const input = screen.getByPlaceholderText(/search server\/app/i) as HTMLInputElement;
+    const input = screen.getByPlaceholderText(/search servers & apps/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: 'payment' } });
 
@@ -80,7 +80,7 @@ describe('UniversalSearch Component', () => {
     fireEvent.click(screen.getByText('Payment Gateway'));
 
     expect(mockOnSelectResult).toHaveBeenCalledWith('app-1', 'APP');
-    expect(input.value).toBe('');
+    expect(input.value).toBe('Payment Gateway');
     expect(screen.queryByText('Payment Gateway')).toBeNull();
   });
 
@@ -97,7 +97,7 @@ describe('UniversalSearch Component', () => {
       </div>
     );
 
-    const input = screen.getByPlaceholderText(/search server\/app/i);
+    const input = screen.getByPlaceholderText(/search servers & apps/i);
     fireEvent.change(input, { target: { value: 'res' } });
 
     await waitFor(() => {

@@ -18,8 +18,109 @@ export function useTopologyLogic() {
 
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
+  const [appSearchQuery, setAppSearchQuery] = useState("");
 
   const reactFlowInstance = useReactFlow();
+
+  // ── Highlighting Logic based on Search ───────────────────────────────
+  useEffect(() => {
+    if (nodes.length === 0) return;
+
+    setNodes((currentNodes) => {
+      const query = appSearchQuery.toLowerCase().trim();
+      
+      if (!query) {
+        // Reset styles if no query
+        return currentNodes.map((node) => ({
+          ...node,
+          style: { ...node.style, opacity: 1, filter: "none" },
+        }));
+      }
+
+      // 1. Define Matching Helpers
+      const isServerDirectMatch = (node: Node) => {
+        const srvData = (node.data as any).server || node.data || {};
+        const hostname = (srvData.hostname || "").toLowerCase();
+        const ip = (srvData.ipAddress || srvData.ip || "").toLowerCase();
+        const label = (node.data as any).label?.toLowerCase() || "";
+        return hostname.includes(query) || ip.includes(query) || label.includes(query);
+      };
+
+      const isAppMatch = (node: Node | any, isEmbedded = false) => {
+        const appData = isEmbedded ? node : ((node.data as any).app || node.data || {});
+        const name = (appData.appName || appData.name || appData.label || "").toLowerCase();
+        const port = (appData.portNumber || appData.port || "").toString();
+        return name.includes(query) || port.includes(query);
+      };
+
+      // 2. Identify Matched Servers (Rule B)
+      const matchedServerIds = new Set<string>();
+      currentNodes.forEach(node => {
+        if (node.type === 'topologyServerNode' || node.type === 'serverNode') {
+          // Rule B.1: Direct Match
+          if (isServerDirectMatch(node)) {
+            matchedServerIds.add(node.id);
+            return;
+          }
+
+          // Rule B.2: Child Match (Embedded Apps)
+          const apps = (node.data as any).apps || [];
+          if (apps.some((app: any) => isAppMatch(app, true))) {
+            matchedServerIds.add(node.id);
+            return;
+          }
+
+          // Rule B.2: Child Match (Separate App Nodes)
+          const hasChildMatch = currentNodes.some(child => 
+            child.parentId === node.id && isAppMatch(child)
+          );
+          if (hasChildMatch) {
+            matchedServerIds.add(node.id);
+          }
+        }
+      });
+
+      // 3. Apply Styling (Rule C)
+      return currentNodes.map((node) => {
+        // If it's a Server
+        if (node.type === 'topologyServerNode' || node.type === 'serverNode') {
+          const hasMatch = matchedServerIds.has(node.id);
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              opacity: hasMatch ? 1 : 0.3,
+              filter: hasMatch 
+                ? "brightness(1.1) drop-shadow(0 0 8px rgba(59, 130, 246, 0.3))" 
+                : "grayscale(0.6)",
+            },
+          };
+        }
+
+        // If it's an Application
+        if (node.type === 'appNode' || node.type === 'topologyAppNode') {
+          const isDirectMatch = isAppMatch(node);
+          const parentNode = node.parentId ? currentNodes.find(n => n.id === node.parentId) : null;
+          const parentMatchedDirectly = parentNode && isServerDirectMatch(parentNode);
+
+          let opacity = 1;
+          if (!isDirectMatch) {
+            opacity = parentMatchedDirectly ? 0.5 : 0.3;
+          }
+
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              opacity,
+            },
+          };
+        }
+
+        return node;
+      });
+    });
+  }, [appSearchQuery, setNodes]);
 
   // ── Listen for app double-click events from TopologyServerNode ────────
   useEffect(() => {
@@ -187,5 +288,7 @@ export function useTopologyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    appSearchQuery,
+    setAppSearchQuery,
   };
 }

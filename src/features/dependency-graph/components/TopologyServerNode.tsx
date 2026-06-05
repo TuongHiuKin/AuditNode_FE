@@ -3,7 +3,7 @@ import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
 import type { TopologyServerNode as TopologyServerNodeData } from "../topology-types";
 import { TopologyAppCard } from "./TopologyAppCard";
 
-export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeData>) {
+export function TopologyServerNode({ id, data, style }: NodeProps<TopologyServerNodeData>) {
   const { setNodes } = useReactFlow();
 
   const apps = (data as any).apps || [];
@@ -54,7 +54,7 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
     return (
       <div
         className={`bg-[#0c1322] border ${borderClass} ${glowClass} rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg transition-all duration-300 hover:scale-[1.02] group relative cursor-pointer`}
-        style={{ width: 280, height: 80 }}
+        style={{ ...style, width: 280, height: 80 }}
         onClick={toggleExpand}
       >
         <div className={`p-2 rounded-lg bg-slate-900 border border-${accentColor}-500/20 shrink-0`}>
@@ -91,7 +91,7 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
   return (
     <div
       className={`bg-[#0c1322]/95 backdrop-blur-sm border ${borderClass} ${glowClass} rounded-2xl flex flex-col relative transition-all duration-300 shadow-2xl`}
-      style={{ width: data.width, minHeight: data.height }}
+      style={{ ...style, width: data.width, minHeight: data.height }}
     >
       {/* Header */}
       <div
