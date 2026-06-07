@@ -10,6 +10,7 @@ export interface PaletteApp {
   techStack: string;
   risk?: string;
   isMapped?: boolean;
+  portMappingId?: string;
 }
 
 export interface AppNodeData extends Record<string, unknown> {

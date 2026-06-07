@@ -30,6 +30,25 @@ Retrieves the application dependency graph data.
   - `datacenterId` (optional): Filter by datacenter.
 - **Success Response**: `200 OK` with nodes and edges compatible with React Flow.
 
+### Sync Network State
+Synchronizes the current canvas connections with the backend database.
+- **URL**: `/api/dependencies/sync`
+- **Method**: `PUT`
+- **Payload**:
+  ```json
+  {
+    "dependencies": [
+      { 
+        "sourceAppId": "uuid", 
+        "destAppId": "uuid", 
+        "destPortId": "uuid" 
+      }
+    ]
+  }
+  ```
+- **Success Response**: `200 OK`
+- **Logic**: Performs a delta-diff to insert new connections and remove deleted ones while respecting database constraints.
+
 ## 🖥️ Infrastructure Endpoints
 
 ### Servers

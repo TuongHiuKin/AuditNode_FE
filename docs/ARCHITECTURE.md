@@ -27,11 +27,13 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
 - **Dependency Graph Manager (Dynamic Service Mapping)**:
   - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
+  - **Auto-layout**: Implements a **2D Grid layout algorithm** (3 columns) for initial server placement, ensuring organized visualization even in dense environments like Production.
+  - **Smart Floating Edges**: Uses a custom **Dynamic Intersection Algorithm** to calculate connection points on node borders in real-time. This prevents edges from clipping through icons/text and ensures clean 90-degree orthogonal routing around assets.
+  - **Edge Reconnection**: Supports interactive re-routing by dragging edge endpoints to new target nodes, powered by `@xyflow/react` utilities.
+  - **Sync Logic**: Features a differential synchronization engine that extract raw UUIDs from composite React Flow IDs and maps connections to the required `destPortId` field before saving to the database.
   - **Custom Nodes Refactor**:
-    - **AppNode**: Redesigned as a sharp rectangle with 8 invisible, connect-anywhere handles (Top, Bottom, Left, Right) to ensure clean edge routing without visible clutter.
-    - **ServerGroupNode**: Optimized for dynamic resizing with explicit `width`/`height` prop binding and a clean `NodeResizer` UI that removes default bounding boxes for a more integrated feel.
-  - **Collapsible App Palette**: Features a flyout drawer design that slides over the canvas, maximizing workspace. Implemented with Tailwind CSS animations and absolute positioning.
-  - **Interaction**: Supports Drag-and-Drop (DnD) of unmapped applications from the palette onto the canvas to create new nodes.
+    *   **AppNode**: Redesigned as a sharp rectangle with 4-sided, hover-reveal handles to balance connectivity and visual clarity.
+    *   **ServerGroupNode**: Optimized for dynamic resizing with an "Auto-fit to content" function that precisely wraps children nodes using bounding-box geometry.
 - **EditEntityDrawer**: 
   - **Design**: Uses **React Portals** (`ReactDOM.createPortal`) to render at the root of the DOM tree (`document.body`).
   - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.

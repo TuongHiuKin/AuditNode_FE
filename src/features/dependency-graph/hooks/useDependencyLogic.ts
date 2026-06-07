@@ -62,6 +62,7 @@ export function useDependencyLogic() {
         return {
           sourceAppId: extractAppId(edge.source),
           destAppId: extractAppId(edge.target),
+          destPortId: (reactFlowInstance.getNode(edge.target)?.data as any)?.app?.portMappingId
         };
       });
 
@@ -190,12 +191,24 @@ export function useDependencyLogic() {
           rawData.edges?.forEach((e: any) => mappedEdges.push(e));
         } else {
           // Fallback: Map servers and their nested applications to flat ReactFlow nodes
+          const MAX_COLUMNS = 3;
+          const X_SPACING = 450;
+          const Y_SPACING = 350;
+          const START_X = 100;
+          const START_Y = 100;
+
           data.servers?.forEach((srv: any, srvIdx: number) => {
+            const col = srvIdx % MAX_COLUMNS;
+            const row = Math.floor(srvIdx / MAX_COLUMNS);
             const serverNodeId = srv.id || `srv-${srvIdx}`;
+
             mappedNodes.push({
               id: serverNodeId,
               type: "serverNode",
-              position: { x: srvIdx * 450, y: 100 },
+              position: { 
+                x: START_X + (col * X_SPACING), 
+                y: START_Y + (row * Y_SPACING) 
+              },
               style: { width: 300, height: 200 },
               data: {
                 server: {
@@ -222,7 +235,8 @@ export function useDependencyLogic() {
                     appName: app.name,
                     portNumber: app.port,
                     protocol: app.protocol,
-                    risk: app.riskLevel
+                    risk: app.riskLevel,
+                    portMappingId: app.portMappingId
                   }
                 },
               });
@@ -235,7 +249,7 @@ export function useDependencyLogic() {
               id: `e-${connIdx}`,
               source: conn.sourceAppId || "",
               target: conn.targetAppId || "",
-              type: "default",
+              type: "floatingSmooth",
               animated: true,
               markerEnd: edgeMarker,
               style: edgeStyle,

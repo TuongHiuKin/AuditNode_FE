@@ -25,6 +25,10 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Dynamic Network Sync**: Implemented "Save Network State" functionality with automated ID parsing and `destPortId` mapping.
+- ✅ **Smart Edge Routing**: Developed a **Dynamic Intersection Algorithm** for floating edges to prevent content clipping and loops.
+- ✅ **Infrastructure Layout**: Refactored server placement to a **2D Grid Layout** for improved scalability.
+- ✅ **Interactive Polish**: Added edge reconnection, hover-to-reveal handles, and "Auto-fit to content" for server containers.
 - ✅ **Custom Node Refactoring**: Redesigned Dependency Graph nodes with invisible "connect-anywhere" handles and fixed resizing bugs.
 - ✅ **Intelligent Search**: Expanded Topology search logic to match both Servers (Hostname/IP) and Applications.
 - ✅ **Canvas Panning UX**: Implemented smooth camera animation to center on search results within the Topology view.
@@ -98,5 +102,5 @@ Please follow the project's coding standards:
 
 ---
 
-**Last Updated:** June 6, 2026  
+**Last Updated:** June 7, 2026  
 **Project Lead:** Gemini CLI

@@ -43,7 +43,7 @@ describe("AppNode", () => {
     handles.forEach(handle => {
       expect(handle.className).toContain("opacity-0");
       expect(handle.className).not.toContain("pointer-events-none");
-      expect(handle.className).toContain("z-10");
+      expect(handle.className).toContain("bg-blue-500");
     });
   });
 

@@ -25,7 +25,16 @@ vi.mock("@xyflow/react", async () => {
       getEdges: vi.fn(() => [
         { id: "e-1", source: "app-123-srv-456", target: "app-789-srv-012" }
       ]),
-      getNode: vi.fn((id) => ({ id, type: "appNode", data: { app: { id: id.split("-")[1] } } })),
+      getNode: vi.fn((id) => ({ 
+        id, 
+        type: "appNode", 
+        data: { 
+          app: { 
+            id: id.split("-")[1],
+            portMappingId: `pm-${id.split("-")[1]}` 
+          } 
+        } 
+      })),
       getNodes: vi.fn(() => []),
     }),
   };
@@ -102,9 +111,14 @@ describe("useDependencyLogic", () => {
       expect(result.current.nodes.length).toBe(2); // 1 server + 1 app
     });
 
-    expect(result.current.nodes.find(n => n.type === "serverNode")).toBeDefined();
+    const serverNode = result.current.nodes.find(n => n.type === "serverNode");
+    expect(serverNode).toBeDefined();
+    // Grid layout: START_X=100, START_Y=100 for index 0
+    expect(serverNode?.position).toEqual({ x: 100, y: 100 });
+    
     expect(result.current.nodes.find(n => n.type === "appNode")).toBeDefined();
     expect(result.current.edges.length).toBe(1);
+    expect(result.current.edges[0].type).toBe("floatingSmooth");
     expect(result.current.availableApps.length).toBe(2);
   });
 
@@ -165,7 +179,7 @@ describe("useDependencyLogic", () => {
 
     expect(apiClient.put).toHaveBeenCalledWith("/api/dependencies/sync", {
       dependencies: [
-        { sourceAppId: "123", destAppId: "789" }
+        { sourceAppId: "123", destAppId: "789", destPortId: "pm-789" }
       ]
     });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dependency-map"] });
