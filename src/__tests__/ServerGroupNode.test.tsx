@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { ReactFlowProvider } from "@xyflow/react";
 import { ServerGroupNode } from "../features/dependency-graph/components/ServerGroupNode";
@@ -86,5 +86,36 @@ describe("ServerGroupNode", () => {
     const nodeDiv = container.querySelector("div") as HTMLElement;
     expect(nodeDiv.className).toContain("border-tertiary");
     expect(nodeDiv.className).toContain("bg-tertiary/5");
+  });
+
+  it("calculates correct dimensions in handleAutoFit", () => {
+    const setNodes = vi.fn();
+    vi.mocked(useReactFlow).mockReturnValue({
+      getNodes: () => [
+        { id: "app-1", parentId: "srv-1", position: { x: 10, y: 10 }, measured: { width: 100, height: 40 } },
+        { id: "app-2", parentId: "srv-1", position: { x: 50, y: 50 }, measured: { width: 100, height: 40 } },
+      ],
+      setNodes,
+    } as any);
+
+    wrap(<ServerGroupNode {...mockProps} />);
+    const fitButton = screen.getByTitle("Auto-fit to children");
+    fireEvent.click(fitButton);
+
+    // Verify setNodes was called
+    expect(setNodes).toHaveBeenCalled();
+    
+    // Get the function passed to setNodes
+    const updateFn = setNodes.mock.calls[0][0];
+    const updatedNodes = updateFn([{ id: "srv-1", style: {}, data: {} }, { id: "app-1", parentId: "srv-1", position: { x: 10, y: 10 } }]);
+    
+    const srvNode = updatedNodes.find((n: any) => n.id === "srv-1");
+    // maxX = 50 + 100 = 150. maxY = 50 + 40 = 90.
+    // padding = 40. topPadding = 60.
+    // minX = 10 < 40 -> offsetX = 30. minY = 10 < 60 -> offsetY = 50.
+    // newWidth = max(150 + 40, 280) = 280.
+    // newHeight = max(90 + 40, 120) = 130.
+    expect(srvNode.style.width).toBe(280);
+    expect(srvNode.style.height).toBe(130);
   });
 });

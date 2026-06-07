@@ -102,27 +102,28 @@ describe("DependencyManager Integration", () => {
       </QueryClientProvider>
     );
 
-    // Initially open (by default in our implementation)
-    expect(screen.getByText("App Palette")).toBeDefined();
+    // Initially closed (translated out)
+    const drawer = screen.getByText("App Palette").closest(".absolute");
+    expect(drawer?.className).toContain("-translate-x-full");
+
+    // Toggle button should be visible
+    const openButton = await screen.findByRole("button", { name: /Apps/i });
+    expect(openButton).toBeDefined();
+
+    // Click to reopen
+    fireEvent.click(openButton);
+    
+    await waitFor(() => {
+      expect(drawer?.className).toContain("translate-x-0");
+    });
 
     // Find and click the close button inside AppPalette using its aria-label
     const closeButton = screen.getByLabelText("Close Palette");
     fireEvent.click(closeButton);
 
     // Palette should be translated out
-    const drawer = screen.getByText("App Palette").closest(".absolute");
     await waitFor(() => {
       expect(drawer?.className).toContain("-translate-x-full");
-    });
-
-    // Toggle button should appear
-    const openButton = await screen.findByRole("button", { name: /Apps/i });
-    expect(openButton).toBeDefined();
-
-    // Click to reopen
-    fireEvent.click(openButton);
-    await waitFor(() => {
-      expect(drawer?.className).toContain("translate-x-0");
     });
   });
 });

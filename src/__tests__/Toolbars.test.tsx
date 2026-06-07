@@ -54,27 +54,27 @@ describe("Toolbars", () => {
 
   describe("SubToolbar", () => {
     const mockProps = {
-      onAddServer: vi.fn(),
-      onAddDatacenter: vi.fn(),
       onAutoMap: vi.fn(),
+      onSync: vi.fn(),
+      isSyncing: false,
     };
-
-    it("triggers onAddServer when button clicked", () => {
-      render(<SubToolbar {...mockProps} />);
-      fireEvent.click(screen.getByText(/Add Server Container/i));
-      expect(mockProps.onAddServer).toHaveBeenCalled();
-    });
-
-    it("triggers onAddDatacenter when button clicked", () => {
-      render(<SubToolbar {...mockProps} />);
-      fireEvent.click(screen.getByText(/Add Datacenter Cluster/i));
-      expect(mockProps.onAddDatacenter).toHaveBeenCalled();
-    });
 
     it("triggers onAutoMap when button clicked", () => {
       render(<SubToolbar {...mockProps} />);
       fireEvent.click(screen.getByText(/Auto-Map from DB/i));
       expect(mockProps.onAutoMap).toHaveBeenCalled();
+    });
+
+    it("triggers onSync when button clicked", () => {
+      render(<SubToolbar {...mockProps} />);
+      fireEvent.click(screen.getByText(/Save Network State/i));
+      expect(mockProps.onSync).toHaveBeenCalled();
+    });
+
+    it("shows loading state when isSyncing is true", () => {
+      render(<SubToolbar {...mockProps} isSyncing={true} />);
+      expect(screen.getByText(/Syncing.../i)).toBeDefined();
+      expect(screen.getByRole("button", { name: /Syncing.../i })).toBeDisabled();
     });
   });
 });
