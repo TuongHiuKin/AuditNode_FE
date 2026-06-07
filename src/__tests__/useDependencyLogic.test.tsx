@@ -10,6 +10,7 @@ import React from "react";
 vi.mock("../shared/api/client", () => ({
   default: {
     get: vi.fn(),
+    put: vi.fn(),
   },
 }));
 
@@ -21,6 +22,11 @@ vi.mock("@xyflow/react", async () => {
     useReactFlow: () => ({
       fitView: vi.fn(),
       screenToFlowPosition: vi.fn(({ x, y }) => ({ x, y })),
+      getEdges: vi.fn(() => [
+        { id: "e-1", source: "app-123-srv-456", target: "app-789-srv-012" }
+      ]),
+      getNode: vi.fn((id) => ({ id, type: "appNode", data: { app: { id: id.split("-")[1] } } })),
+      getNodes: vi.fn(() => []),
     }),
   };
 });
@@ -145,5 +151,37 @@ describe("useDependencyLogic", () => {
     });
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dependency-map"] });
+  });
+
+  it("handles sync to database by parsing composite IDs and calling API", async () => {
+    vi.mocked(apiClient.put).mockResolvedValue({ data: { success: true } });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    await act(async () => {
+      await result.current.handleSync();
+    });
+
+    expect(apiClient.put).toHaveBeenCalledWith("/api/dependencies/sync", {
+      dependencies: [
+        { sourceAppId: "123", destAppId: "789" }
+      ]
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dependency-map"] });
+  });
+
+  it("handles reconnecting an edge", async () => {
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    const oldEdge = { id: "e-1", source: "app-1", target: "app-2" };
+    const newConnection = { source: "app-1", target: "app-3", sourceHandle: null, targetHandle: null };
+
+    await act(async () => {
+      result.current.onReconnect(oldEdge as any, newConnection);
+    });
+
+    // Check if edges were updated (reconnectEdge is a utility from @xyflow/react)
+    // We expect the hook to call setEdges which eventually updates edges state
   });
 });
