@@ -46,20 +46,33 @@ describe("ServerGroupNode", () => {
     expect(screen.getByTitle("Auto-fit to children")).toBeDefined();
   });
 
-  it("prioritizes data.height over automatic calculation", () => {
-    // Mock 3 child apps (which would usually trigger 260px height)
+  it("prioritizes width and height props over data values", () => {
     vi.mocked(useReactFlow).mockReturnValue({
-      getNodes: () => [
-        { id: "app-1", parentId: "srv-1" },
-        { id: "app-2", parentId: "srv-1" },
-        { id: "app-3", parentId: "srv-1" },
-      ],
+      getNodes: () => [],
     } as any);
 
-    // If data.height is provided (e.g. from a previous resize), it should be used
+    const propsWithExplicitSize = { 
+      ...mockProps, 
+      width: 500, 
+      height: 300 
+    };
+    
+    const { container } = wrap(<ServerGroupNode {...propsWithExplicitSize} />);
+    const nodeDiv = container.querySelector("div") as HTMLElement;
+    
+    expect(nodeDiv.style.width).toBe("500px");
+    expect(nodeDiv.style.height).toBe("300px");
+  });
+
+  it("falls back to data.width/height if props are missing", () => {
+    vi.mocked(useReactFlow).mockReturnValue({
+      getNodes: () => [],
+    } as any);
+
     const { container } = wrap(<ServerGroupNode {...mockProps} />);
     const nodeDiv = container.querySelector("div") as HTMLElement;
     
+    expect(nodeDiv.style.width).toBe("280px");
     expect(nodeDiv.style.height).toBe("120px");
   });
 

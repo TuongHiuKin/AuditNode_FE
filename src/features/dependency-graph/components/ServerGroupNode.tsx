@@ -2,7 +2,7 @@ import { Server as ServerIcon, Maximize } from "lucide-react";
 import { Handle, Position, NodeProps, useReactFlow, NodeResizer } from "@xyflow/react";
 import { ServerNode } from "../types";
 
-export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNode>) {
+export function ServerGroupNode({ id, data, selected, width, height }: NodeProps<ServerNode>) {
   const { getNodes, setNodes } = useReactFlow();
   
   const handleAutoFit = (e: React.MouseEvent) => {
@@ -14,71 +14,70 @@ export function ServerGroupNode({ id, data, selected }: NodeProps<ServerNode>) {
 
     childApps.forEach(node => {
       const { x, y } = node.position;
-      const width = node.measured?.width ?? 180; // Fallback to standard AppNode width
-      const height = node.measured?.height ?? 50; // Fallback to standard AppNode height
+      const w = node.measured?.width ?? 240; // Default width for AppNode
+      const h = node.measured?.height ?? 44; // Default height for AppNode
 
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x + width);
-      maxY = Math.max(maxY, y + height);
+      maxX = Math.max(maxX, x + w);
+      maxY = Math.max(maxY, y + h);
     });
 
     const padding = 40;
-    const newWidth = (maxX - minX) + (padding * 2);
-    const newHeight = (maxY - minY) + (padding * 2);
+    const topPadding = 60; // Leave space for header
+    
+    // Calculate required dimensions
+    const newWidth = Math.max(maxX + padding, 280);
+    const newHeight = Math.max(maxY + padding, 120);
 
-    // Adjust child positions if they have negative coordinates relative to the new origin
-    if (minX < padding || minY < padding) {
-        const offsetX = padding - minX;
-        const offsetY = padding - minY;
-        
-        setNodes(nodes => nodes.map(n => {
-            if (n.parentId === id) {
-                return {
-                    ...n,
-                    position: {
-                        x: n.position.x + offsetX,
-                        y: n.position.y + offsetY
-                    }
-                };
-            }
-            if (n.id === id) {
-                return {
-                    ...n,
-                    data: { ...n.data, width: newWidth, height: newHeight }
-                };
-            }
-            return n;
-        }));
-    } else {
-        setNodes(nodes => nodes.map(n => {
-            if (n.id === id) {
-                return {
-                    ...n,
-                    data: { ...n.data, width: newWidth, height: newHeight }
-                };
-            }
-            return n;
-        }));
-    }
+    // If children have negative relative coordinates, shift them
+    const offsetX = minX < padding ? padding - minX : 0;
+    const offsetY = minY < topPadding ? topPadding - minY : 0;
+
+    setNodes(nodes => nodes.map(n => {
+      if (n.parentId === id) {
+        return {
+          ...n,
+          position: {
+            x: n.position.x + offsetX,
+            y: n.position.y + offsetY
+          }
+        };
+      }
+      if (n.id === id) {
+        return {
+          ...n,
+          style: { ...n.style, width: newWidth, height: newHeight },
+          data: { ...n.data, width: newWidth, height: newHeight }
+        };
+      }
+      return n;
+    }));
   };
-
-  // Use data.width/height if set (by resizer), otherwise use dynamic defaults
-  const currentWidth = data.width || 280;
-  const currentHeight = data.height || 120;
 
   return (
     <div
       className={`border border-dashed rounded-xl transition-all duration-200 ease-in-out relative flex flex-col ${
         selected ? "border-tertiary bg-tertiary/5" : "border-slate-800 bg-[#0c1322]/30 hover:bg-[#0c1322]/50 hover:border-slate-700"
       }`}
-      style={{ width: currentWidth, height: currentHeight }}
+      style={{ 
+        width: width ? `${width}px` : (data.width ? `${data.width}px` : '280px'), 
+        height: height ? `${height}px` : (data.height ? `${data.height}px` : '120px') 
+      }}
     >
       <NodeResizer 
         isVisible={selected} 
         minWidth={200} 
         minHeight={100} 
-        handleStyle={{ width: 8, height: 8, borderRadius: '50%' }}
+        lineStyle={{ border: 'none' }}
+        handleStyle={{ 
+          width: 8, 
+          height: 8, 
+          borderRadius: '2px',
+          background: '#FF4D7E',
+          border: 'none',
+          margin: 0 // Ensures handles sit perfectly on the border
+        }}
       />
 
       {/* Header Container */}

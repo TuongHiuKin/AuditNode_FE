@@ -27,6 +27,9 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
 - **Dependency Graph Manager (Dynamic Service Mapping)**:
   - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
+  - **Custom Nodes Refactor**:
+    - **AppNode**: Redesigned as a sharp rectangle with 8 invisible, connect-anywhere handles (Top, Bottom, Left, Right) to ensure clean edge routing without visible clutter.
+    - **ServerGroupNode**: Optimized for dynamic resizing with explicit `width`/`height` prop binding and a clean `NodeResizer` UI that removes default bounding boxes for a more integrated feel.
   - **Collapsible App Palette**: Features a flyout drawer design that slides over the canvas, maximizing workspace. Implemented with Tailwind CSS animations and absolute positioning.
   - **Interaction**: Supports Drag-and-Drop (DnD) of unmapped applications from the palette onto the canvas to create new nodes.
 - **EditEntityDrawer**: 

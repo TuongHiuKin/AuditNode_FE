@@ -27,10 +27,24 @@ describe("AppNode", () => {
     expect(screen.getByText("443")).toBeDefined();
   });
 
-  it("applies professional SaaS border-slate-800 when not selected", () => {
+  it("renders as a sharp rectangle (rounded-none)", () => {
     const { container } = wrap(<AppNode {...mockProps} />);
     const nodeDiv = container.firstChild as HTMLElement;
-    expect(nodeDiv.className).toContain("border-slate-800");
+    expect(nodeDiv.className).toContain("rounded-none");
+    expect(nodeDiv.className).not.toContain("rounded-lg");
+  });
+
+  it("has invisible interactive handles on all four sides", () => {
+    const { container } = wrap(<AppNode {...mockProps} />);
+    // There should be 8 handles total (4 target, 4 source)
+    const handles = container.querySelectorAll(".react-flow__handle");
+    expect(handles.length).toBe(8);
+    
+    handles.forEach(handle => {
+      expect(handle.className).toContain("opacity-0");
+      expect(handle.className).not.toContain("pointer-events-none");
+      expect(handle.className).toContain("z-10");
+    });
   });
 
   it("applies tertiary border and shadow when selected", () => {

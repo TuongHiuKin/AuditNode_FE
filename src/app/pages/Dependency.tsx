@@ -21,6 +21,9 @@ function DependencyManagerContent() {
     isDrawingServer, setIsDrawingServer, drawBox,
     onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
     canDrawServer,
+    onReconnect,
+    handleSync,
+    isSyncing,
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -64,11 +67,9 @@ function DependencyManagerContent() {
         {/* Docked Utility Toolbar - always full width */}
         <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
           <SubToolbar
-            onAddServer={() => setIsDrawingServer(true)}
-            onAddDatacenter={() => console.log("Add Datacenter")}
             onAutoMap={handleAutoMap}
-            isDrawingServer={isDrawingServer}
-            canDrawServer={canDrawServer}
+            onSync={handleSync}
+            isSyncing={isSyncing}
           />
           <div className="w-px h-5 bg-border shrink-0"></div>
           <FilterBar
@@ -99,6 +100,7 @@ function DependencyManagerContent() {
             <FlowCanvas
               nodes={nodes} edges={edges} onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange} onConnect={onConnect}
+              onReconnect={onReconnect}
               onDrop={onDrop} onDragOver={onDragOver}
               onSelectionChange={onSelectionChange} isLoading={isLoading}
               isDrawingServer={isDrawingServer}

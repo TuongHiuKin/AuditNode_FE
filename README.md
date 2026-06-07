@@ -25,6 +25,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Custom Node Refactoring**: Redesigned Dependency Graph nodes with invisible "connect-anywhere" handles and fixed resizing bugs.
 - ✅ **Intelligent Search**: Expanded Topology search logic to match both Servers (Hostname/IP) and Applications.
 - ✅ **Canvas Panning UX**: Implemented smooth camera animation to center on search results within the Topology view.
 - ✅ **Topology Refactoring**: Migrated to a "Static Resource Inventory" approach with nested nodes and auto-grid layout.
@@ -97,5 +98,5 @@ Please follow the project's coding standards:
 
 ---
 
-**Last Updated:** June 5, 2026  
+**Last Updated:** June 6, 2026  
 **Project Lead:** Gemini CLI

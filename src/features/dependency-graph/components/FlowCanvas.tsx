@@ -6,17 +6,25 @@ import {
   DefaultEdgeOptions,
   type NodeTypes,
   BackgroundVariant,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
+import { RemovableEdge } from "./RemovableEdge";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: 'default', // Bezier is default in ReactFlow
+  type: 'removable',
   animated: true,
   style: { strokeWidth: 2, stroke: "#3b82f6" },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    width: 20,
+    height: 20,
+    color: "#3b82f6",
+  },
 };
 
 interface FlowCanvasProps {
@@ -25,6 +33,7 @@ interface FlowCanvasProps {
   onNodesChange: any;
   onEdgesChange: any;
   onConnect: any;
+  onReconnect?: any;
   onDrop: any;
   onDragOver: any;
   onSelectionChange: any;
@@ -43,6 +52,7 @@ export function FlowCanvas({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onReconnect,
   onDrop,
   onDragOver,
   onSelectionChange,
@@ -57,6 +67,10 @@ export function FlowCanvas({
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
+  }), []);
+
+  const edgeTypes = useMemo(() => ({
+    removable: RemovableEdge,
   }), []);
 
   return (
@@ -95,11 +109,13 @@ export function FlowCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onReconnect={onReconnect}
         onSelectionChange={onSelectionChange}
         onDrop={onDrop}
         onDragOver={onDragOver}
 
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         className="bg-background"

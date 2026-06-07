@@ -3,6 +3,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  reconnectEdge,
   useReactFlow,
   MarkerType,
   type Node,
@@ -13,6 +14,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
 import { PaletteApp, SelectedItem } from "../types";
 import { useAppPalette } from "./useAppPalette";
+import { toast } from "sonner";
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
@@ -27,8 +29,55 @@ export function useDependencyLogic() {
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const reactFlowInstance = useReactFlow();
   const queryClient = useQueryClient();
+
+  // ── Sync to Database ─────────────────────────────────────────────────────
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const currentEdges = reactFlowInstance.getEdges();
+      
+      const dependencies = currentEdges.map((edge) => {
+        // Extract real Application ID from composite (e.g., app-123-srv-456)
+        const extractAppId = (nodeId: string) => {
+          // Robust regex to extract the ID between 'app-' and '-srv-'
+          // This handles UUIDs with dashes correctly
+          const compositeMatch = nodeId.match(/^app-(.+)-srv-.+$/);
+          if (compositeMatch) {
+            return compositeMatch[1];
+          }
+          
+          // Fallback: If it's a new node (e.g., n-timestamp), get the real ID from node data
+          const node = reactFlowInstance.getNode(nodeId);
+          if (node?.type === "appNode") {
+            return (node.data as any).app?.id || nodeId;
+          }
+          
+          return nodeId;
+        };
+
+        return {
+          sourceAppId: extractAppId(edge.source),
+          destAppId: extractAppId(edge.target),
+        };
+      });
+
+      await apiClient.put("/api/dependencies/sync", { dependencies });
+      
+      toast.success("Network state synchronized successfully");
+      
+      // Reset edge animations/colors to "saved" state by refetching
+      await queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
+    } catch (error: any) {
+      console.error("Sync failed:", error);
+      toast.error(error.response?.data?.message || "Failed to synchronize network state");
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [reactFlowInstance, queryClient]);
 
   // ── Fetch all servers to determine mapping status ────────────────────────
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
@@ -96,6 +145,7 @@ export function useDependencyLogic() {
         id: targetServer.id!,
         type: "serverNode",
         position: { x, y },
+        style: { width, height },
         data: {
           server: {
             hostname: targetServer.hostname,
@@ -145,7 +195,8 @@ export function useDependencyLogic() {
             mappedNodes.push({
               id: serverNodeId,
               type: "serverNode",
-              position: { x: srvIdx * 400, y: 0 },
+              position: { x: srvIdx * 450, y: 100 },
+              style: { width: 300, height: 200 },
               data: {
                 server: {
                   hostname: srv.hostname,
@@ -221,6 +272,14 @@ export function useDependencyLogic() {
       setEdges((eds) => addEdge(newEdge, eds));
     },
     [setEdges],
+  );
+
+  // ── Reconnect an edge ──────────────────────────────────────────────────────
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
+    },
+    [setEdges]
   );
 
   // ── Drag-over canvas ───────────────────────────────────────────────────────
@@ -380,6 +439,9 @@ export function useDependencyLogic() {
     onPaneMouseDown,
     onPaneMouseMove,
     onPaneMouseUp,
+    onReconnect,
+    handleSync,
+    isSyncing,
   };
 }
 
