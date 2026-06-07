@@ -8,29 +8,29 @@ export function AppNode({ data, selected }: NodeProps<AppNodeModel>) {
   const Icon = ICONS[data.app.icon] || Globe;
   return (
     <div
-      className={`flex items-center gap-3 p-1.5 pr-4 rounded-none bg-[#0c1322] transition-all duration-200 ease-in-out select-none border ${
+      className={`group relative flex items-center gap-3 p-1.5 pr-4 rounded-none bg-[#0c1322] transition-all duration-200 ease-in-out select-none border ${
         selected
           ? "border-tertiary shadow-[0_0_15px_rgba(255,77,126,0.15)]"
           : "border-slate-800 hover:border-slate-700 hover:shadow-[0_0_10px_rgba(122,134,153,0.1)]"
       }`}
       style={{ width: 240, height: 44 }}
     >
-      {/* Invisible Hitboxes - 4 sides, both Source and Target for full connectivity */}
-      {/* Top side */}
-      <Handle type="target" position={Position.Top} className="opacity-0 !w-full !h-3 !-top-1.5 !rounded-none !border-none !bg-transparent z-10" id="t-t" />
-      <Handle type="source" position={Position.Top} className="opacity-0 !w-full !h-3 !-top-1.5 !rounded-none !border-none !bg-transparent z-10" id="t-s" />
+      {/* 4-Sided Multi-directional Handles (Reveal on Hover) */}
+      {/* Top */}
+      <Handle type="target" position={Position.Top} id="t-t" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-top-1.25" />
+      <Handle type="source" position={Position.Top} id="t-s" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-top-1.25" />
       
-      {/* Bottom side */}
-      <Handle type="target" position={Position.Bottom} className="opacity-0 !w-full !h-3 !-bottom-1.5 !rounded-none !border-none !bg-transparent z-10" id="b-t" />
-      <Handle type="source" position={Position.Bottom} className="opacity-0 !w-full !h-3 !-bottom-1.5 !rounded-none !border-none !bg-transparent z-10" id="b-s" />
+      {/* Right */}
+      <Handle type="target" position={Position.Right} id="r-t" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-right-1.25" />
+      <Handle type="source" position={Position.Right} id="r-s" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-right-1.25" />
       
-      {/* Left side */}
-      <Handle type="target" position={Position.Left} className="opacity-0 !h-full !w-3 !-left-1.5 !rounded-none !border-none !bg-transparent z-10" id="l-t" />
-      <Handle type="source" position={Position.Left} className="opacity-0 !h-full !w-3 !-left-1.5 !rounded-none !border-none !bg-transparent z-10" id="l-s" />
+      {/* Bottom */}
+      <Handle type="target" position={Position.Bottom} id="b-t" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-bottom-1.25" />
+      <Handle type="source" position={Position.Bottom} id="b-s" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-bottom-1.25" />
       
-      {/* Right side */}
-      <Handle type="target" position={Position.Right} className="opacity-0 !h-full !w-3 !-right-1.5 !rounded-none !border-none !bg-transparent z-10" id="r-t" />
-      <Handle type="source" position={Position.Right} className="opacity-0 !h-full !w-3 !-right-1.5 !rounded-none !border-none !bg-transparent z-10" id="r-s" />
+      {/* Left */}
+      <Handle type="target" position={Position.Left} id="l-t" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-left-1.25" />
+      <Handle type="source" position={Position.Left} id="l-s" className="w-2.5 h-2.5 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[#0c1322] !-left-1.25" />
 
       <div
         className={`flex items-center justify-center w-7 h-7 rounded-md shrink-0 ${

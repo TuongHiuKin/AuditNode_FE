@@ -14,11 +14,12 @@ import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
+import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: 'removable',
+  type: 'floatingSmooth',
   animated: true,
-  style: { strokeWidth: 2, stroke: "#3b82f6" },
+  style: { strokeWidth: 2, stroke: "#3b82f6", strokeDasharray: '5,5' },
   markerEnd: {
     type: MarkerType.ArrowClosed,
     width: 20,
@@ -71,6 +72,7 @@ export function FlowCanvas({
 
   const edgeTypes = useMemo(() => ({
     removable: RemovableEdge,
+    floatingSmooth: FloatingSmoothStepEdge,
   }), []);
 
   return (
@@ -110,6 +112,7 @@ export function FlowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onReconnect={onReconnect}
+        isValidConnection={(connection) => connection.source !== connection.target}
         onSelectionChange={onSelectionChange}
         onDrop={onDrop}
         onDragOver={onDragOver}
@@ -117,6 +120,7 @@ export function FlowCanvas({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
+        connectionRadius={30}
         fitView
         className="bg-background"
         colorMode="dark"
