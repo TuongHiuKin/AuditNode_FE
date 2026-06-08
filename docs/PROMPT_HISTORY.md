@@ -29,7 +29,18 @@ The Dependency Manager required final polish to become production-ready. Issues 
    - Blocked self-connections via `isValidConnection` validation.
 5. **UI Streamlining**: Removed redundant toolbar controls and added a primary "Save Network State" action with loading feedback.
 
+## 2026-06-08: Resource Inventory Grid Enhancements & Combobox Migration
+
+### Context
+The Infrastructure Inventory grid needed functional updates to support Application Migration (updating server residency) and a safe "Hard Delete" sequence. Later, the target server selection field became unmanageable as a native HTML select, and a critical bug was found where the grid was passing `PortMappingId` instead of `ApplicationId` for deletions.
+
+### Solution
+1. **Migration Drawer (`MigrationDrawer.tsx`)**: Created a dedicated side drawer to handle moving applications between infrastructure assets, fetching available servers dynamically.
+2. **Safe Hard Delete Modal (`DeleteConfirmationModal.tsx`)**: Implemented a state-driven 3-step sequence. It performs a live pre-check via `/dependencies-count`, displays a context-aware warning (safe vs. critical), and forces a strict confirmation before executing a purge.
+3. **Searchable Combobox Integration**: Upgraded the Target Server dropdown in `EditResourceDrawer` from a basic `<select>` to a fully-controlled `shadcn/ui` Combobox utilizing `cmdk`. Built custom typing, visibility, and selection logic to bypass portal event trapping and added a `scrollIntoView` polyfill to fix JSDOM testing issues.
+4. **Data Parsing & ID Fixes**: Corrected an Axios response parsing bug that ignored raw numeric payloads for dependency counts. Also patched `ServerTable.tsx` to explicitly extract the true `applicationId` from nested DTOs, ensuring grid actions route correctly to backend endpoints.
+
 ### Impact
-Transformed the canvas from a prototype into a high-performance auditing tool. Service dependencies now route intelligently around infrastructure assets, and the system correctly persists complex network topologies to the database while maintaining strict relational integrity.
+Significantly improved the safety and usability of resource management. Deletions are now aggressively protected against accidental network severance, and server migrations scale flawlessly in the UI, even with massive infrastructure datasets.
 
 
