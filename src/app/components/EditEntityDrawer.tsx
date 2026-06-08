@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
-import { X, Loader2, Save, ChevronDown } from "lucide-react";
+import { X, Loader2, Save, ChevronDown, MoveHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
-import apiClient from "../../shared/api/client";
+import apiClient, { Schemas } from "../../shared/api/client";
 
 interface EditEntityDrawerProps {
   entityId: string | null;
@@ -26,6 +26,10 @@ export function EditEntityDrawer({
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
+  const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
+  const [serverSearchTerm, setServerSearchTerm] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { register, handleSubmit, reset, setValue, watch } = useForm();
 
   const isOpen = !!entityId && !!entityType;
@@ -34,6 +38,39 @@ export function EditEntityDrawer({
   const watchedEnv = watch("environment");
   const watchedStatus = watch("status");
   const watchedRisk = watch("risk");
+  const watchedServerId = watch("targetServerId");
+
+  // Click outside for custom dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsServerDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Sync search term with selected value
+  useEffect(() => {
+    if (watchedServerId && !isServerDropdownOpen) {
+      const srv = availableServers.find(s => s.id === watchedServerId);
+      if (srv) {
+        setServerSearchTerm(`${srv.hostname} (${srv.ipAddress})`);
+      }
+    }
+  }, [watchedServerId, availableServers, isServerDropdownOpen]);
+
+  const filteredServers = availableServers.filter(srv => 
+    srv.hostname?.toLowerCase().includes(serverSearchTerm.toLowerCase()) || 
+    srv.ipAddress?.toLowerCase().includes(serverSearchTerm.toLowerCase())
+  );
+
+  const handleSelectServer = (srv: Schemas["ServerResponseDto"]) => {
+    setValue("targetServerId", srv.id, { shouldDirty: true });
+    setServerSearchTerm(`${srv.hostname} (${srv.ipAddress})`);
+    setIsServerDropdownOpen(false);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -43,11 +80,25 @@ export function EditEntityDrawer({
     if (isOpen) {
       setFetchError(null);
       fetchData();
+      if (entityType === "APP") {
+        fetchAvailableServers();
+      }
     } else {
       reset();
       setFetchError(null);
     }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isOpen]);
+
+  const fetchAvailableServers = async () => {
+    try {
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const rawResponse = response as any;
+      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      setAvailableServers(data);
+    } catch (error) {
+      console.error("Failed to fetch available servers", error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,6 +123,9 @@ export function EditEntityDrawer({
         setValue("ownerId", data.ownerId);
         setValue("ownerTeam", data.ownerTeam || "");
         setValue("risk", data.risk);
+        // Pre-fill migration fields if available
+        if (data.serverId) setValue("targetServerId", data.serverId);
+        if (data.portNumber) setValue("newPortNumber", data.portNumber);
       }
     } catch (error: any) {
       const msg = error.response?.data?.message || "Failed to fetch entity details";
@@ -95,7 +149,9 @@ export function EditEntityDrawer({
             appName: formData.appName,
             ownerTeam: formData.ownerTeam,
             risk: formData.risk,
-            // appCode and ownerId are usually read-only or not part of this specific metadata update
+            // Include migration fields
+            targetServerId: formData.targetServerId,
+            newPortNumber: Number(formData.newPortNumber),
           }
         : formData;
 
@@ -170,22 +226,22 @@ export function EditEntityDrawer({
               {entityType === "SERVER" ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">IP Address (Read-only)</label>
-                    <input {...register("ipAddress")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
+                    <label htmlFor="ipAddress" className="block text-xs font-bold text-slate-400 uppercase mb-2">IP Address (Read-only)</label>
+                    <input id="ipAddress" {...register("ipAddress")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white uppercase mb-2">Hostname</label>
-                    <input {...register("hostname")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="hostname" className="block text-xs font-bold text-white uppercase mb-2">Hostname</label>
+                    <input id="hostname" {...register("hostname")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-white uppercase mb-2">OS Type</label>
-                      <input {...register("osType")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                      <label htmlFor="osType" className="block text-xs font-bold text-white uppercase mb-2">OS Type</label>
+                      <input id="osType" {...register("osType")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-white uppercase mb-2">Environment</label>
+                      <label htmlFor="environment" className="block text-xs font-bold text-white uppercase mb-2">Environment</label>
                       <div className="relative">
-                        <select {...register("environment")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                        <select id="environment" {...register("environment")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
                           {envOptions.map(opt => <option key={opt}>{opt}</option>)}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -193,9 +249,9 @@ export function EditEntityDrawer({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white uppercase mb-2">Status</label>
+                    <label htmlFor="status" className="block text-xs font-bold text-white uppercase mb-2">Status</label>
                     <div className="relative">
-                      <select {...register("status")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                      <select id="status" {...register("status")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
                         {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -205,24 +261,92 @@ export function EditEntityDrawer({
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">App Code (Read-only)</label>
-                    <input {...register("appCode")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
+                    <label htmlFor="appCode" className="block text-xs font-bold text-slate-400 uppercase mb-2">App Code (Read-only)</label>
+                    <input id="appCode" {...register("appCode")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white uppercase mb-2">Application Name</label>
-                    <input {...register("appName")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="appName" className="block text-xs font-bold text-white uppercase mb-2">Application Name</label>
+                    <input id="appName" {...register("appName")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white uppercase mb-2">Owner Team</label>
-                    <input {...register("ownerTeam")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="ownerTeam" className="block text-xs font-bold text-white uppercase mb-2">Owner Team</label>
+                    <input id="ownerTeam" {...register("ownerTeam")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-white uppercase mb-2">Risk Level</label>
+                    <label htmlFor="risk" className="block text-xs font-bold text-white uppercase mb-2">Risk Level</label>
                     <div className="relative">
-                      <select {...register("risk")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                      <select id="risk" {...register("risk")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
                         {riskOptions.map(opt => <option key={opt}>{opt}</option>)}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Network Migration Section */}
+                  <div className="pt-4 border-t border-slate-800">
+                    <div className="flex items-center gap-2 mb-4">
+                      <MoveHorizontal size={14} className="text-tertiary" />
+                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Mapping</h3>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="targetServerIdSearch" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Target Server</label>
+                        <div className="relative" ref={dropdownRef}>
+                          <input
+                            id="targetServerIdSearch"
+                            type="text"
+                            role="combobox"
+                            aria-expanded={isServerDropdownOpen}
+                            value={serverSearchTerm}
+                            onChange={(e) => {
+                              setServerSearchTerm(e.target.value);
+                              setIsServerDropdownOpen(true);
+                            }}
+                            onClick={() => setIsServerDropdownOpen(true)}
+                            placeholder="Select Target Infrastructure..."
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all"
+                            autoComplete="off"
+                          />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+
+                          {isServerDropdownOpen && (
+                            <ul className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 custom-scrollbar list-none m-0 p-0">
+                              {filteredServers.length > 0 ? (
+                                filteredServers.map((srv) => (
+                                  <li
+                                    key={srv.id}
+                                    role="option"
+                                    aria-selected={watchedServerId === srv.id}
+                                    onClick={() => handleSelectServer(srv)}
+                                    className={`p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 last:border-0 transition-colors flex items-center ${watchedServerId === srv.id ? 'bg-slate-700' : ''}`}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 shrink-0 ${watchedServerId === srv.id ? "opacity-100 text-tertiary" : "opacity-0"}`}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-sm text-white">{srv.hostname}</span>
+                                      <span className="text-xs text-slate-400 font-mono">{srv.ipAddress}</span>
+                                    </div>
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="p-4 text-center text-sm text-slate-400">No infrastructure found.</li>
+                              )}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="newPortNumber" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Port Number</label>
+                        <input 
+                          id="newPortNumber"
+                          type="number"
+                          {...register("newPortNumber")}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" 
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

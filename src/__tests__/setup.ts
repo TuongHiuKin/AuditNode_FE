@@ -13,3 +13,8 @@ class ResizeObserverMock {
 
 global.ResizeObserver = ResizeObserverMock;
 
+// Polyfill scrollIntoView for JSDOM
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn();
+}
+

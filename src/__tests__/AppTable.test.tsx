@@ -50,6 +50,9 @@ describe("AppTable Reproduction", () => {
         <MemoryRouter>
                   <AppTable 
           onRegister={vi.fn()} 
+          onEditClick={vi.fn()}
+          onMigrateClick={vi.fn()}
+          onDeleteClick={vi.fn()}
           onSelectResult={vi.fn()} 
           onClearFilter={vi.fn()} 
         />
@@ -86,6 +89,9 @@ describe("AppTable Reproduction", () => {
         <MemoryRouter>
                   <AppTable 
           onRegister={vi.fn()} 
+          onEditClick={vi.fn()}
+          onMigrateClick={vi.fn()}
+          onDeleteClick={vi.fn()}
           onSelectResult={vi.fn()} 
           onClearFilter={vi.fn()} 
         />
@@ -125,6 +131,9 @@ describe("AppTable Reproduction", () => {
         <MemoryRouter>
                   <AppTable 
           onRegister={vi.fn()} 
+          onEditClick={vi.fn()}
+          onMigrateClick={vi.fn()}
+          onDeleteClick={vi.fn()}
           onSelectResult={vi.fn()} 
           onClearFilter={vi.fn()} 
         />
@@ -172,6 +181,9 @@ describe("AppTable Reproduction", () => {
         <MemoryRouter>
                   <AppTable 
           onRegister={vi.fn()} 
+          onEditClick={vi.fn()}
+          onMigrateClick={vi.fn()}
+          onDeleteClick={vi.fn()}
           onSelectResult={vi.fn()} 
           onClearFilter={vi.fn()} 
         />
@@ -220,6 +232,9 @@ describe("AppTable Reproduction", () => {
         <MemoryRouter>
                   <AppTable 
           onRegister={vi.fn()} 
+          onEditClick={vi.fn()}
+          onMigrateClick={vi.fn()}
+          onDeleteClick={vi.fn()}
           onSelectResult={vi.fn()} 
           onClearFilter={vi.fn()} 
         />
