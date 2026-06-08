@@ -25,12 +25,16 @@ function TableSkeleton() {
 export function ServerTable({
   onRegister,
   onEditClick,
+  onMigrateClick,
+  onDeleteClick,
   filterId,
   onSelectResult,
   onClearFilter,
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
+  onMigrateClick: (id: string) => void;
+  onDeleteClick: (id: string, name: string) => void;
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
@@ -161,6 +165,8 @@ export function ServerTable({
                     onToggle={() => toggleRow(server.id!)}
                     onDepClick={(id) => goToDep(id)}
                     onEditClick={onEditClick}
+                    onMigrateClick={onMigrateClick}
+                    onDeleteClick={onDeleteClick}
                   />
                 ))
               )}
@@ -174,13 +180,15 @@ export function ServerTable({
 
 // ── ServerRowItem ─────────────────────────────────────────────────────────────
 function ServerRowItem({
-  server, expanded, onToggle, onDepClick, onEditClick,
+  server, expanded, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
 }: { 
   server: ServerRow; 
   expanded: boolean; 
   onToggle: () => void; 
   onDepClick: (id: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
+  onMigrateClick: (id: string) => void;
+  onDeleteClick: (id: string, name: string) => void;
 }) {
   return (
     <>
@@ -209,6 +217,7 @@ function ServerRowItem({
           <ActionButtons 
             onDepClick={() => onDepClick(server.id || "")} 
             onEditClick={() => onEditClick(server.id || "", "SERVER")}
+            onDeleteClick={() => onDeleteClick(server.id || "", server.hostname || "Server")}
           />
         </td>
       </tr>
@@ -242,8 +251,9 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-xs text-secondary/70">{(app as any).ownerTeam || app.ownerId}</td>
                         <td className="px-4 py-2 text-right">
                           <ActionButtons 
-                            onDepClick={() => onDepClick(app.id || "")} 
-                            onEditClick={() => onEditClick(app.id || "", "APP")}
+                            onDepClick={() => onDepClick((app as any).applicationId || (app as any).appId || app.id || "")} 
+                            onEditClick={() => onMigrateClick((app as any).applicationId || (app as any).appId || app.id || "")}
+                            onDeleteClick={() => onDeleteClick((app as any).applicationId || (app as any).appId || app.id || "", app.appName || "")}
                           />
                         </td>
                       </tr>

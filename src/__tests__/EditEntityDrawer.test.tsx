@@ -67,8 +67,12 @@ describe("EditEntityDrawer", () => {
     expect(apiClient.get).toHaveBeenCalledWith("/api/Servers/srv-123");
   });
 
-  it("renders and fetches application data when opened", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: mockAppData });
+  it("renders and fetches application data and available servers when opened", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url) => {
+      if (url.includes("/api/Applications")) return Promise.resolve({ data: mockAppData });
+      if (url === "/api/Servers") return Promise.resolve({ data: [mockServerData] });
+      return Promise.reject(new Error("Not found"));
+    });
 
     render(
       <EditEntityDrawer
@@ -81,10 +85,61 @@ describe("EditEntityDrawer", () => {
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("Test App")).toBeDefined();
-      expect(screen.getByDisplayValue("T-01")).toBeDisabled();
+      expect(screen.getByText("Network Mapping")).toBeDefined();
+      expect(screen.getByPlaceholderText("Select Target Infrastructure...")).toBeDefined();
     });
 
     expect(apiClient.get).toHaveBeenCalledWith("/api/Applications/app-456");
+    expect(apiClient.get).toHaveBeenCalledWith("/api/Servers");
+  });
+
+  it("submits the application form with migration fields", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url) => {
+      if (url.includes("/api/Applications")) return Promise.resolve({ data: mockAppData });
+      if (url === "/api/Servers") return Promise.resolve({ data: [mockServerData] });
+      return Promise.reject(new Error("Not found"));
+    });
+    vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+    const onUpdateSuccess = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <EditEntityDrawer
+        entityId="app-456"
+        entityType="APP"
+        onClose={onClose}
+        onUpdateSuccess={onUpdateSuccess}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Test App")).toBeDefined();
+    });
+
+    fireEvent.change(screen.getByLabelText(/Application Name/i), { target: { value: "Updated App" } });
+    
+    // Open combobox and select target server
+    const combobox = screen.getByPlaceholderText("Select Target Infrastructure...");
+    fireEvent.click(combobox);
+    
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /test-server/i })).toBeDefined();
+    });
+    
+    fireEvent.click(screen.getByRole("option", { name: /test-server/i }));
+    
+    fireEvent.change(screen.getByLabelText(/Port Number/i), { target: { value: "9090" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
+
+    await waitFor(() => {
+      expect(apiClient.put).toHaveBeenCalledWith("/api/Applications/app-456", expect.objectContaining({
+        appName: "Updated App",
+        targetServerId: "srv-123",
+        newPortNumber: 9090,
+      }));
+      expect(onUpdateSuccess).toHaveBeenCalled();
+    });
   });
 
   it("submits the form successfully", async () => {

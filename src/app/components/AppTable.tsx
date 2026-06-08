@@ -27,12 +27,16 @@ function TableSkeleton() {
 export function AppTable({
   onRegister,
   onEditClick,
+  onMigrateClick,
+  onDeleteClick,
   filterId,
   onSelectResult,
   onClearFilter,
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
+  onMigrateClick: (id: string) => void;
+  onDeleteClick: (id: string, name: string) => void;
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
@@ -161,9 +165,15 @@ export function AppTable({
                 </tr>
               ) : (
                 filteredApps.map((app: AppRow) => (
-                  <AppRowItem key={app.id} app={app} expanded={!!expandedRows[app.id!]}
-                    onToggle={() => toggleRow(app.id!)} onDepClick={(id) => goToDep(id)} 
+                  <AppRowItem 
+                    key={app.id} 
+                    app={app} 
+                    expanded={!!expandedRows[app.id!]}
+                    onToggle={() => toggleRow(app.id!)} 
+                    onDepClick={(id) => goToDep(id)} 
                     onEditClick={onEditClick}
+                    onMigrateClick={onMigrateClick}
+                    onDeleteClick={onDeleteClick}
                   />
                 ))
               )}
@@ -177,13 +187,15 @@ export function AppTable({
 
 // ── AppRowItem ────────────────────────────────────────────────────────────────
 function AppRowItem({
-  app, expanded, onToggle, onDepClick, onEditClick,
+  app, expanded, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
 }: { 
   app: AppRow; 
   expanded: boolean; 
   onToggle: () => void; 
   onDepClick: (id: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
+  onMigrateClick: (id: string) => void;
+  onDeleteClick: (id: string, name: string) => void;
 }) {
   const riskStyle =
     app.risk === "Critical" || app.risk === "High" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" :
@@ -209,6 +221,7 @@ function AppRowItem({
           <ActionButtons 
             onDepClick={() => onDepClick(app.id!)} 
             onEditClick={() => onEditClick(app.id!, "APP")}
+            onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}
           />
         </td>
       </tr>
@@ -245,7 +258,8 @@ function AppRowItem({
                         <td className="px-4 py-2 text-right">
                           <ActionButtons 
                             onDepClick={() => onDepClick(srv.id || "")} 
-                            onEditClick={() => onEditClick(srv.id || "", "SERVER")}
+                            onEditClick={() => onMigrateClick(app.id!)}
+                            onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}
                           />
                         </td>
                       </tr>

@@ -6,6 +6,8 @@ import { AppTable } from "../components/AppTable";
 import { RegisterModal } from "../components/RegisterModal";
 import { BulkImportModal } from "../components/BulkImportModal";
 import { EditEntityDrawer } from "../components/EditEntityDrawer";
+import { MigrationDrawer } from "../components/MigrationDrawer";
+import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useHeader } from "../hooks/useHeader";
 
 export function Inventory() {
@@ -19,6 +21,15 @@ export function Inventory() {
   const [editEntity, setEditEntity] = useState<{ id: string | null; type: "SERVER" | "APP" | null }>({
     id: null,
     type: null,
+  });
+
+  // Migration State
+  const [migrateAppId, setMigrateAppId] = useState<string | null>(null);
+
+  // Delete State
+  const [deleteApp, setDeleteApp] = useState<{ id: string | null; name: string | null }>({
+    id: null,
+    name: null,
   });
 
   const { setHeader } = useHeader();
@@ -49,6 +60,14 @@ export function Inventory() {
 
   const handleEditClick = (id: string, type: "SERVER" | "APP") => {
     setEditEntity({ id, type });
+  };
+
+  const handleMigrateClick = (id: string) => {
+    setMigrateAppId(id);
+  };
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setDeleteApp({ id, name });
   };
 
   return (
@@ -138,6 +157,8 @@ export function Inventory() {
           ? <ServerTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
               onEditClick={handleEditClick}
+              onMigrateClick={handleMigrateClick}
+              onDeleteClick={handleDeleteClick}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
@@ -145,6 +166,8 @@ export function Inventory() {
           : <AppTable 
               onRegister={() => setIsRegisterModalOpen(true)} 
               onEditClick={handleEditClick}
+              onMigrateClick={handleMigrateClick}
+              onDeleteClick={handleDeleteClick}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
@@ -171,6 +194,19 @@ export function Inventory() {
         entityType={editEntity.type}
         onClose={() => setEditEntity({ id: null, type: null })}
         onUpdateSuccess={refreshData}
+      />
+
+      <MigrationDrawer
+        applicationId={migrateAppId}
+        onClose={() => setMigrateAppId(null)}
+        onSuccess={refreshData}
+      />
+
+      <DeleteConfirmationModal
+        applicationId={deleteApp.id}
+        appName={deleteApp.name}
+        onClose={() => setDeleteApp({ id: null, name: null })}
+        onSuccess={refreshData}
       />
     </div>
   );
