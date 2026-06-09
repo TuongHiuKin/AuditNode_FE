@@ -53,42 +53,6 @@ describe("Inventory Page Integration", () => {
     { id: "srv-1", hostname: "server-01", ipAddress: "192.168.1.1", environment: "Development", applications: [] }
   ];
 
-  it("opens migration drawer when clicking edit on a deployed app in AppTable", async () => {
-    vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url === "/api/Applications") return Promise.resolve({ data: mockApps });
-      if (url === "/api/Servers") return Promise.resolve({ data: mockServers });
-      return Promise.resolve({ data: [] });
-    });
-
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <Inventory />
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-
-    // Switch to Applications tab
-    fireEvent.click(screen.getByText("Applications"));
-
-    await waitFor(() => screen.getByText("Test Application"));
-
-    // Expand the application row to see servers
-    fireEvent.click(screen.getByText("APP-001"));
-
-    await waitFor(() => screen.getByText("server-01"));
-
-    // Click edit on the deployed server row (which should trigger migration in our new implementation)
-    const editBtns = screen.getAllByTitle("Edit");
-    // The second one should be for the deployed server row
-    fireEvent.click(editBtns[1]);
-
-    await waitFor(() => {
-      expect(screen.getByText("Migrate Application")).toBeDefined();
-    });
-  });
-
   it("opens delete confirmation modal when clicking delete on an app", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
       if (url === "/api/Applications") return Promise.resolve({ data: mockApps });
@@ -112,7 +76,7 @@ describe("Inventory Page Integration", () => {
     fireEvent.click(deleteBtns[0]);
 
     await waitFor(() => {
-      expect(screen.getByText("Hard Delete")).toBeDefined();
+      expect(screen.getByText("Hard Delete Application")).toBeDefined();
     });
   });
 });

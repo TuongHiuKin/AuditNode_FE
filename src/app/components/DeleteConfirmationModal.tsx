@@ -1,28 +1,37 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, Trash2, X, Loader2, Info, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Trash2, X, Loader2, Info, ShieldAlert, Box } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../shared/api/client";
 
 interface DeleteConfirmationModalProps {
-  applicationId: string | null;
-  appName: string | null;
+  entityId: string | null;
+  entityName: string | null;
+  entityType: "SERVER" | "APP" | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
+interface DeployedApp {
+  id: string;
+  appName: string;
+  portNumber: number;
+}
+
 export function DeleteConfirmationModal({
-  applicationId,
-  appName,
+  entityId,
+  entityName,
+  entityType,
   onClose,
   onSuccess,
 }: DeleteConfirmationModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [loadingCount, setLoadingCount] = useState(false);
+  const [loadingImpact, setLoadingImpact] = useState(false);
   const [dependencyCount, setDependencyCount] = useState<number | null>(null);
+  const [deployedApps, setDeployedApps] = useState<DeployedApp[]>([]);
   const [purging, setPurging] = useState(false);
 
-  const isOpen = !!applicationId;
+  const isOpen = !!entityId;
 
   useEffect(() => {
     setMounted(true);
@@ -30,16 +39,23 @@ export function DeleteConfirmationModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchDependencyCount();
+      if (entityType === "APP") {
+        fetchDependencyCount();
+      } else if (entityType === "SERVER") {
+        fetchDeployedApps();
+      }
+    } else {
+      setDependencyCount(null);
+      setDeployedApps([]);
     }
-  }, [applicationId, isOpen]);
+  }, [entityId, isOpen, entityType]);
 
   const fetchDependencyCount = async () => {
-    if (!applicationId) return;
-    setLoadingCount(true);
+    if (!entityId) return;
+    setLoadingImpact(true);
     try {
-      const response = await apiClient.get<any>(`/api/infrastructure/apps/${applicationId}/dependencies-count`);
-      const rawData = response.data ?? response; // axios responses often unwrap inside interceptors, handle both
+      const response = await apiClient.get<any>(`/api/infrastructure/apps/${entityId}/dependencies-count`);
+      const rawData = response.data ?? response;
       
       let parsedCount = 0;
       if (typeof rawData === 'number') {
@@ -55,21 +71,41 @@ export function DeleteConfirmationModal({
       console.error("Failed to fetch dependency count", error);
       setDependencyCount(0);
     } finally {
-      setLoadingCount(false);
+      setLoadingImpact(false);
+    }
+  };
+
+  const fetchDeployedApps = async () => {
+    if (!entityId) return;
+    setLoadingImpact(true);
+    try {
+      const response = await apiClient.get<DeployedApp[]>(`/api/infrastructure/servers/${entityId}/deployed-apps`);
+      const rawResponse = response as any;
+      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      setDeployedApps(data);
+    } catch (error) {
+      console.error("Failed to fetch deployed apps", error);
+      setDeployedApps([]);
+    } finally {
+      setLoadingImpact(false);
     }
   };
 
   const handlePurge = async () => {
-    if (!applicationId) return;
+    if (!entityId || !entityType) return;
     
     setPurging(true);
     try {
-      await apiClient.delete(`/api/infrastructure/apps/${applicationId}/purge`);
-      toast.success("Application purged successfully");
+      const endpoint = entityType === "APP" 
+        ? `/api/infrastructure/apps/${entityId}/purge`
+        : `/api/infrastructure/servers/${entityId}/purge`;
+        
+      await apiClient.delete(endpoint);
+      toast.success(`${entityType === "APP" ? "Application" : "Server"} purged successfully`);
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to purge application");
+      toast.error(error.response?.data?.message || `Failed to purge ${entityType.toLowerCase()}`);
     } finally {
       setPurging(false);
     }
@@ -77,7 +113,8 @@ export function DeleteConfirmationModal({
 
   if (!mounted || !isOpen) return null;
 
-  const hasDeps = dependencyCount != null && dependencyCount > 0;
+  const hasImpact = (entityType === "APP" && dependencyCount != null && dependencyCount > 0) || 
+                   (entityType === "SERVER" && deployedApps.length > 0);
 
   return createPortal(
     <div
@@ -139,10 +176,10 @@ export function DeleteConfirmationModal({
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#F2F2F5", lineHeight: 1.2 }}>
-                Hard Delete
+                Hard Delete {entityType === "SERVER" ? "Server" : "Application"}
               </h2>
               <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#7A8699" }}>
-                {appName || "Application"}
+                {entityName || "Resource"}
               </p>
             </div>
           </div>
@@ -175,18 +212,19 @@ export function DeleteConfirmationModal({
 
         {/* Content */}
         <div style={{ padding: "24px" }}>
-          {loadingCount ? (
+          {loadingImpact ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 0", gap: "12px", color: "#7A8699" }}>
               <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: "#FF4D7E" }} />
-              <p style={{ margin: 0, fontSize: "13px" }}>Evaluating network dependencies...</p>
+              <p style={{ margin: 0, fontSize: "13px" }}>Analyzing infrastructure impact...</p>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Warning / Info banner */}
-              {hasDeps ? (
+              {/* Impact Banner */}
+              {hasImpact ? (
                 <div
                   style={{
                     display: "flex",
+                    flexDirection: "column",
                     gap: "14px",
                     padding: "16px",
                     backgroundColor: "rgba(255,77,126,0.08)",
@@ -194,17 +232,47 @@ export function DeleteConfirmationModal({
                     borderRadius: "12px",
                   }}
                 >
-                  <ShieldAlert size={22} style={{ color: "#FF4D7E", flexShrink: 0, marginTop: "1px" }} />
-                  <div>
-                    <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 700, color: "#FF4D7E", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                      Critical Warning
-                    </p>
-                    <p style={{ margin: 0, fontSize: "13px", color: "#c8d0de", lineHeight: 1.6 }}>
-                      This application has{" "}
-                      <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{dependencyCount} active network connection{dependencyCount !== 1 ? "s" : ""}</span>.
-                      Purging will permanently sever all linked dependencies.
-                    </p>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <ShieldAlert size={22} style={{ color: "#FF4D7E", flexShrink: 0, marginTop: "1px" }} />
+                    <div>
+                      <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 700, color: "#FF4D7E", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                        Critical Impact Warning
+                      </p>
+                      <p style={{ margin: 0, fontSize: "13px", color: "#c8d0de", lineHeight: 1.6 }}>
+                        {entityType === "APP" ? (
+                          <>
+                            This application has <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{dependencyCount} active network connection{dependencyCount !== 1 ? "s" : ""}</span>.
+                            Purging will permanently sever all linked dependencies.
+                          </>
+                        ) : (
+                          <>
+                            Warning: This server is actively hosting <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{deployedApps.length} application{deployedApps.length !== 1 ? "s" : ""}</span>. 
+                            Deleting it will permanently purge the server and cascade-delete the following network deployments:
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
+
+                  {entityType === "SERVER" && deployedApps.length > 0 && (
+                    <div style={{ 
+                      marginTop: "4px",
+                      padding: "12px",
+                      backgroundColor: "rgba(0,0,0,0.2)",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,77,126,0.1)"
+                    }}>
+                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
+                        {deployedApps.map(app => (
+                          <li key={app.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#F2F2F5" }}>
+                            <Box size={14} style={{ color: "#FF4D7E" }} />
+                            <span style={{ fontWeight: 600 }}>{app.appName}</span>
+                            <span style={{ color: "#7A8699", fontSize: "11px" }}>(Port {app.portNumber})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
@@ -220,8 +288,8 @@ export function DeleteConfirmationModal({
                   <Info size={22} style={{ color: "#60a5fa", flexShrink: 0, marginTop: "1px" }} />
                   <p style={{ margin: 0, fontSize: "13px", color: "#c8d0de", lineHeight: 1.6 }}>
                     Are you sure you want to permanently delete{" "}
-                    <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{appName || "this application"}</span>?
-                    This resource has no active dependencies.
+                    <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{entityName || "this resource"}</span>?
+                    {entityType === "SERVER" ? " This server is currently empty." : " This resource has no active dependencies."}
                   </p>
                 </div>
               )}
@@ -263,7 +331,7 @@ export function DeleteConfirmationModal({
             Cancel
           </button>
           <button
-            disabled={purging || loadingCount}
+            disabled={purging || loadingImpact}
             onClick={handlePurge}
             style={{
               flex: 1,

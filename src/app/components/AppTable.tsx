@@ -241,7 +241,6 @@ function AppRowItem({
                       <th className="px-4 py-2 font-bold">IP Address</th>
                       <th className="px-4 py-2 font-bold">Port</th>
                       <th className="px-4 py-2 font-bold">Protocol</th>
-                      <th className="px-4 py-2 text-right font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
@@ -254,13 +253,6 @@ function AppRowItem({
                           <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border text-slate-400 bg-slate-500/10 border-slate-500/20">
                             {srv.protocol?.toUpperCase() ?? "UNKNOWN"}
                           </span>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <ActionButtons 
-                            onDepClick={() => onDepClick(srv.id || "")} 
-                            onEditClick={() => onMigrateClick(app.id!)}
-                            onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}
-                          />
                         </td>
                       </tr>
                     ))}

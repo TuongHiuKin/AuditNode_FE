@@ -238,7 +238,6 @@ function ServerRowItem({
                       <th className="px-4 py-2 font-bold">Port</th>
                       <th className="px-4 py-2 font-bold">Protocol</th>
                       <th className="px-4 py-2 font-bold">Owner</th>
-                      <th className="px-4 py-2 text-right font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/50">
@@ -249,13 +248,6 @@ function ServerRowItem({
                         <td className="px-4 py-2 font-mono text-[11px] font-bold text-tertiary tracking-tighter">{app.portNumber}</td>
                         <td className="px-4 py-2 text-[10px] font-mono font-bold text-secondary/70 uppercase">{app.protocol}</td>
                         <td className="px-4 py-2 text-xs text-secondary/70">{(app as any).ownerTeam || app.ownerId}</td>
-                        <td className="px-4 py-2 text-right">
-                          <ActionButtons 
-                            onDepClick={() => onDepClick((app as any).applicationId || (app as any).appId || app.id || "")} 
-                            onEditClick={() => onMigrateClick((app as any).applicationId || (app as any).appId || app.id || "")}
-                            onDeleteClick={() => onDeleteClick((app as any).applicationId || (app as any).appId || app.id || "", app.appName || "")}
-                          />
-                        </td>
                       </tr>
                     ))}
                   </tbody>

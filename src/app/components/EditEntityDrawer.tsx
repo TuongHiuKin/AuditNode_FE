@@ -9,7 +9,8 @@ interface EditEntityDrawerProps {
   entityId: string | null;
   entityType: "SERVER" | "APP" | null;
   onClose: () => void;
-  onUpdateSuccess: () => void;
+  onApplicationsUpdated: () => void;
+  onServersUpdated: () => void;
 }
 
 const PREDEFINED_ENV = ["Production", "Staging", "Development"];
@@ -20,7 +21,8 @@ export function EditEntityDrawer({
   entityId,
   entityType,
   onClose,
-  onUpdateSuccess,
+  onApplicationsUpdated,
+  onServersUpdated,
 }: EditEntityDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export function EditEntityDrawer({
   const watchedEnv = watch("environment");
   const watchedStatus = watch("status");
   const watchedRisk = watch("risk");
-  const watchedServerId = watch("targetServerId");
+  const watchedServerId = watch("serverId");
 
   // Click outside for custom dropdown
   useEffect(() => {
@@ -67,7 +69,10 @@ export function EditEntityDrawer({
   );
 
   const handleSelectServer = (srv: Schemas["ServerResponseDto"]) => {
-    setValue("targetServerId", srv.id, { shouldDirty: true });
+    setValue("serverId", srv.id, { 
+      shouldDirty: true, 
+      shouldValidate: true 
+    });
     setServerSearchTerm(`${srv.hostname} (${srv.ipAddress})`);
     setIsServerDropdownOpen(false);
   };
@@ -124,8 +129,8 @@ export function EditEntityDrawer({
         setValue("ownerTeam", data.ownerTeam || "");
         setValue("risk", data.risk);
         // Pre-fill migration fields if available
-        if (data.serverId) setValue("targetServerId", data.serverId);
-        if (data.portNumber) setValue("newPortNumber", data.portNumber);
+        if (data.serverId) setValue("serverId", data.serverId);
+        if (data.portNumber) setValue("portNumber", data.portNumber);
       }
     } catch (error: any) {
       const msg = error.response?.data?.message || "Failed to fetch entity details";
@@ -137,29 +142,39 @@ export function EditEntityDrawer({
   };
 
   const onSubmit = async (formData: any) => {
+    if (entityType === "APP" && !formData.serverId) {
+      toast.error("Please select a Target Server");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const endpoint = entityType === "SERVER" 
         ? `/api/Servers/${entityId}` 
         : `/api/Applications/${entityId}`;
       
-      // Filter out redundant fields for APP update to match architectural mandate
+      // Aligned with Backend DTO properties
       const payload = entityType === "APP" 
         ? {
             appName: formData.appName,
             ownerTeam: formData.ownerTeam,
             risk: formData.risk,
-            // Include migration fields
-            targetServerId: formData.targetServerId,
-            newPortNumber: Number(formData.newPortNumber),
+            // Aligned with Backend DTO properties
+            serverId: formData.serverId,
+            portNumber: Number(formData.portNumber),
           }
         : formData;
 
       await apiClient.put(endpoint, payload);
       
       toast.success(`${entityType === "SERVER" ? "Server" : "Application"} updated successfully`);
-      onUpdateSuccess();
-      onClose();
+      
+      // Full state invalidation across domain boundaries
+      onApplicationsUpdated();
+      onServersUpdated();
+      
+      // Keep drawer open for continuous updates/corrections per UX mandate
+      // onClose();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Update failed");
     } finally {
@@ -291,10 +306,10 @@ export function EditEntityDrawer({
                     
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="targetServerIdSearch" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Target Server</label>
+                        <label htmlFor="serverIdSearch" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Target Server</label>
                         <div className="relative" ref={dropdownRef}>
                           <input
-                            id="targetServerIdSearch"
+                            id="serverIdSearch"
                             type="text"
                             role="combobox"
                             aria-expanded={isServerDropdownOpen}
@@ -339,11 +354,11 @@ export function EditEntityDrawer({
                       </div>
 
                       <div>
-                        <label htmlFor="newPortNumber" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Port Number</label>
+                        <label htmlFor="portNumber" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Port Number</label>
                         <input 
-                          id="newPortNumber"
+                          id="portNumber"
                           type="number"
-                          {...register("newPortNumber")}
+                          {...register("portNumber")}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" 
                         />
                       </div>

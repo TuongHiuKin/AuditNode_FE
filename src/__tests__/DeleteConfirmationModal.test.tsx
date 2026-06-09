@@ -24,13 +24,14 @@ describe("DeleteConfirmationModal", () => {
     vi.clearAllMocks();
   });
 
-  it("renders safe message when no dependencies exist", async () => {
+  it("renders safe message when no dependencies exist for APP", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { count: 0 } });
 
     render(
       <DeleteConfirmationModal 
-        applicationId="app-1" 
-        appName="Test App" 
+        entityId="app-1" 
+        entityName="Test App" 
+        entityType="APP"
         onClose={vi.fn()} 
         onSuccess={vi.fn()} 
       />
@@ -38,32 +39,57 @@ describe("DeleteConfirmationModal", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Are you sure you want to permanently delete/)).toBeDefined();
-      // Use getAllByText because it appears in header and message
       expect(screen.getAllByText("Test App").length).toBeGreaterThan(0);
     });
   });
 
-  it("renders critical warning when dependencies exist", async () => {
+  it("renders critical warning when dependencies exist for APP", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { count: 5 } });
 
     render(
       <DeleteConfirmationModal 
-        applicationId="app-1" 
-        appName="Test App" 
+        entityId="app-1" 
+        entityName="Test App" 
+        entityType="APP"
         onClose={vi.fn()} 
         onSuccess={vi.fn()} 
       />
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Critical Warning")).toBeDefined();
+      expect(screen.getByText("Critical Impact Warning")).toBeDefined();
       expect(screen.getByText(/active network connection/)).toBeDefined();
-      // Match 5 within the span that contains the full text
       expect(screen.getByText(/5/)).toBeDefined();
     });
   });
 
-  it("calls delete API and triggers success", async () => {
+  it("renders server impact warning when apps are deployed", async () => {
+    const mockDeployedApps = [
+      { id: "app-1", appName: "App 1", portNumber: 80 },
+      { id: "app-2", appName: "App 2", portNumber: 443 },
+    ];
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockDeployedApps });
+
+    render(
+      <DeleteConfirmationModal 
+        entityId="srv-1" 
+        entityName="Prod Server" 
+        entityType="SERVER"
+        onClose={vi.fn()} 
+        onSuccess={vi.fn()} 
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Critical Impact Warning")).toBeDefined();
+      expect(screen.getByText(/actively hosting/)).toBeDefined();
+      expect(screen.getByText(/2\s+applications/i)).toBeDefined();
+      expect(screen.getByText("App 1")).toBeDefined();
+      expect(screen.getByText("App 2")).toBeDefined();
+    });
+  });
+
+  it("calls purge API for APP and triggers success", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { count: 0 } });
     vi.mocked(apiClient.delete).mockResolvedValueOnce({ data: { success: true } });
 
@@ -72,8 +98,9 @@ describe("DeleteConfirmationModal", () => {
 
     render(
       <DeleteConfirmationModal 
-        applicationId="app-1" 
-        appName="Test App" 
+        entityId="app-1" 
+        entityName="Test App" 
+        entityType="APP"
         onClose={onClose} 
         onSuccess={onSuccess} 
       />
@@ -86,6 +113,35 @@ describe("DeleteConfirmationModal", () => {
     await waitFor(() => {
       expect(apiClient.delete).toHaveBeenCalledWith("/api/infrastructure/apps/app-1/purge");
       expect(toast.success).toHaveBeenCalledWith("Application purged successfully");
+      expect(onSuccess).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("calls purge API for SERVER and triggers success", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
+    vi.mocked(apiClient.delete).mockResolvedValueOnce({ data: { success: true } });
+
+    const onSuccess = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <DeleteConfirmationModal 
+        entityId="srv-1" 
+        entityName="Prod Server" 
+        entityType="SERVER"
+        onClose={onClose} 
+        onSuccess={onSuccess} 
+      />
+    );
+
+    await waitFor(() => screen.getByText("Confirm Delete"));
+
+    fireEvent.click(screen.getByText("Confirm Delete"));
+
+    await waitFor(() => {
+      expect(apiClient.delete).toHaveBeenCalledWith("/api/infrastructure/servers/srv-1/purge");
+      expect(toast.success).toHaveBeenCalledWith("Server purged successfully");
       expect(onSuccess).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
     });

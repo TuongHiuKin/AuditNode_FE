@@ -44,3 +44,20 @@ The Infrastructure Inventory grid needed functional updates to support Applicati
 Significantly improved the safety and usability of resource management. Deletions are now aggressively protected against accidental network severance, and server migrations scale flawlessly in the UI, even with massive infrastructure datasets.
 
 
+
+## 2026-06-09: Inventory UI/UX Refinements
+
+### Context
+The Infrastructure Inventory interface required polish to enforce domain boundaries (restricting nested row edits), fix data payload mismatches during application updates, and ensure that changes correctly invalidated state across all grid tabs simultaneously.
+
+### Solution
+1. **Domain Boundaries Enforced**: Removed edit and delete action buttons from nested child rows (Servers under Apps, Apps under Servers). All state mutations now strictly occur on primary domain rows.
+2. **Payload Alignment & Tracing**: Refactored EditEntityDrawer.tsx to align frontend JSON payloads with Backend DTO expectations, replacing incorrect properties like 	argetServerId with serverId and 
+ewPortNumber with portNumber. Added robust payload tracing in onSubmit for debugging.
+3. **Searchable Combobox Binding Fix**: Fixed the shadcn/ui Combobox implementation inside EditEntityDrawer.tsx to properly register its selected value with eact-hook-form using shouldValidate: true and shouldDirty: true, preventing empty submissions.
+4. **Dual State Invalidation**: Upgraded EditEntityDrawer and MigrationDrawer to accept dual success callbacks (onApplicationsUpdated and onServersUpdated). These now fire simultaneously upon successful API responses to enforce global cache invalidation across Inventory.tsx.
+5. **Continuous Editing UX**: Removed automatic onClose() calls from drawer success handlers, allowing users to rapidly correct typos or execute multiple subsequent edits without reopening the panel.
+6. **Safe Deletion UI Refinement**: Updated DeleteConfirmationModal to handle dynamic API fetching and critical warning renders for both Server cascade deletions and Application dependency removals.
+
+### Impact
+Resolved critical data corruption bugs caused by misaligned JSON payloads, eliminated stale UI data via robust state invalidation, and significantly improved the user's workflow by supporting continuous edits and clearer destructive-action warnings.

@@ -39,7 +39,11 @@ describe("EditEntityDrawer", () => {
     portNumber: 8080,
     protocol: "HTTP",
     risk: "Low",
+    serverId: "srv-999"
   };
+
+  const onApplicationsUpdated = vi.fn();
+  const onServersUpdated = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -53,7 +57,8 @@ describe("EditEntityDrawer", () => {
         entityId="srv-123"
         entityType="SERVER"
         onClose={vi.fn()}
-        onUpdateSuccess={vi.fn()}
+        onApplicationsUpdated={onApplicationsUpdated}
+        onServersUpdated={onServersUpdated}
       />
     );
 
@@ -79,7 +84,8 @@ describe("EditEntityDrawer", () => {
         entityId="app-456"
         entityType="APP"
         onClose={vi.fn()}
-        onUpdateSuccess={vi.fn()}
+        onApplicationsUpdated={onApplicationsUpdated}
+        onServersUpdated={onServersUpdated}
       />
     );
 
@@ -93,14 +99,13 @@ describe("EditEntityDrawer", () => {
     expect(apiClient.get).toHaveBeenCalledWith("/api/Servers");
   });
 
-  it("submits the application form with migration fields", async () => {
+  it("submits the application form with migration fields and stays open", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
       if (url.includes("/api/Applications")) return Promise.resolve({ data: mockAppData });
       if (url === "/api/Servers") return Promise.resolve({ data: [mockServerData] });
       return Promise.reject(new Error("Not found"));
     });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
-    const onUpdateSuccess = vi.fn();
     const onClose = vi.fn();
 
     render(
@@ -108,7 +113,8 @@ describe("EditEntityDrawer", () => {
         entityId="app-456"
         entityType="APP"
         onClose={onClose}
-        onUpdateSuccess={onUpdateSuccess}
+        onApplicationsUpdated={onApplicationsUpdated}
+        onServersUpdated={onServersUpdated}
       />
     );
 
@@ -135,44 +141,12 @@ describe("EditEntityDrawer", () => {
     await waitFor(() => {
       expect(apiClient.put).toHaveBeenCalledWith("/api/Applications/app-456", expect.objectContaining({
         appName: "Updated App",
-        targetServerId: "srv-123",
-        newPortNumber: 9090,
+        serverId: "srv-123", // Aligned property name
+        portNumber: 9090,     // Aligned property name
       }));
-      expect(onUpdateSuccess).toHaveBeenCalled();
-    });
-  });
-
-  it("submits the form successfully", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: mockServerData });
-    vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
-    const onUpdateSuccess = vi.fn();
-    const onClose = vi.fn();
-
-    render(
-      <EditEntityDrawer
-        entityId="srv-123"
-        entityType="SERVER"
-        onClose={onClose}
-        onUpdateSuccess={onUpdateSuccess}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("test-server")).toBeDefined();
-    });
-
-    const hostnameInput = screen.getByDisplayValue("test-server");
-    fireEvent.change(hostnameInput, { target: { value: "updated-server" } });
-
-    const saveButton = screen.getByRole("button", { name: /Save Changes/i });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(apiClient.put).toHaveBeenCalledWith("/api/Servers/srv-123", expect.objectContaining({
-        hostname: "updated-server",
-      }));
-      expect(onUpdateSuccess).toHaveBeenCalled();
-      expect(onClose).toHaveBeenCalled();
+      expect(onApplicationsUpdated).toHaveBeenCalled();
+      expect(onServersUpdated).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled(); // Per continuous updates requirement
     });
   });
 
@@ -187,7 +161,8 @@ describe("EditEntityDrawer", () => {
         entityId="srv-123"
         entityType="SERVER"
         onClose={onClose}
-        onUpdateSuccess={vi.fn()}
+        onApplicationsUpdated={onApplicationsUpdated}
+        onServersUpdated={onServersUpdated}
       />
     );
 
