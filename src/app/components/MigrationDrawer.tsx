@@ -8,7 +8,8 @@ import apiClient, { Schemas } from "../../shared/api/client";
 interface MigrationDrawerProps {
   applicationId: string | null;
   onClose: () => void;
-  onSuccess: () => void;
+  onApplicationsUpdated: () => void;
+  onServersUpdated: () => void;
 }
 
 interface MigrationForm {
@@ -19,7 +20,8 @@ interface MigrationForm {
 export function MigrationDrawer({
   applicationId,
   onClose,
-  onSuccess,
+  onApplicationsUpdated,
+  onServersUpdated,
 }: MigrationDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [servers, setServers] = useState<Schemas["ServerResponseDto"][]>([]);
@@ -63,8 +65,6 @@ export function MigrationDrawer({
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
       
-      // If the app is already on a server, we might want to pre-select it or just wait for user choice
-      // For migration, we usually assume it's moving, but pre-filling the current port is good
       if (data.portNumber) setValue("portNumber", data.portNumber);
       if (data.serverId) setValue("serverId", data.serverId);
     } catch (error) {
@@ -73,6 +73,7 @@ export function MigrationDrawer({
   };
 
   const onSubmit = async (formData: MigrationForm) => {
+    if (submitting) return;
     setSubmitting(true);
     try {
       const payload = {
@@ -81,13 +82,27 @@ export function MigrationDrawer({
         portNumber: Number(formData.portNumber),
       };
 
+      // Payload Tracing Audit
+      console.log("=== DEBUG MIGRATION PAYLOAD ===");
+      console.log("Payload Object:", payload);
+      console.log("Application ID:", payload.applicationId);
+      console.log("Server ID Value:", payload.serverId);
+      console.log("Port Number Value:", payload.portNumber);
+      console.log("Raw Form Data:", formData);
+      console.log("===============================");
+
       await apiClient.put("/api/infrastructure/apps/migrate", payload);
       
-      toast.success("Application migrated successfully");
-      onSuccess();
-      onClose();
+      toast.success("Deployment updated successfully");
+      
+      // Full state invalidation across domain boundaries
+      onApplicationsUpdated();
+      onServersUpdated();
+      
+      // Keep drawer open for continuous updates/corrections per UX mandate
+      // onClose(); 
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Migration failed");
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       setSubmitting(false);
     }
@@ -111,9 +126,9 @@ export function MigrationDrawer({
               <MoveHorizontal size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Migrate Application</h2>
+              <h2 className="text-xl font-bold text-white">Edit Deployment</h2>
               <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-mono">
-                Update Target Server & Port
+                MODIFY SERVER BINDING AND PORT SETTINGS
               </p>
             </div>
           </div>
@@ -158,7 +173,7 @@ export function MigrationDrawer({
 
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
               <p className="text-xs text-blue-400 leading-relaxed">
-                <span className="font-bold">Note:</span> Migrating this application will update its network residency. All existing dependencies in the React Flow topology will be re-calculated based on the new server's connectivity.
+                <span className="font-bold">Note:</span> Updating the server binding or port will automatically reposition this application on the Topology Map and recalculate its connected network flows.
               </p>
             </div>
           </form>
@@ -173,7 +188,7 @@ export function MigrationDrawer({
               disabled={submitting || loadingServers} 
               className="flex-1 bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(255,77,126,0.2)] disabled:opacity-50"
             >
-              {submitting ? <><Loader2 className="animate-spin" size={18} />Migrating...</> : <><Save size={18} />Apply Migration</>}
+              {submitting ? <><Loader2 className="animate-spin" size={18} />Updating...</> : <><Save size={18} />Update Configuration</>}
             </button>
           </div>
         </div>

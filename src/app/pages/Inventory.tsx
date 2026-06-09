@@ -27,9 +27,10 @@ export function Inventory() {
   const [migrateAppId, setMigrateAppId] = useState<string | null>(null);
 
   // Delete State
-  const [deleteApp, setDeleteApp] = useState<{ id: string | null; name: string | null }>({
+  const [deleteEntity, setDeleteEntity] = useState<{ id: string | null; name: string | null; type: "SERVER" | "APP" | null }>({
     id: null,
     name: null,
+    type: null,
   });
 
   const { setHeader } = useHeader();
@@ -66,8 +67,8 @@ export function Inventory() {
     setMigrateAppId(id);
   };
 
-  const handleDeleteClick = (id: string, name: string) => {
-    setDeleteApp({ id, name });
+  const handleDeleteClick = (id: string, name: string, type: "SERVER" | "APP") => {
+    setDeleteEntity({ id, name, type });
   };
 
   return (
@@ -158,7 +159,7 @@ export function Inventory() {
               onRegister={() => setIsRegisterModalOpen(true)} 
               onEditClick={handleEditClick}
               onMigrateClick={handleMigrateClick}
-              onDeleteClick={handleDeleteClick}
+              onDeleteClick={(id, name) => handleDeleteClick(id, name, "SERVER")}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
@@ -167,7 +168,7 @@ export function Inventory() {
               onRegister={() => setIsRegisterModalOpen(true)} 
               onEditClick={handleEditClick}
               onMigrateClick={handleMigrateClick}
-              onDeleteClick={handleDeleteClick}
+              onDeleteClick={(id, name) => handleDeleteClick(id, name, "APP")}
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
@@ -193,19 +194,22 @@ export function Inventory() {
         entityId={editEntity.id}
         entityType={editEntity.type}
         onClose={() => setEditEntity({ id: null, type: null })}
-        onUpdateSuccess={refreshData}
+        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: ["applications"] })}
+        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: ["servers"] })}
       />
 
       <MigrationDrawer
         applicationId={migrateAppId}
         onClose={() => setMigrateAppId(null)}
-        onSuccess={refreshData}
+        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: ["applications"] })}
+        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: ["servers"] })}
       />
 
       <DeleteConfirmationModal
-        applicationId={deleteApp.id}
-        appName={deleteApp.name}
-        onClose={() => setDeleteApp({ id: null, name: null })}
+        entityId={deleteEntity.id}
+        entityName={deleteEntity.name}
+        entityType={deleteEntity.type}
+        onClose={() => setDeleteEntity({ id: null, name: null, type: null })}
         onSuccess={refreshData}
       />
     </div>

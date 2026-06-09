@@ -254,4 +254,61 @@ describe("AppTable Reproduction", () => {
       expect(screen.getByText("HTTPS")).toBeDefined();
     });
   });
+
+  it("does not render action buttons for nested server rows", async () => {
+    const mockData = [
+      {
+        id: "1",
+        appCode: "APP-001",
+        appName: "Test App",
+        ownerId: "OWNER-1",
+        risk: "Low",
+        servers: [
+          {
+            id: "s1",
+            ipAddress: "10.0.0.1",
+            hostname: "prod-server-01",
+            portNumber: 443,
+            protocol: "https"
+          }
+        ]
+      }
+    ];
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable 
+            onRegister={vi.fn()} 
+            onEditClick={vi.fn()}
+            onMigrateClick={vi.fn()}
+            onDeleteClick={vi.fn()}
+            onSelectResult={vi.fn()} 
+            onClearFilter={vi.fn()} 
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("Test App")).toBeDefined());
+
+    // Expand
+    screen.getByText("APP-001").click();
+
+    await waitFor(() => {
+      expect(screen.getByText("prod-server-01")).toBeDefined();
+    });
+
+    // The main row should have actions, but the nested table should not have "Actions" column or action buttons
+    const actionsHeaders = screen.queryAllByText("Actions");
+    expect(actionsHeaders.length).toBe(1); // Only the main table header
+    
+    // Find all trash icons (Delete buttons)
+    // They are rendered using Lucide Trash2
+    const deleteButtons = screen.queryAllByTitle("Delete");
+    expect(deleteButtons.length).toBe(1); // Only for the main application row
+  });
 });

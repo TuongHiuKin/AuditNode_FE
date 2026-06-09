@@ -47,11 +47,12 @@ describe("MigrationDrawer", () => {
       <MigrationDrawer 
         applicationId="app-1" 
         onClose={vi.fn()} 
-        onSuccess={vi.fn()} 
+        onApplicationsUpdated={vi.fn()} 
+        onServersUpdated={vi.fn()}
       />
     );
 
-    expect(screen.getByText("Migrate Application")).toBeDefined();
+    expect(screen.getByText("Edit Deployment")).toBeDefined();
     
     await waitFor(() => {
       expect(screen.getByText("server-01 (192.168.1.1)")).toBeDefined();
@@ -62,7 +63,7 @@ describe("MigrationDrawer", () => {
     expect(portInput.value).toBe("8080");
   });
 
-  it("submits the migration form successfully", async () => {
+  it("submits the migration form successfully and stays open", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
       if (url === "/api/Servers") return Promise.resolve({ data: mockServers });
       if (url === "/api/Applications/app-1") return Promise.resolve({ data: mockApp });
@@ -71,14 +72,16 @@ describe("MigrationDrawer", () => {
 
     vi.mocked(apiClient.put).mockResolvedValueOnce({ data: { success: true } });
 
-    const onSuccess = vi.fn();
+    const onApplicationsUpdated = vi.fn();
+    const onServersUpdated = vi.fn();
     const onClose = vi.fn();
 
     render(
       <MigrationDrawer 
         applicationId="app-1" 
         onClose={onClose} 
-        onSuccess={onSuccess} 
+        onApplicationsUpdated={onApplicationsUpdated}
+        onServersUpdated={onServersUpdated}
       />
     );
 
@@ -91,7 +94,7 @@ describe("MigrationDrawer", () => {
     fireEvent.change(screen.getByPlaceholderText("e.g. 8080"), { target: { value: "9090" } });
 
     // Submit
-    fireEvent.click(screen.getByText("Apply Migration"));
+    fireEvent.click(screen.getByText("Update Configuration"));
 
     await waitFor(() => {
       expect(apiClient.put).toHaveBeenCalledWith("/api/infrastructure/apps/migrate", {
@@ -99,9 +102,10 @@ describe("MigrationDrawer", () => {
         serverId: "srv-2",
         portNumber: 9090,
       });
-      expect(toast.success).toHaveBeenCalledWith("Application migrated successfully");
-      expect(onSuccess).toHaveBeenCalled();
-      expect(onClose).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith("Deployment updated successfully");
+      expect(onApplicationsUpdated).toHaveBeenCalled();
+      expect(onServersUpdated).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled(); // Per continuous updates requirement
     });
   });
 
@@ -113,24 +117,25 @@ describe("MigrationDrawer", () => {
     });
 
     vi.mocked(apiClient.put).mockRejectedValueOnce({
-      response: { data: { message: "Migration failed" } }
+      response: { data: { message: "Update failed" } }
     });
 
     render(
       <MigrationDrawer 
         applicationId="app-1" 
         onClose={vi.fn()} 
-        onSuccess={vi.fn()} 
+        onApplicationsUpdated={vi.fn()} 
+        onServersUpdated={vi.fn()}
       />
     );
 
     await waitFor(() => screen.getByText("server-01 (192.168.1.1)"));
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "srv-2" } });
-    fireEvent.click(screen.getByText("Apply Migration"));
+    fireEvent.click(screen.getByText("Update Configuration"));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Migration failed");
+      expect(toast.error).toHaveBeenCalledWith("Update failed");
     });
   });
 });

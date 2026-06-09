@@ -25,6 +25,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Inventory UX Refinements**: Enforced domain boundaries on nested grids, implemented dual state invalidation for real-time tab synchronization, and fixed DTO payload mismatches for seamless application migration.
 - ✅ **Dynamic Network Sync**: Implemented "Save Network State" functionality with automated ID parsing and `destPortId` mapping.
 - ✅ **Smart Edge Routing**: Developed a **Dynamic Intersection Algorithm** for floating edges to prevent content clipping and loops.
 - ✅ **Infrastructure Layout**: Refactored server placement to a **2D Grid Layout** for improved scalability.

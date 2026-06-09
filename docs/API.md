@@ -54,15 +54,20 @@ Synchronizes the current canvas connections with the backend database.
 ### Servers
 - `GET /api/Servers`: List all registered servers.
 - `GET /api/Servers/{id}`: Get details of a specific server.
+- `GET /api/infrastructure/servers/{id}/deployed-apps`: List all applications currently hosted on the server.
 - `POST /api/Servers`: Register a new server.
 - `PUT /api/Servers/{id}`: Update an existing server.
+- `DELETE /api/infrastructure/servers/{id}/purge`: Permanently delete a server and all its hosted applications and network mappings.
 
 ### Applications (Registration Upsert)
 - `GET /api/Applications`: List all applications.
 - `GET /api/Applications/{id}`: Get details of a specific application.
+- `GET /api/infrastructure/apps/{id}/dependencies-count`: Get the number of active network dependencies for an application.
 - `POST /api/Applications`: Register or Update an application.
   - **Logic**: Uses a **Transaction-based Upsert pattern**. If an `AppCode` already exists, the system updates the existing record and its port mappings instead of creating a duplicate. This ensures data consistency across the environment.
 - `PUT /api/Applications/{id}`: Update an existing application.
+- `PUT /api/infrastructure/apps/migrate`: Update the server residency and port mapping of an application.
+- `DELETE /api/infrastructure/apps/{id}/purge`: Permanently delete an application and cascade-delete all its linked dependencies.
 
 ### Datacenters
 - `GET /api/Datacenters`: List all available datacenters.
