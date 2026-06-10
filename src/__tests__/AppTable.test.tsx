@@ -1,9 +1,19 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppTable } from "../app/components/AppTable";
 import apiClient from "../shared/api/client";
+
+// Mock the useNavigate hook
+const mockNavigate = vi.fn();
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual("react-router");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock the apiClient
 vi.mock("../shared/api/client", () => ({
@@ -27,6 +37,47 @@ const createTestQueryClient = () => new QueryClient({
 describe("AppTable Reproduction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("routes to dependency manager with lowercase environment parameter", async () => {
+    const mockData = [
+      {
+        id: "app-1",
+        appCode: "APP-001",
+        appName: "Test App",
+        ownerId: "OWNER-1",
+        risk: "Low",
+        environment: "Staging",
+        servers: []
+      }
+    ];
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable 
+            onRegister={vi.fn()} 
+            onEditClick={vi.fn()}
+            onMigrateClick={vi.fn()}
+            onDeleteClick={vi.fn()}
+            onSelectResult={vi.fn()} 
+            onClearFilter={vi.fn()} 
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Test App")).toBeDefined();
+    });
+
+    const depButton = screen.getByTitle("View Dependency");
+    fireEvent.click(depButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dependency-manager?entityId=app-1&type=app&environment=staging");
   });
 
   it("renders 'N/A' when app.risk is undefined instead of crashing", async () => {

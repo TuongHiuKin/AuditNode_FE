@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   useNodesState,
   useEdgesState,
@@ -33,6 +33,9 @@ export function useDependencyLogic() {
 
   const reactFlowInstance = useReactFlow();
   const queryClient = useQueryClient();
+
+  const isExplicitFetchRef = useRef(false);
+  const hasMountedRef = useRef(false);
 
   // ── Sync to Database ─────────────────────────────────────────────────────
   const handleSync = useCallback(async () => {
@@ -165,106 +168,124 @@ export function useDependencyLogic() {
     setIsDrawingServer(false);
   }, [drawBox, unmappedServers, setNodes]);
 
+  // ── Fetch and Map Graph Logic (Internal) ────────────────────────────────
+  const fetchAndMapGraph = useCallback(async (env: string, dc: string) => {
+    try {
+      const response = await apiClient.get<Schemas["DependencyMapDto"]>(
+        "/api/Topology/map",
+        {
+          params: {
+            environment: env === "All" ? undefined : env,
+            datacenterId: dc === "All" ? undefined : dc,
+          },
+        }
+      );
+      const data = response.data;
+
+      const mappedNodes: Node[] = [];
+      const mappedEdges: Edge[] = [];
+
+      // Handle ReactFlow-compatible structure directly if provided
+      const rawData = data as any;
+      if (rawData.nodes && Array.isArray(rawData.nodes)) {
+        rawData.nodes.forEach((n: any) => mappedNodes.push(n));
+        rawData.edges?.forEach((e: any) => mappedEdges.push(e));
+      } else {
+        // Fallback: Map servers and their nested applications to flat ReactFlow nodes
+        const MAX_COLUMNS = 3;
+        const X_SPACING = 450;
+        const Y_SPACING = 350;
+        const START_X = 100;
+        const START_Y = 100;
+
+        data.servers?.forEach((srv: any, srvIdx: number) => {
+          const col = srvIdx % MAX_COLUMNS;
+          const row = Math.floor(srvIdx / MAX_COLUMNS);
+          const serverNodeId = srv.id || `srv-${srvIdx}`;
+
+          mappedNodes.push({
+            id: serverNodeId,
+            type: "serverNode",
+            position: { 
+              x: START_X + (col * X_SPACING), 
+              y: START_Y + (row * Y_SPACING) 
+            },
+            style: { width: 300, height: 200 },
+            data: {
+              server: {
+                hostname: srv.hostname,
+                ipAddress: srv.ipAddress,
+                osType: srv.osType
+              },
+              width: 300,
+              height: 200
+            },
+            zIndex: -1,
+          });
+
+          srv.applications?.forEach((app: any, appIdx: number) => {
+            mappedNodes.push({
+              id: app.id || `app-${appIdx}`,
+              type: "appNode",
+              position: { x: 40, y: 60 + appIdx * 60 },
+              parentId: serverNodeId,
+              extent: "parent",
+              data: {
+                app: {
+                  id: app.id,
+                  appName: app.name,
+                  portNumber: app.port,
+                  protocol: app.protocol,
+                  risk: app.riskLevel,
+                  portMappingId: app.portMappingId
+                }
+              },
+            });
+          });
+        });
+
+        // Map connections to ReactFlow edges
+        data.connections?.forEach((conn: any, connIdx: number) => {
+          mappedEdges.push({
+            id: `e-${connIdx}`,
+            source: conn.sourceAppId || "",
+            target: conn.targetAppId || "",
+            type: "floatingSmooth",
+            animated: true,
+            markerEnd: edgeMarker,
+            style: edgeStyle,
+            data: { protocol: "TCP" },
+          });
+        });
+      }
+
+      return { nodes: mappedNodes, edges: mappedEdges };
+    } catch (err) {
+      console.error("Failed to fetch dependency map", err);
+      throw err;
+    }
+  }, []);
+
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
     queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
-    queryFn: async () => {
-      try {
-        const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-          "/api/Topology/map",
-          {
-            params: {
-              environment: selectedEnv === "All" ? undefined : selectedEnv,
-              datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
-            },
-          }
-        );
-        const data = response.data;
+    queryFn: async ({ queryKey }) => {
+      const [_key, env, dc] = queryKey as [string, string, string];
+      const result = await fetchAndMapGraph(env, dc);
 
-        const mappedNodes: Node[] = [];
-        const mappedEdges: Edge[] = [];
+      const isFirstMount = !hasMountedRef.current;
+      hasMountedRef.current = true;
 
-        // Handle ReactFlow-compatible structure directly if provided
-        const rawData = data as any;
-        if (rawData.nodes && Array.isArray(rawData.nodes)) {
-          rawData.nodes.forEach((n: any) => mappedNodes.push(n));
-          rawData.edges?.forEach((e: any) => mappedEdges.push(e));
-        } else {
-          // Fallback: Map servers and their nested applications to flat ReactFlow nodes
-          const MAX_COLUMNS = 3;
-          const X_SPACING = 450;
-          const Y_SPACING = 350;
-          const START_X = 100;
-          const START_Y = 100;
-
-          data.servers?.forEach((srv: any, srvIdx: number) => {
-            const col = srvIdx % MAX_COLUMNS;
-            const row = Math.floor(srvIdx / MAX_COLUMNS);
-            const serverNodeId = srv.id || `srv-${srvIdx}`;
-
-            mappedNodes.push({
-              id: serverNodeId,
-              type: "serverNode",
-              position: { 
-                x: START_X + (col * X_SPACING), 
-                y: START_Y + (row * Y_SPACING) 
-              },
-              style: { width: 300, height: 200 },
-              data: {
-                server: {
-                  hostname: srv.hostname,
-                  ipAddress: srv.ipAddress,
-                  osType: srv.osType
-                },
-                width: 300,
-                height: 200
-              },
-              zIndex: -1,
-            });
-
-            srv.applications?.forEach((app: any, appIdx: number) => {
-              mappedNodes.push({
-                id: app.id || `app-${appIdx}`,
-                type: "appNode",
-                position: { x: 40, y: 60 + appIdx * 60 },
-                parentId: serverNodeId,
-                extent: "parent",
-                data: {
-                  app: {
-                    id: app.id,
-                    appName: app.name,
-                    portNumber: app.port,
-                    protocol: app.protocol,
-                    risk: app.riskLevel,
-                    portMappingId: app.portMappingId
-                  }
-                },
-              });
-            });
-          });
-
-          // Map connections to ReactFlow edges
-          data.connections?.forEach((conn: any, connIdx: number) => {
-            mappedEdges.push({
-              id: `e-${connIdx}`,
-              source: conn.sourceAppId || "",
-              target: conn.targetAppId || "",
-              type: "floatingSmooth",
-              animated: true,
-              markerEnd: edgeMarker,
-              style: edgeStyle,
-              data: { protocol: "TCP" },
-            });
-          });
-        }
-
-        setNodes(mappedNodes);
-        setEdges(mappedEdges);
-        return { nodes: mappedNodes, edges: mappedEdges };
-      } catch (err) {
-        console.error("Failed to fetch dependency map", err);
-        throw err;
+      const cached = sessionStorage.getItem('dependencyGraphState');
+      const hasDeepLink = new URLSearchParams(window.location.search).has("entityId");
+      
+      // Safely determine if we should overwrite the local state with API data
+      if (!isFirstMount || isExplicitFetchRef.current || hasDeepLink || !cached) {
+        setNodes(result.nodes);
+        setEdges(result.edges);
       }
+
+      return result;
     },
   });
 
@@ -417,17 +438,37 @@ export function useDependencyLogic() {
   );
 
   // ── Auto-Map from DB ──────────────────────────────────────────────────────
-  const handleAutoMap = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
+  const handleAutoMap = useCallback(async (overrideEnv?: string) => {
+    isExplicitFetchRef.current = true;
+    
+    // Step 1: UI Sync & Normalization
+    let targetEnv = selectedEnv;
+    if (overrideEnv) {
+      // "production" -> "Production"
+      const normalizedEnv = overrideEnv.charAt(0).toUpperCase() + overrideEnv.slice(1).toLowerCase();
+      setSelectedEnv(normalizedEnv);
+      targetEnv = normalizedEnv;
+    }
+
+    // Step 2: API Fetch with Race Condition Prevention
+    // We explicitly invalidate the query with the specific key we want to fetch
+    // This ensures React Query starts the fetch for the correct environment immediately
+    await queryClient.invalidateQueries({ 
+      queryKey: ["dependency-map", targetEnv, selectedDatacenter] 
+    });
+
     setTimeout(() => {
       reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
-    }, 100);
-  }, [queryClient, reactFlowInstance]);
+      isExplicitFetchRef.current = false;
+    }, 500);
+  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter]);
 
 
   return {
     nodes,
+    setNodes,
     edges,
+    setEdges,
     onNodesChange,
     onEdgesChange,
     onConnect,

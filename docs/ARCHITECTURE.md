@@ -27,6 +27,7 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
 - **Dependency Graph Manager (Dynamic Service Mapping)**:
   - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
+  - **Environment Context Preservation**: Implements a robust context-passing mechanism between the Inventory and Dependency Manager modules. Deep links now include an `environment` parameter that is normalized and prioritized during initialization to prevent race conditions and ensure the destination graph matches the source context (e.g., automatically switching to "Production" when viewing a production server's dependencies).
   - **Auto-layout**: Implements a **2D Grid layout algorithm** (3 columns) for initial server placement, ensuring organized visualization even in dense environments like Production.
   - **Smart Floating Edges**: Uses a custom **Dynamic Intersection Algorithm** to calculate connection points on node borders in real-time. This prevents edges from clipping through icons/text and ensures clean 90-degree orthogonal routing around assets.
   - **Edge Reconnection**: Supports interactive re-routing by dragging edge endpoints to new target nodes, powered by `@xyflow/react` utilities.

@@ -156,15 +156,18 @@ describe("useDependencyLogic", () => {
     expect(result.current.rightPanelData.server.hostname).toBe("test-server");
   });
 
-  it("handles auto map by invalidating queries", async () => {
+  it("handles auto map with environment normalization and specific query key invalidation", async () => {
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
 
     await act(async () => {
-      await result.current.handleAutoMap();
+      await result.current.handleAutoMap("production");
     });
 
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dependency-map"] });
+    expect(result.current.selectedEnv).toBe("Production");
+    expect(invalidateSpy).toHaveBeenCalledWith({ 
+      queryKey: ["dependency-map", "Production", "All"] 
+    });
   });
 
   it("handles sync to database by parsing composite IDs and calling API", async () => {

@@ -76,8 +76,13 @@ export function ServerTable({
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const goToDep = (id: string) =>
-    navigate("/dependency-manager", { state: { selectedEntityId: id } });
+  const goToDep = (id: string, env?: string) => {
+    let url = `/dependency-manager?entityId=${id}&type=server`;
+    if (env) {
+      url += `&environment=${env.toLowerCase()}`;
+    }
+    navigate(url);
+  };
 
   return (
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
@@ -163,7 +168,7 @@ export function ServerTable({
                     server={server}
                     expanded={!!expandedRows[server.id!]}
                     onToggle={() => toggleRow(server.id!)}
-                    onDepClick={(id) => goToDep(id)}
+                    onDepClick={(id, env) => goToDep(id, env)}
                     onEditClick={onEditClick}
                     onMigrateClick={onMigrateClick}
                     onDeleteClick={onDeleteClick}
@@ -185,7 +190,7 @@ function ServerRowItem({
   server: ServerRow; 
   expanded: boolean; 
   onToggle: () => void; 
-  onDepClick: (id: string) => void;
+  onDepClick: (id: string, env?: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
   onDeleteClick: (id: string, name: string) => void;
@@ -215,7 +220,7 @@ function ServerRowItem({
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 
-            onDepClick={() => onDepClick(server.id || "")} 
+            onDepClick={() => onDepClick(server.id || "", server.environment)} 
             onEditClick={() => onEditClick(server.id || "", "SERVER")}
             onDeleteClick={() => onDeleteClick(server.id || "", server.hostname || "Server")}
           />

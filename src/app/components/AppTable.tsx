@@ -83,8 +83,13 @@ export function AppTable({
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const goToDep = (id: string) =>
-    navigate("/dependency-manager", { state: { selectedEntityId: id } });
+  const goToDep = (id: string, env?: string) => {
+    let url = `/dependency-manager?entityId=${id}&type=app`;
+    if (env) {
+      url += `&environment=${env.toLowerCase()}`;
+    }
+    navigate(url);
+  };
 
   return (
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
@@ -170,7 +175,7 @@ export function AppTable({
                     app={app} 
                     expanded={!!expandedRows[app.id!]}
                     onToggle={() => toggleRow(app.id!)} 
-                    onDepClick={(id) => goToDep(id)} 
+                    onDepClick={(id, env) => goToDep(id, env)} 
                     onEditClick={onEditClick}
                     onMigrateClick={onMigrateClick}
                     onDeleteClick={onDeleteClick}
@@ -192,7 +197,7 @@ function AppRowItem({
   app: AppRow; 
   expanded: boolean; 
   onToggle: () => void; 
-  onDepClick: (id: string) => void;
+  onDepClick: (id: string, env?: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
   onDeleteClick: (id: string, name: string) => void;
@@ -219,7 +224,7 @@ function AppRowItem({
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 
-            onDepClick={() => onDepClick(app.id!)} 
+            onDepClick={() => onDepClick(app.id!, (app as any).environment)} 
             onEditClick={() => onEditClick(app.id!, "APP")}
             onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}
           />
