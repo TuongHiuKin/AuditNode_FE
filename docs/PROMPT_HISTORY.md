@@ -76,3 +76,21 @@ Deep linking from the Infrastructure Inventory to the Dependency Manager was los
 
 ### Impact
 Seamlessly preserves the user's operational context across modules. Users can now transition from infrastructure lists to network maps with 100% state accuracy, eliminating redundant clicks and improving the overall reliability of the dependency visualization workflow.
+
+## 2026-06-10: Adaptive Deployment Selector & Multi-Server Support
+
+### Context
+The application management system previously assumed a 1-to-1 relationship between Applications and Servers. However, the database supports multi-server deployments (1-to-Many). The `EditEntityDrawer` lacked the UI to select which specific deployment to modify, resulting in data-binding failures and payload mismatches.
+
+### Solution
+1. **Adaptive Deployment Selector**: Implemented a radio-based selection UI that renders only when an application has multiple deployments. This allows users to target a specific "port mapping" for modification.
+2. **Robust Data Binding**: Refactored the data extraction logic to support both `servers` and `portMappings` properties from the API response, ensuring the deployments array is correctly populated.
+3. **Strict Form Hydration**: Implemented a "Force Hydration" pattern where selecting a deployment via radio button immediately synchronizes the `serverId` and `portNumber` fields in `react-hook-form` with validation and dirty state tracking.
+4. **Forgiving Combobox Filtering**: Updated the "Target Server" searchable dropdown to support matches against hostname, IP address, or the combined display string, preventing "No infrastructure found" errors after auto-hydration.
+5. **Payload Integrity Guard**: Corrected the `onSubmit` payload to use the exact property names expected by the backend (`serverId`, `portNumber`, and `portMappingId`) and added exhaustive console logging for payload auditing.
+6. **UX Enhancements**: 
+   - Implemented "Clear on Open" for the server combobox to show the full list of available infrastructure immediately.
+   - Maintained continuous editing support by keeping the drawer open after successful updates.
+
+### Impact
+Enabled full support for complex, multi-server application architectures. Users can now safely and precisely migrate or reconfigure individual deployments within a multi-server app without data loss or UI confusion. The implementation bridges the gap between the flexible database schema and the administrative interface.

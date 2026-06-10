@@ -25,6 +25,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Adaptive Deployment Selector**: Implemented a dynamic radio-based UI in `EditEntityDrawer` to handle 1-to-Many application-server relationships, enabling precise targeting of multi-server deployments.
 - ✅ **Inventory UX Refinements**: Enforced domain boundaries on nested grids, implemented dual state invalidation for real-time tab synchronization, and fixed DTO payload mismatches for seamless application migration.
 - ✅ **Dynamic Network Sync**: Implemented "Save Network State" functionality with automated ID parsing and `destPortId` mapping.
 - ✅ **Smart Edge Routing**: Developed a **Dynamic Intersection Algorithm** for floating edges to prevent content clipping and loops.
@@ -103,5 +104,5 @@ Please follow the project's coding standards:
 
 ---
 
-**Last Updated:** June 7, 2026  
+**Last Updated:** June 10, 2026  
 **Project Lead:** Gemini CLI

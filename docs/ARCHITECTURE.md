@@ -37,6 +37,9 @@ Built with **React 18**, **TypeScript**, and **Vite**.
     *   **ServerGroupNode**: Optimized for dynamic resizing with an "Auto-fit to content" function that precisely wraps children nodes using bounding-box geometry.
 - **EditEntityDrawer**: 
   - **Design**: Uses **React Portals** (`ReactDOM.createPortal`) to render at the root of the DOM tree (`document.body`).
+  - **Adaptive Deployment Selector**: Implements a dynamic UI block that renders when an application has multiple deployments (1-to-Many). Uses a **Radio Group pattern** to target a specific port mapping for modification.
+  - **Force Hydration Pattern**: Programmatically synchronizes `react-hook-form` state upon deployment selection, ensuring strict validation and reliable payload construction.
+  - **Combobox Integration**: Features a searchable, filtered infrastructure selector with a "Clear on Open" UX and forgiving multi-field matching logic.
   - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.
 - **State Management**: React Hooks and TanStack Query for efficient caching.
 - **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.

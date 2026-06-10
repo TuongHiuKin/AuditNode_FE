@@ -29,6 +29,8 @@ export function EditEntityDrawer({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
+  const [portMappings, setPortMappings] = useState<any[]>([]);
+  const [selectedMappingId, setSelectedMappingId] = useState<string | null>(null);
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [serverSearchTerm, setServerSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,10 +65,16 @@ export function EditEntityDrawer({
     }
   }, [watchedServerId, availableServers, isServerDropdownOpen]);
 
-  const filteredServers = availableServers.filter(srv => 
-    srv.hostname?.toLowerCase().includes(serverSearchTerm.toLowerCase()) || 
-    srv.ipAddress?.toLowerCase().includes(serverSearchTerm.toLowerCase())
-  );
+  const filteredServers = availableServers.filter(srv => {
+    if (!serverSearchTerm) return true;
+    const searchLower = serverSearchTerm.toLowerCase();
+    const combined = `${srv.hostname} (${srv.ipAddress})`.toLowerCase();
+    return (
+      srv.hostname?.toLowerCase().includes(searchLower) || 
+      srv.ipAddress?.toLowerCase().includes(searchLower) ||
+      combined.includes(searchLower)
+    );
+  });
 
   const handleSelectServer = (srv: Schemas["ServerResponseDto"]) => {
     setValue("serverId", srv.id, { 
@@ -128,6 +136,12 @@ export function EditEntityDrawer({
         setValue("ownerId", data.ownerId);
         setValue("ownerTeam", data.ownerTeam || "");
         setValue("risk", data.risk);
+        
+        // Populate deployments for selector (supports both 'servers' and 'portMappings' from API)
+        const deployments = data.servers || data.portMappings || [];
+        console.log("Drawer Deployments Array:", deployments);
+        setPortMappings(deployments);
+
         // Pre-fill migration fields if available
         if (data.serverId) setValue("serverId", data.serverId);
         if (data.portNumber) setValue("portNumber", data.portNumber);
@@ -141,10 +155,39 @@ export function EditEntityDrawer({
     }
   };
 
+  // Hydration Logic: Auto-select mapping when drawer opens or mappings change
+  useEffect(() => {
+    if (entityType === "APP" && portMappings.length > 0) {
+      const defaultMapping = portMappings[0];
+      setSelectedMappingId(defaultMapping.id);
+      // Ensure we use the correct ID property (serverId vs id)
+      const targetServerId = defaultMapping.serverId || defaultMapping.id;
+      
+      // Force Hydration into react-hook-form
+      setValue("serverId", targetServerId, { shouldValidate: true, shouldDirty: true });
+      setValue("portNumber", defaultMapping.portNumber, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [portMappings, entityType, setValue]);
+
+  const handleSelectMapping = (mapping: any) => {
+    setSelectedMappingId(mapping.id);
+    const targetServerId = mapping.serverId || mapping.id;
+    
+    // Force Hydration into react-hook-form
+    setValue("serverId", targetServerId, { shouldValidate: true, shouldDirty: true });
+    setValue("portNumber", mapping.portNumber, { shouldValidate: true, shouldDirty: true });
+  };
+
   const onSubmit = async (formData: any) => {
-    if (entityType === "APP" && !formData.serverId) {
-      toast.error("Please select a Target Server");
-      return;
+    if (entityType === "APP") {
+      if (!selectedMappingId && portMappings.length > 0) {
+        toast.error("Please select a deployment to update");
+        return;
+      }
+      if (!formData.serverId) {
+        toast.error("Please select a Target Server");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -153,17 +196,29 @@ export function EditEntityDrawer({
         ? `/api/Servers/${entityId}` 
         : `/api/Applications/${entityId}`;
       
+      // Debug Payload Audit
+      console.log("=== FRONTEND PAYLOAD AUDIT ===");
+      console.log("Entity Type:", entityType);
+      console.log("Raw FormData:", formData);
+      console.log("Selected Mapping ID:", selectedMappingId);
+
       // Aligned with Backend DTO properties
       const payload = entityType === "APP" 
         ? {
+            // App Metadata
+            appCode: formData.appCode,
             appName: formData.appName,
             ownerTeam: formData.ownerTeam,
             risk: formData.risk,
-            // Aligned with Backend DTO properties
-            serverId: formData.serverId,
-            portNumber: Number(formData.portNumber),
+            
+            // Network Mapping Payload - EXACT PROPERTY NAMES FOR BACKEND
+            portMappingId: selectedMappingId, 
+            serverId: formData.serverId,     // Target Infrastructure ID
+            portNumber: Number(formData.portNumber), // Deployment Port
           }
         : formData;
+
+      console.log("Constructed Payload sending to API:", payload);
 
       await apiClient.put(endpoint, payload);
       
@@ -305,6 +360,36 @@ export function EditEntityDrawer({
                     </div>
                     
                     <div className="space-y-4">
+                      {portMappings && portMappings.length > 1 && (
+                        <div className="mb-6 p-4 border border-slate-700 bg-slate-900/50 rounded-lg">
+                          <label className="text-[10px] font-bold mb-3 block text-slate-400 uppercase tracking-widest">
+                            Select Deployment to Modify
+                          </label>
+                          <div className="space-y-3">
+                            {portMappings.map((dep: any) => (
+                              <label key={dep.id} className="flex items-center space-x-3 text-sm text-slate-300 cursor-pointer hover:text-white group">
+                                <input 
+                                  type="radio" 
+                                  name="deploymentSelector"
+                                  value={dep.id}
+                                  checked={selectedMappingId === dep.id}
+                                  onChange={() => handleSelectMapping(dep)}
+                                  className="w-4 h-4 text-tertiary bg-slate-800 border-slate-600 focus:ring-tertiary focus:ring-offset-slate-900"
+                                />
+                                <span className="flex flex-col">
+                                  <span className={`font-medium ${selectedMappingId === dep.id ? 'text-white' : ''}`}>
+                                    {dep.hostname || dep.serverName}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {dep.ipAddress} &mdash; Port: {dep.portNumber}
+                                  </span>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div>
                         <label htmlFor="serverIdSearch" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Target Server</label>
                         <div className="relative" ref={dropdownRef}>
@@ -318,7 +403,10 @@ export function EditEntityDrawer({
                               setServerSearchTerm(e.target.value);
                               setIsServerDropdownOpen(true);
                             }}
-                            onClick={() => setIsServerDropdownOpen(true)}
+                            onClick={() => {
+                              setIsServerDropdownOpen(true);
+                              setServerSearchTerm(""); // Clear search term to show full list on click
+                            }}
                             placeholder="Select Target Infrastructure..."
                             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all"
                             autoComplete="off"

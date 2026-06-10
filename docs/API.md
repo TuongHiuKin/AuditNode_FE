@@ -65,7 +65,19 @@ Synchronizes the current canvas connections with the backend database.
 - `GET /api/infrastructure/apps/{id}/dependencies-count`: Get the number of active network dependencies for an application.
 - `POST /api/Applications`: Register or Update an application.
   - **Logic**: Uses a **Transaction-based Upsert pattern**. If an `AppCode` already exists, the system updates the existing record and its port mappings instead of creating a duplicate. This ensures data consistency across the environment.
-- `PUT /api/Applications/{id}`: Update an existing application.
+- `PUT /api/Applications/{id}`: Update an existing application or a specific deployment mapping.
+  - **Payload**:
+    ```json
+    {
+      "appName": "string",
+      "ownerTeam": "string",
+      "risk": "string",
+      "portMappingId": "uuid",
+      "serverId": "uuid",
+      "portNumber": 443
+    }
+    ```
+  - **Logic**: Supports multi-server deployments. If `portMappingId` is provided, the system updates that specific deployment record's server and port.
 - `PUT /api/infrastructure/apps/migrate`: Update the server residency and port mapping of an application.
 - `DELETE /api/infrastructure/apps/{id}/purge`: Permanently delete an application and cascade-delete all its linked dependencies.
 
