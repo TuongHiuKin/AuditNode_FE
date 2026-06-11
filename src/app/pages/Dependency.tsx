@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { ReactFlowProvider } from "@xyflow/react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router";
+import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { Network, ChevronRight, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
@@ -12,8 +13,24 @@ import { RegisterModal } from "../components/RegisterModal";
 import { useHeader } from "../hooks/useHeader";
 
 function DependencyManagerContent() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const entityId = searchParams.get("entityId");
+  const type = searchParams.get("type");
+  const envParam = searchParams.get("environment");
+  const hasInitialized = useRef(false);
+  const reactFlowInstance = useReactFlow();
+
+  // Debug payload to confirm search params are captured
+  useEffect(() => {
+    console.log("=== DEBUG DEPENDENCY INITIALIZATION ===");
+    console.log("Passed Entity ID (URL):", entityId);
+    console.log("Passed Entity Type (URL):", type);
+    console.log("Passed Environment (URL):", envParam);
+    console.log("======================================");
+  }, [entityId, type, envParam]);
+
   const {
-    nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
+    nodes, setNodes, edges, setEdges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
     onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
@@ -44,6 +61,80 @@ function DependencyManagerContent() {
         <Network size={20} />
       );
     }, [setHeader]);
+
+    // Hook 1: Initialize from Deep Link or Session Storage
+    useEffect(() => {
+      if (hasInitialized.current) return;
+      hasInitialized.current = true;
+
+      if (entityId) {
+        console.log(">>> [INIT] Executing PRIORITY 1: Deep Link Auto-Map for ID:", entityId);
+        // PRIORITY 1: Deep Linking
+        sessionStorage.removeItem('dependencyGraphState'); // Clear old session
+        
+        handleAutoMap(envParam || undefined).then(() => {
+          // Clear URL parameters to prevent re-triggering on refresh
+          setSearchParams({});
+          
+          // Focus the specific entity node once the graph settles
+          setTimeout(() => {
+            const targetNode = reactFlowInstance.getNode(entityId);
+            if (targetNode) {
+              console.log(">>> [INIT] Deep link target node found, focusing camera.");
+              onSelectionChange({ nodes: [targetNode], edges: [] });
+              reactFlowInstance.fitView({ nodes: [{ id: entityId }], duration: 800, padding: 0.5 });
+            } else {
+              console.warn(">>> [INIT] Target node not found in graph data after Auto-Map.");
+            }
+          }, 500);
+        });
+      } else {
+        console.log(">>> [INIT] Executing PRIORITY 2: Session Restore");
+        // PRIORITY 2: State Persistence (Restore)
+        const cached = sessionStorage.getItem('dependencyGraphState');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            
+            // Restore exact state variables
+            if (parsed.selectedItem) setSelectedItem(parsed.selectedItem);
+            if (parsed.rightPanelData) setRightPanelData(parsed.rightPanelData);
+            if (parsed.selectedEnv) setSelectedEnv(parsed.selectedEnv);
+            if (parsed.selectedDatacenter) setSelectedDatacenter(parsed.selectedDatacenter);
+            
+            if (parsed.nodes && parsed.nodes.length > 0) {
+              setNodes(parsed.nodes);
+            }
+            if (parsed.edges && parsed.edges.length > 0) {
+              setEdges(parsed.edges);
+            }
+            
+            // Restore camera position if a node was selected
+            if (parsed.selectedItem?.id) {
+              setTimeout(() => {
+                reactFlowInstance.fitView({ nodes: [{ id: parsed.selectedItem.id }], duration: 800, padding: 0.5 });
+              }, 100);
+            }
+          } catch (e) {
+            console.error("Failed to parse cached dependency graph state", e);
+          }
+        }
+      }
+    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter]);
+
+    // Hook 2: Save state to Session Storage continuously
+    useEffect(() => {
+      if (hasInitialized.current && (nodes.length > 0 || edges.length > 0)) {
+        sessionStorage.setItem('dependencyGraphState', JSON.stringify({
+          nodes,
+          edges,
+          selectedItem,
+          rightPanelData,
+          selectedEnv,
+          selectedDatacenter
+        }));
+      }
+    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter]);
 
     return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">

@@ -1,9 +1,19 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerTable } from "../app/components/ServerTable";
 import apiClient from "../shared/api/client";
+
+// Mock the useNavigate hook
+const mockNavigate = vi.fn();
+vi.mock("react-router", async () => {
+  const actual = await vi.importActual("react-router");
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock the apiClient
 vi.mock("../shared/api/client", () => ({
@@ -40,6 +50,35 @@ describe("ServerTable", () => {
       apps: []
     }
   ];
+
+  it("routes to dependency manager with lowercase environment parameter", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <ServerTable 
+            onRegister={vi.fn()} 
+            onEditClick={vi.fn()}
+            onMigrateClick={vi.fn()}
+            onDeleteClick={vi.fn()}
+            onSelectResult={vi.fn()} 
+            onClearFilter={vi.fn()} 
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("prod-web-01")).toBeDefined();
+    });
+
+    const depButton = screen.getByTitle("View Dependency");
+    fireEvent.click(depButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/dependency-manager?entityId=srv-1&type=server&environment=development");
+  });
 
   it("renders server rows and applies SaaS monochromatic container styles", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });

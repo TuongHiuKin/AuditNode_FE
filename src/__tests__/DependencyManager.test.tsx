@@ -1,6 +1,7 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ReactFlowProvider } from "@xyflow/react";
+import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerGroupNode } from "../features/dependency-graph/components/ServerGroupNode";
 import { DependencyManager } from "../app/pages/Dependency";
@@ -75,7 +76,9 @@ describe("DependencyManager Integration", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <HeaderProvider>
-          <DependencyManager />
+          <MemoryRouter>
+            <DependencyManager />
+          </MemoryRouter>
         </HeaderProvider>
       </QueryClientProvider>
     );
@@ -97,7 +100,9 @@ describe("DependencyManager Integration", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <HeaderProvider>
-          <DependencyManager />
+          <MemoryRouter>
+            <DependencyManager />
+          </MemoryRouter>
         </HeaderProvider>
       </QueryClientProvider>
     );
