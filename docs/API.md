@@ -93,25 +93,33 @@ Retrieves an Excel template (.xlsx) for bulk importing servers and applications.
 - **Method**: `GET`
 - **Success Response**: `200 OK` (binary/blob)
 
-### Bulk Import Inventory
+### Bulk Import Inventory (Multipart)
 Uploads an Excel file to process and save multiple servers and applications.
 - **URL**: `/api/inventory/import`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Success Response**: `200 OK`
-  - **Body**:
-    ```json
+
+### Partial Bulk Import (JSON)
+Saves a list of pre-validated and normalized inventory records.
+- **URL**: `/api/inventory/bulk-import`
+- **Method**: `POST`
+- **Content-Type**: `application/json`
+- **Payload**:
+  ```json
+  [
     {
-      "totalProcessed": 10,
-      "savedCount": 8,
-      "errors": [
-        { "row": 3, "message": "Invalid IP format" }
-      ],
-      "conflicts": [
-        { "row": 5, "message": "Server hostname already exists" }
-      ]
+      "serverName": "SRV-PROD-01",
+      "ipAddress": "10.0.0.1",
+      "appName": "PaymentGateway",
+      "appCode": "PG-01",
+      "port": 443,
+      "environment": "Production"
     }
-    ```
+  ]
+  ```
+- **Success Response**: `200 OK`
+- **Logic**: Performs iterative saves of the provided records. Designed for use with the browser-side "Fix & Commit" workflow.
 
 ## 🛠️ Global Configuration
 The API uses a centralized `apiFetch` wrapper in the frontend to handle base URLs and content-type headers. CORS is enabled for local development on ports `5173` and `3000`.

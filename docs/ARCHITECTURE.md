@@ -41,6 +41,12 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Force Hydration Pattern**: Programmatically synchronizes `react-hook-form` state upon deployment selection, ensuring strict validation and reliable payload construction.
   - **Combobox Integration**: Features a searchable, filtered infrastructure selector with a "Clear on Open" UX and forgiving multi-field matching logic.
   - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.
+- **Iterative Bulk Import**:
+  - **Design**: Implements an enterprise-grade "Parse-Validate-Fix" workflow for Excel ingestion.
+  - **Data Normalization**: Intercepts raw Excel JSON and maps human-readable headers (with spaces) to strict internal camelCase keys.
+  - **In-Browser Triage**: Performs immediate validation using a robust engine (regex-based IP/Port/AppCode checks) to categorize rows as "Ready" or "Error" before they reach the server.
+  - **Iterative Commit Pattern**: Supports "Partial Imports" where successfully saved rows are removed from local state, while erroneous rows persist in an interactive review grid for inline correction.
+  - **Inline Editing**: Utilizes reactive UI components that re-validate individual records on-the-fly, providing instant feedback and visual cues (badges/tooltips) for data correction.
 - **State Management**: React Hooks and TanStack Query for efficient caching.
 - **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.
 

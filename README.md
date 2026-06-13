@@ -13,6 +13,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 - **Inventory Tracking**: Manage servers, applications, and their port mappings across multiple environments.
 - **Universal Search**: Intelligent search with debounce and autocomplete to quickly locate servers or applications globally.
 - **Topology Map (Static Inventory)**: A rigid, auto-layout grid visualization of Servers containing their hosted Applications.
+- **Iterative Bulk Import**: Enterprise-grade Excel ingestion with browser-side triage, inline error fixing, and partial commit capabilities.
 - **Dependency Manager**: 
   - Interactive graph using **XYFlow**.
   - **Performance Filters**: Slice data by Environment or Datacenter.
@@ -25,7 +26,9 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
-- ✅ **Adaptive Deployment Selector**: Implemented a dynamic radio-based UI in `EditEntityDrawer` to handle 1-to-Many application-server relationships, enabling precise targeting of multi-server deployments.
+- ✅ **Iterative Partial Bulk Import**: Developed a high-performance Excel ingestion workflow featuring browser-side data normalization, strict multi-field validation, and an interactive review grid that persists errors for iterative fixing.
+- ✅ **Adaptive Deployment Selector**: 
+ Implemented a dynamic radio-based UI in `EditEntityDrawer` to handle 1-to-Many application-server relationships, enabling precise targeting of multi-server deployments.
 - ✅ **Inventory UX Refinements**: Enforced domain boundaries on nested grids, implemented dual state invalidation for real-time tab synchronization, and fixed DTO payload mismatches for seamless application migration.
 - ✅ **Dynamic Network Sync**: Implemented "Save Network State" functionality with automated ID parsing and `destPortId` mapping.
 - ✅ **Smart Edge Routing**: Developed a **Dynamic Intersection Algorithm** for floating edges to prevent content clipping and loops.

@@ -94,3 +94,21 @@ The application management system previously assumed a 1-to-1 relationship betwe
 
 ### Impact
 Enabled full support for complex, multi-server application architectures. Users can now safely and precisely migrate or reconfigure individual deployments within a multi-server app without data loss or UI confusion. The implementation bridges the gap between the flexible database schema and the administrative interface.
+
+## 2026-06-13: Iterative Partial Bulk Import Workflow
+
+### Context
+Bulk data ingestion via Excel was previously a "black box" process with limited feedback. Users could not see which rows failed until the entire process finished, and fixing errors required re-uploading the entire file. There was also a data mapping mismatch where Excel headers with spaces (e.g., "App Name") caused validation failures.
+
+### Solution
+1. **Iterative "Fix & Commit" Workflow**: Developed a 3-phase UI in `BulkImportModal.tsx`.
+   - **Ingestion & Triage**: Parses Excel in the browser using `xlsx`, normalizes headers, and runs a local validation engine to categorize rows immediately.
+   - **Review Grid**: An interactive table that displays errors with visual badges and tooltips. Cells are live `<input>` fields that re-validate data reactively as the user types.
+   - **Partial Commit Engine**: Allows users to import only "Ready" rows. Successfully saved rows are removed from the UI, while erroneous rows persist for iterative fixing.
+2. **Robust Data Normalization**: Implemented a mapping layer that intercepts raw Excel keys (e.g., `"Server Name"`, `"IP Address"`) and normalizes them to internal camelCase properties (`serverName`, `ipAddress`) before validation.
+3. **Strict Validation Engine**: Tightened `validateRow` to enforce mandatory fields (`serverName`, `appCode`, `appName`, `port`) and strict IPv4 regex checks, ensuring high data quality before backend submission.
+4. **Reactive UI Components**: Leveraged Radix UI `Tabs`, `ScrollArea`, and `Badge` components to provide an enterprise-grade review experience with real-time feedback.
+5. **Comprehensive TDD Suite**: Rewrote the component tests using Vitest and React Testing Library to cover the full iterative lifecycle, including file parsing mocks and inline editing verification.
+
+### Impact
+Transformed bulk import from a frustrating, opaque process into a powerful, interactive tool. Users can now confidently ingest large datasets, resolve data issues on-the-fly without leaving the UI, and selectively import clean data—significantly reducing manual data entry overhead and improving system accuracy.
