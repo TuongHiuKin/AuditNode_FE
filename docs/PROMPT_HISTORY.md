@@ -95,20 +95,23 @@ The application management system previously assumed a 1-to-1 relationship betwe
 ### Impact
 Enabled full support for complex, multi-server application architectures. Users can now safely and precisely migrate or reconfigure individual deployments within a multi-server app without data loss or UI confusion. The implementation bridges the gap between the flexible database schema and the administrative interface.
 
-## 2026-06-13: Iterative Partial Bulk Import Workflow
+## 2026-06-14: Keycloak IAM Integration & API Security
 
 ### Context
-Bulk data ingestion via Excel was previously a "black box" process with limited feedback. Users could not see which rows failed until the entire process finished, and fixing errors required re-uploading the entire file. There was also a data mapping mismatch where Excel headers with spaces (e.g., "App Name") caused validation failures.
+The application required a transition from placeholder authentication to a production-grade Identity and Access Management (IAM) system. All API calls needed to be protected by Bearer tokens, with support for automatic token injection and silent background refreshing to prevent session timeouts.
 
 ### Solution
-1. **Iterative "Fix & Commit" Workflow**: Developed a 3-phase UI in `BulkImportModal.tsx`.
-   - **Ingestion & Triage**: Parses Excel in the browser using `xlsx`, normalizes headers, and runs a local validation engine to categorize rows immediately.
-   - **Review Grid**: An interactive table that displays errors with visual badges and tooltips. Cells are live `<input>` fields that re-validate data reactively as the user types.
-   - **Partial Commit Engine**: Allows users to import only "Ready" rows. Successfully saved rows are removed from the UI, while erroneous rows persist for iterative fixing.
-2. **Robust Data Normalization**: Implemented a mapping layer that intercepts raw Excel keys (e.g., `"Server Name"`, `"IP Address"`) and normalizes them to internal camelCase properties (`serverName`, `ipAddress`) before validation.
-3. **Strict Validation Engine**: Tightened `validateRow` to enforce mandatory fields (`serverName`, `appCode`, `appName`, `port`) and strict IPv4 regex checks, ensuring high data quality before backend submission.
-4. **Reactive UI Components**: Leveraged Radix UI `Tabs`, `ScrollArea`, and `Badge` components to provide an enterprise-grade review experience with real-time feedback.
-5. **Comprehensive TDD Suite**: Rewrote the component tests using Vitest and React Testing Library to cover the full iterative lifecycle, including file parsing mocks and inline editing verification.
+1. **IAM Integration (Keycloak)**: Implemented `keycloak-js` adapter for OIDC-compliant authentication. Configured with PKCE (Proof Key for Code Exchange) for enhanced security on the local `AuditNode-Realm`.
+2. **Centralized Auth Service**: Created `src/services/keycloakService.ts` to manage Keycloak lifecycle (Init, Login, Logout, Token Refresh, and Profile retrieval).
+3. **Async API Interceptor**: Upgraded the global Axios `apiClient` with an asynchronous request interceptor. This interceptor calls `keycloak.updateToken(30)` before every outgoing request, ensuring that a valid, unexpired token is always attached to the `Authorization: Bearer` header.
+4. **App Initialization Guard**: Refactored `src/main.tsx` to delay React rendering until Keycloak is successfully initialized (`onLoad: 'login-required'`), effectively creating a global auth-gate.
+5. **UI & Navigation Polish**:
+   - Integrated `getUsername()` into `Topbar.tsx` for personalized greetings.
+   - Added a dedicated "Logout" action with `lucide-react` icons.
+   - Updated styling for user profile components to better fit the enterprise theme.
+6. **Testing & Stability**:
+   - Implemented a global Keycloak mock in `src/__tests__/setup.ts` to preserve test suite integrity across 22 test files.
+   - Updated `apiClient.test.ts` to verify the new asynchronous token refresh and injection logic.
 
 ### Impact
-Transformed bulk import from a frustrating, opaque process into a powerful, interactive tool. Users can now confidently ingest large datasets, resolve data issues on-the-fly without leaving the UI, and selectively import clean data—significantly reducing manual data entry overhead and improving system accuracy.
+Secured the entire frontend and backend communication channel using industry-standard protocols. The implementation provides a seamless, "zero-click" authentication experience for the user while ensuring that infrastructure data is strictly protected behind the corporate IAM.

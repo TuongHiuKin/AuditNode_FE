@@ -26,6 +26,7 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 ## 📈 Current Status
 
 ### Recent Progress
+- ✅ **Keycloak IAM Integration**: Implemented centralized OIDC-compliant authentication using `keycloak-js`. Features include PKCE-enabled initialization guard, automatic token injection via Axios interceptors, and silent token refresh logic.
 - ✅ **Iterative Partial Bulk Import**: Developed a high-performance Excel ingestion workflow featuring browser-side data normalization, strict multi-field validation, and an interactive review grid that persists errors for iterative fixing.
 - ✅ **Adaptive Deployment Selector**: 
  Implemented a dynamic radio-based UI in `EditEntityDrawer` to handle 1-to-Many application-server relationships, enabling precise targeting of multi-server deployments.
@@ -41,8 +42,8 @@ Audit System is a specialized tool for IT Infrastructure teams to visualize, tra
 - ✅ **Data Integrity**: Implemented a **Transaction-based Upsert pattern** for Application registration.
 
 ### Next Steps
-- 🔐 **Keycloak IAM Integration**: Implementing centralized Authentication and Authorization.
 - 📊 **Advanced Analytics**: Developing deeper insights into dependency chains.
+- 🐳 **Dockerization**: Containerizing the frontend and backend for unified deployment.
 
 ---
 
@@ -107,5 +108,5 @@ Please follow the project's coding standards:
 
 ---
 
-**Last Updated:** June 10, 2026  
+**Last Updated:** June 14, 2026  
 **Project Lead:** Gemini CLI

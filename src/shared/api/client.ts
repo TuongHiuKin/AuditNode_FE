@@ -1,21 +1,12 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { paths } from "./v1-contract";
+import { getToken, updateToken } from "../../services/keycloakService";
 
 /**
  * Base URL for the API.
  * Defaults to localhost:7126 as per requirement.
  */
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
-
-/**
- * Placeholder for Keycloak token retrieval.
- * In a real scenario, this would interface with the Keycloak provider.
- */
-const getToken = (): string | null => {
-  // Logic to fetch token from Keycloak instance/context
-  // return window.keycloak?.token;
-  return localStorage.getItem("keycloak_token"); // Example placeholder
-};
 
 /**
  * Centralized Axios instance with type safety and interceptors.
@@ -28,12 +19,19 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor to inject the Keycloak Bearer Token.
+ * Request interceptor handler to inject the Keycloak Bearer Token.
+ * Includes automatic token refresh logic.
  */
-export const requestInterceptorHandler = (config: InternalAxiosRequestConfig) => {
-  const token = getToken();
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
+  try {
+    // Ensure token is valid for at least 30 seconds
+    await updateToken(30);
+    const token = getToken();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (error) {
+    console.error("Failed to refresh token", error);
   }
   return config;
 };

@@ -18,3 +18,19 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }
 
+// Global mock for Keycloak Service
+vi.mock("../services/keycloakService", () => ({
+  initKeycloak: vi.fn((cb) => cb()),
+  doLogout: vi.fn(),
+  getToken: vi.fn(() => "mock-token"),
+  updateToken: vi.fn(() => Promise.resolve(true)),
+  getUsername: vi.fn(() => "Test User"),
+  default: {
+    token: "mock-token",
+    tokenParsed: { preferred_username: "Test User" },
+    logout: vi.fn(),
+    init: vi.fn().mockResolvedValue(true),
+    updateToken: vi.fn().mockResolvedValue(true),
+  },
+}));
+

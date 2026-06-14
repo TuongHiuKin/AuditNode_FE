@@ -1,27 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requestInterceptorHandler, responseInterceptorErrorHandler } from "../shared/api/client";
+import * as keycloakService from "../services/keycloakService";
+
+vi.mock("../services/keycloakService", () => ({
+  getToken: vi.fn(),
+  updateToken: vi.fn().mockResolvedValue(true),
+}));
 
 describe("apiClient Interceptors", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
   });
 
   describe("requestInterceptorHandler", () => {
-    it("adds Bearer token from localStorage if present", () => {
-      localStorage.setItem("keycloak_token", "test-token");
+    it("adds Bearer token from keycloakService if present", async () => {
+      vi.mocked(keycloakService.getToken).mockReturnValue("test-token");
       
       const config = { headers: {} } as any;
-      const result = requestInterceptorHandler(config);
+      const result = await requestInterceptorHandler(config);
       
+      expect(keycloakService.updateToken).toHaveBeenCalledWith(30);
       expect(result.headers.Authorization).toBe("Bearer test-token");
     });
 
-    it("does not add Authorization header if token is missing", () => {
+    it("does not add Authorization header if token is missing", async () => {
+      vi.mocked(keycloakService.getToken).mockReturnValue(undefined);
+      
       const config = { headers: {} } as any;
-      const result = requestInterceptorHandler(config);
+      const result = await requestInterceptorHandler(config);
       
       expect(result.headers.Authorization).toBeUndefined();
+    });
+
+    it("handles token refresh failure gracefully", async () => {
+      vi.mocked(keycloakService.updateToken).mockRejectedValue(new Error("Refresh failed"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      
+      const config = { headers: {} } as any;
+      const result = await requestInterceptorHandler(config);
+      
+      expect(consoleSpy).toHaveBeenCalledWith("Failed to refresh token", expect.any(Error));
+      expect(result.headers.Authorization).toBeUndefined();
+      
+      consoleSpy.mockRestore();
     });
   });
 
