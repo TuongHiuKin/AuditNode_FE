@@ -41,6 +41,11 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Force Hydration Pattern**: Programmatically synchronizes `react-hook-form` state upon deployment selection, ensuring strict validation and reliable payload construction.
   - **Combobox Integration**: Features a searchable, filtered infrastructure selector with a "Clear on Open" UX and forgiving multi-field matching logic.
   - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.
+- **IAM Integration (Keycloak)**:
+  - **Authentication**: Uses `keycloak-js` for OIDC-compliant authentication.
+  - **Initialization**: App initialization is guarded in `main.tsx`; the React tree only renders after a successful Keycloak `init`.
+  - **Token Management**: Implements an async Axios interceptor that calls `keycloak.updateToken()` before every request, ensuring no calls are made with expired credentials.
+  - **Identity**: Exposes a `getUsername()` utility for personalized UI components (e.g., Topbar).
 - **Iterative Bulk Import**:
   - **Design**: Implements an enterprise-grade "Parse-Validate-Fix" workflow for Excel ingestion.
   - **Data Normalization**: Intercepts raw Excel JSON and maps human-readable headers (with spaces) to strict internal camelCase keys.
