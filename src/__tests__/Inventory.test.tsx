@@ -64,12 +64,11 @@ describe("Inventory Page Integration", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <Inventory />
+          <Inventory type="applications" />
         </MemoryRouter>
       </QueryClientProvider>
     );
 
-    fireEvent.click(screen.getByText("Applications"));
     await waitFor(() => screen.getByText("Test Application"));
 
     const deleteBtns = screen.getAllByTitle("Delete");

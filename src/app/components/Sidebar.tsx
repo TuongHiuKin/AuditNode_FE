@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router";
 import { Server, Network, Workflow, Activity } from "lucide-react";
 
 const navItems = [
-  { name: "Infrastructure Inventory", path: "/", icon: <Server size={20} /> },
+  { name: "Infrastructure Inventory", path: "/inventory", icon: <Server size={20} /> },
   { name: "Topology Map", path: "/topology", icon: <Network size={20} /> },
   { name: "Dependency Manager", path: "/dependency-manager", icon: <Workflow size={20} /> },
 ];
@@ -23,9 +23,7 @@ export function Sidebar() {
 
       <nav className="flex-1 py-6 px-4 space-y-2">
         {navItems.map((item) => {
-          const isActive =
-            location.pathname === item.path ||
-            (location.pathname === "/inventory" && item.path === "/");
+          const isActive = location.pathname.startsWith(item.path);
           return (
             <Link
               key={item.path}
