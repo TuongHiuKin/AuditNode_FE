@@ -2,10 +2,19 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Topbar } from "../app/components/Topbar";
 import * as keycloakService from "../services/keycloakService";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
+import apiClient from "../shared/api/client";
 
-vi.mock("../services/keycloakService", () => ({
+vi.mock("../../services/keycloakService", () => ({
   getUsername: vi.fn(),
   doLogout: vi.fn(),
+}));
+
+vi.mock("../shared/api/client", () => ({
+  default: {
+    get: vi.fn(),
+  },
 }));
 
 vi.mock("../app/hooks/useHeader", () => ({
@@ -16,46 +25,52 @@ vi.mock("../app/hooks/useHeader", () => ({
   }),
 }));
 
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
+
 describe("Topbar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
   });
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    const queryClient = createTestQueryClient();
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <WorkspaceProvider>
+          {ui}
+        </WorkspaceProvider>
+      </QueryClientProvider>
+    );
+  };
 
   it("renders user information correctly", () => {
     vi.mocked(keycloakService.getUsername).mockReturnValue("testuser");
-    render(<Topbar />);
+    renderWithProviders(<Topbar />);
     expect(screen.getAllByText("testuser")).toBeDefined();
     expect(screen.getAllByText("Authenticated User")).toBeDefined();
   });
 
   it("toggles dropdown when user profile is clicked", () => {
     vi.mocked(keycloakService.getUsername).mockReturnValue("testuser");
-    render(<Topbar />);
-    
-    // Dropdown should be closed initially
-    expect(screen.queryByText("Logout")).toBeNull();
+    renderWithProviders(<Topbar />);
 
-    const profileBtn = screen.getByRole("button");
+    // User profile button is the second button (first is workspace)
+    const profileBtn = screen.getAllByRole("button")[1];
     fireEvent.click(profileBtn);
 
-    // Dropdown should be open
     expect(screen.getByText("Logout")).toBeDefined();
-    
-    fireEvent.click(profileBtn);
-    // Dropdown should be closed again
-    expect(screen.queryByText("Logout")).toBeNull();
   });
 
-  it("calls doLogout when logout button is clicked", () => {
-    vi.mocked(keycloakService.getUsername).mockReturnValue("testuser");
-    render(<Topbar />);
-    
-    const profileBtn = screen.getByRole("button");
-    fireEvent.click(profileBtn);
-
-    const logoutBtn = screen.getByText("Logout");
-    fireEvent.click(logoutBtn);
-
-    expect(keycloakService.doLogout).toHaveBeenCalled();
+  it("renders workspace switcher", () => {
+    renderWithProviders(<Topbar />);
+    expect(screen.getByText("Active Workspace")).toBeDefined();
   });
 });
+

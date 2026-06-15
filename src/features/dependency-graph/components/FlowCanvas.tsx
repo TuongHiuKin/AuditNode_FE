@@ -12,6 +12,7 @@ import "@xyflow/react/dist/style.css";
 
 import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
+import GroupNode from "./GroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
@@ -40,6 +41,7 @@ interface FlowCanvasProps {
   onSelectionChange: any;
   isLoading: boolean;
   onQuickAdd?: () => void;
+  onAddGroup?: () => void;
   isDrawingServer?: boolean;
   drawBox?: { startX: number; startY: number; currentX: number; currentY: number } | null;
   onPaneMouseDown?: (event: React.MouseEvent) => void;
@@ -59,6 +61,7 @@ export function FlowCanvas({
   onSelectionChange,
   isLoading,
   onQuickAdd,
+  onAddGroup,
   isDrawingServer,
   drawBox,
   onPaneMouseDown,
@@ -68,6 +71,7 @@ export function FlowCanvas({
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
+    groupNode: GroupNode,
   }), []);
 
   const edgeTypes = useMemo(() => ({
@@ -130,7 +134,7 @@ export function FlowCanvas({
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar onQuickAdd={onQuickAdd} />
+        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "#0c1322" : "#FF4D7E")}
           maskColor="rgba(5, 8, 17, 0.7)"

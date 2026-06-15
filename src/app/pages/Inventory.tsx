@@ -6,8 +6,10 @@ import { RegisterModal } from "../components/RegisterModal";
 import { EditEntityDrawer } from "../components/EditEntityDrawer";
 import { MigrationDrawer } from "../components/MigrationDrawer";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
+import { useInventoryContext } from "./InventoryLayout";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
+  const { selectedIds, onSelectRow, onSelectAll } = useInventoryContext();
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [filterId, setFilterId] = useState<string | undefined>(undefined);
 
@@ -63,6 +65,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
+              selectedIds={selectedIds}
+              onSelectRow={onSelectRow}
+              onSelectAll={onSelectAll}
             />
           : <AppTable
               onRegister={() => setIsRegisterModalOpen(true)}
@@ -72,6 +77,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               filterId={filterId}
               onSelectResult={handleSelectResult}
               onClearFilter={() => setFilterId(undefined)}
+              selectedIds={selectedIds}
+              onSelectRow={onSelectRow}
+              onSelectAll={onSelectAll}
             />}
       </div>
 

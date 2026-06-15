@@ -5,6 +5,7 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -58,9 +59,11 @@ describe("useDependencyLogic", () => {
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <ReactFlowProvider>
-        {children}
-      </ReactFlowProvider>
+      <WorkspaceProvider>
+        <ReactFlowProvider>
+          {children}
+        </ReactFlowProvider>
+      </WorkspaceProvider>
     </QueryClientProvider>
   );
 

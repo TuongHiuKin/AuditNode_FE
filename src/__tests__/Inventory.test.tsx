@@ -24,6 +24,15 @@ vi.mock("../app/hooks/useHeader", () => ({
   }),
 }));
 
+vi.mock("../app/pages/InventoryLayout", () => ({
+  useInventoryContext: () => ({
+    onRefresh: vi.fn(),
+    selectedIds: [],
+    onSelectRow: vi.fn(),
+    onSelectAll: vi.fn(),
+  }),
+}));
+
 const createTestQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {

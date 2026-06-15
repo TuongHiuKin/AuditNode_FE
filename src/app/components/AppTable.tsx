@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Server, ChevronDown, ChevronRight, Plus, Filter, X } from "lucide-react";
+import { Server, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
@@ -32,6 +32,9 @@ export function AppTable({
   filterId,
   onSelectResult,
   onClearFilter,
+  selectedIds = [],
+  onSelectRow = () => {},
+  onSelectAll = () => {},
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -40,6 +43,9 @@ export function AppTable({
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
+  selectedIds?: string[];
+  onSelectRow?: (id: string) => void;
+  onSelectAll?: (ids: string[]) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -79,6 +85,9 @@ export function AppTable({
       return matchesRisk && matchesSearch;
     });
   }, [apps, searchQuery, riskFilter, filterId]);
+
+  const allIdsOnPage = useMemo(() => filteredApps.map(app => app.id!).filter(Boolean), [filteredApps]);
+  const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -154,6 +163,16 @@ export function AppTable({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-slate-500 bg-[#050811]/60">
+                <th className="px-6 py-4 w-12">
+                  <div 
+                    onClick={() => onSelectAll(allIdsOnPage)}
+                    className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                      isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    {isAllSelected && <Check size={10} className="text-white" />}
+                  </div>
+                </th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">App Code</th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Application Name</th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Owner</th>
@@ -164,7 +183,7 @@ export function AppTable({
             <tbody className="divide-y divide-slate-900/50">
               {filteredApps.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-secondary italic">
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-secondary italic">
                     {searchQuery ? "No applications match your search." : "No applications found. Check your backend connection."}
                   </td>
                 </tr>
@@ -174,6 +193,8 @@ export function AppTable({
                     key={app.id} 
                     app={app} 
                     expanded={!!expandedRows[app.id!]}
+                    isSelected={selectedIds.includes(app.id!)}
+                    onSelect={() => onSelectRow(app.id!)}
                     onToggle={() => toggleRow(app.id!)} 
                     onDepClick={(id, env) => goToDep(id, env)} 
                     onEditClick={onEditClick}
@@ -192,10 +213,12 @@ export function AppTable({
 
 // ── AppRowItem ────────────────────────────────────────────────────────────────
 function AppRowItem({
-  app, expanded, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
+  app, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
 }: { 
   app: AppRow; 
   expanded: boolean; 
+  isSelected: boolean;
+  onSelect: () => void;
   onToggle: () => void; 
   onDepClick: (id: string, env?: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -208,8 +231,18 @@ function AppRowItem({
                               "text-slate-400 bg-slate-500/10 border-slate-500/20";
   return (
     <>
-      <tr className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""}`}
+      <tr className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""} ${isSelected ? "bg-tertiary/5" : ""}`}
         onClick={onToggle}>
+        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+          <div 
+            onClick={onSelect}
+            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+              isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+            }`}
+          >
+            {isSelected && <Check size={10} className="text-white" />}
+          </div>
+        </td>
         <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
           {expanded ? <ChevronDown size={14} className="text-secondary" /> : <ChevronRight size={14} className="text-secondary" />}
           {app.appCode}
@@ -233,7 +266,7 @@ function AppRowItem({
 
       {expanded && (
         <tr className="bg-[#050811]/40">
-          <td colSpan={5} className="p-0 border-t border-slate-900">
+          <td colSpan={6} className="p-0 border-t border-slate-900">
             <div className="px-12 py-4">
               <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Server size={12} /> DEPLOYED SERVERS

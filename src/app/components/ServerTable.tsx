@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { Grid, ChevronDown, ChevronRight, Plus, Filter, X } from "lucide-react";
+import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
@@ -30,6 +30,9 @@ export function ServerTable({
   filterId,
   onSelectResult,
   onClearFilter,
+  selectedIds = [],
+  onSelectRow = () => {},
+  onSelectAll = () => {},
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -38,6 +41,9 @@ export function ServerTable({
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
+  selectedIds?: string[];
+  onSelectRow?: (id: string) => void;
+  onSelectAll?: (ids: string[]) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +78,9 @@ export function ServerTable({
       return matchesEnv && matchesSearch;
     });
   }, [servers, searchQuery, envFilter, filterId]);
+
+  const allIdsOnPage = useMemo(() => filteredServers.map(s => s.id!).filter(Boolean), [filteredServers]);
+  const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -147,6 +156,16 @@ export function ServerTable({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-slate-500 bg-[#050811]/60">
+                <th className="px-6 py-4 w-12">
+                  <div 
+                    onClick={() => onSelectAll(allIdsOnPage)}
+                    className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                      isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    {isAllSelected && <Check size={10} className="text-white" />}
+                  </div>
+                </th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">IP Address</th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Hostname</th>
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">OS Type</th>
@@ -157,7 +176,7 @@ export function ServerTable({
             <tbody className="divide-y divide-slate-900/50">
               {filteredServers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-secondary italic">
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-secondary italic">
                     {searchQuery ? "No servers match your search." : "No servers found. Check your backend connection."}
                   </td>
                 </tr>
@@ -167,6 +186,8 @@ export function ServerTable({
                     key={server.id}
                     server={server}
                     expanded={!!expandedRows[server.id!]}
+                    isSelected={selectedIds.includes(server.id!)}
+                    onSelect={() => onSelectRow(server.id!)}
                     onToggle={() => toggleRow(server.id!)}
                     onDepClick={(id, env) => goToDep(id, env)}
                     onEditClick={onEditClick}
@@ -185,10 +206,12 @@ export function ServerTable({
 
 // ── ServerRowItem ─────────────────────────────────────────────────────────────
 function ServerRowItem({
-  server, expanded, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
+  server, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
 }: { 
   server: ServerRow; 
   expanded: boolean; 
+  isSelected: boolean;
+  onSelect: () => void;
   onToggle: () => void; 
   onDepClick: (id: string, env?: string) => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -198,9 +221,19 @@ function ServerRowItem({
   return (
     <>
       <tr
-        className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""}`}
+        className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""} ${isSelected ? "bg-tertiary/5" : ""}`}
         onClick={onToggle}
       >
+        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+          <div 
+            onClick={onSelect}
+            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+              isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+            }`}
+          >
+            {isSelected && <Check size={10} className="text-white" />}
+          </div>
+        </td>
         <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
           {expanded
             ? <ChevronDown size={14} className="text-secondary" />
@@ -229,7 +262,7 @@ function ServerRowItem({
 
       {expanded && (
         <tr className="bg-[#050811]/40">
-          <td colSpan={5} className="p-0 border-t border-slate-900">
+          <td colSpan={6} className="p-0 border-t border-slate-900">
             <div className="px-12 py-4">
               <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Grid size={12} /> DEPLOYED APPLICATIONS

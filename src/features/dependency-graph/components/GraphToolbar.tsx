@@ -1,12 +1,13 @@
 import { Controls } from "@xyflow/react";
-import { Camera, Plus } from "lucide-react";
+import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
+  onAddGroup?: () => void;
 }
 
-export function GraphToolbar({ onQuickAdd }: GraphToolbarProps) {
+export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -37,6 +38,13 @@ export function GraphToolbar({ onQuickAdd }: GraphToolbarProps) {
           className="p-2.5 text-secondary hover:text-tertiary hover:bg-background transition-all border-b border-border"
         >
           <Camera size={18} />
+        </button>
+        <button
+          onClick={onAddGroup}
+          title="Add Group Box"
+          className="p-2.5 text-secondary hover:text-tertiary hover:bg-background transition-all border-b border-border"
+        >
+          <Briefcase size={18} />
         </button>
         <button
           onClick={onQuickAdd}

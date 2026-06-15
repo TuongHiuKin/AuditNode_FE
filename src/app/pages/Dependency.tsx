@@ -41,6 +41,8 @@ function DependencyManagerContent() {
     onReconnect,
     handleSync,
     isSyncing,
+    exportGroupAuditMatrix,
+    addGroupBox,
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -199,6 +201,7 @@ function DependencyManagerContent() {
               onPaneMouseDown={onPaneMouseDown}
               onPaneMouseMove={onPaneMouseMove}
               onPaneMouseUp={onPaneMouseUp}
+              onAddGroup={addGroupBox}
             />
           </div>
 

@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { paths } from "./v1-contract";
 import { getToken, updateToken } from "../../services/keycloakService";
+import { getActiveWorkspaceId } from "../../app/hooks/useWorkspaceStore";
 
 /**
  * Base URL for the API.
@@ -24,7 +25,13 @@ const apiClient: AxiosInstance = axios.create({
  */
 export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
   try {
-    // Ensure token is valid for at least 30 seconds
+    // 1. Inject Workspace Context
+    const workspaceId = getActiveWorkspaceId();
+    if (workspaceId && config.headers) {
+      config.headers["X-Workspace-Id"] = workspaceId;
+    }
+
+    // 2. Ensure Keycloak token is valid for at least 30 seconds
     await updateToken(30);
     const token = getToken();
     if (token && config.headers) {

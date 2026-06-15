@@ -15,6 +15,8 @@ import apiClient, { Schemas } from "../../../shared/api/client";
 import { PaletteApp, SelectedItem } from "../types";
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { useWorkspaceStore } from "../../../app/hooks/useWorkspaceStore";
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
@@ -36,6 +38,76 @@ export function useDependencyLogic() {
 
   const isExplicitFetchRef = useRef(false);
   const hasMountedRef = useRef(false);
+
+  // ── Scoped Export Algorithm ─────────────────────────────────────────────
+  const { activeWorkspace } = useWorkspaceStore();
+
+  const exportGroupAuditMatrix = useCallback((groupId: string, groupLabel: string) => {
+    // 1. Identify all child nodes recursively (handling apps inside servers inside groups)
+    const childNodes = nodes.filter(n => n.parentId === groupId);
+    const serverIds = childNodes.filter(n => n.type === 'serverNode').map(n => n.id);
+    
+    // Find apps that are either directly in group OR in a server that is in group
+    const appNodesInGroup = nodes.filter(n => 
+      n.type === 'appNode' && (n.parentId === groupId || (n.parentId && serverIds.includes(n.parentId)))
+    );
+
+    const groupNodeIds = new Set([groupId, ...childNodes.map(n => n.id), ...appNodesInGroup.map(n => n.id)]);
+
+    // 2. Filter edges where BOTH source and target are within the group boundaries
+    const scopedEdges = edges.filter(e => 
+      groupNodeIds.has(e.source) && groupNodeIds.has(e.target)
+    );
+
+    // 3. Map into Audit Matrix Format
+    const auditData = scopedEdges.map(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      const targetNode = nodes.find(n => n.id === edge.target);
+      
+      return {
+        "Source Component": sourceNode?.data?.app?.appName || sourceNode?.data?.server?.hostname || "Unknown",
+        "Source IP": sourceNode?.data?.server?.ipAddress || "Internal",
+        "Target Component": targetNode?.data?.app?.appName || targetNode?.data?.server?.hostname || "Unknown",
+        "Target IP": targetNode?.data?.server?.ipAddress || "Internal",
+        "Port": targetNode?.data?.app?.portNumber || edge.data?.protocol || "Any",
+        "Protocol": edge.data?.protocol || "TCP",
+        "Workspace": activeWorkspace?.name || "Global"
+      };
+    });
+
+    if (auditData.length === 0) {
+      toast.error("No connections found within this group to export.");
+      return;
+    }
+
+    // 4. Client-side XLSX Generation
+    const ws = XLSX.utils.json_to_sheet(auditData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Audit Matrix");
+
+    const date = new Date().toISOString().split('T')[0];
+    const cleanGroupLabel = groupLabel.replace(/\s+/g, '_');
+    const workspaceName = activeWorkspace?.name?.replace(/\s+/g, '_') || "Global";
+    
+    XLSX.writeFile(wb, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}.xlsx`);
+    toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
+  }, [nodes, edges, activeWorkspace]);
+
+  const addGroupBox = useCallback(() => {
+    const id = `group-${Date.now()}`;
+    const newNode: Node = {
+      id,
+      type: 'groupNode',
+      position: { x: 100, y: 100 },
+      data: { 
+        label: "New Infrastructure Cluster",
+        onExportAudit: exportGroupAuditMatrix
+      },
+      style: { width: 400, height: 300 },
+      zIndex: -2,
+    };
+    setNodes((nds) => nds.concat(newNode));
+  }, [setNodes, exportGroupAuditMatrix]);
 
   // ── Sync to Database ─────────────────────────────────────────────────────
   const handleSync = useCallback(async () => {
@@ -497,6 +569,8 @@ export function useDependencyLogic() {
     onReconnect,
     handleSync,
     isSyncing,
+    exportGroupAuditMatrix,
+    addGroupBox,
   };
 }
 
