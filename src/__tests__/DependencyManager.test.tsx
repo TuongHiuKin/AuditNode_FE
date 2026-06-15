@@ -7,6 +7,7 @@ import { ServerGroupNode } from "../features/dependency-graph/components/ServerG
 import { DependencyManager } from "../app/pages/Dependency";
 import apiClient from "../shared/api/client";
 import { HeaderProvider } from "../app/hooks/useHeader";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock the apiClient
 vi.mock("../shared/api/client", () => ({
@@ -75,11 +76,13 @@ describe("DependencyManager Integration", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <HeaderProvider>
-          <MemoryRouter>
-            <DependencyManager />
-          </MemoryRouter>
-        </HeaderProvider>
+        <WorkspaceProvider>
+          <HeaderProvider>
+            <MemoryRouter>
+              <DependencyManager />
+            </MemoryRouter>
+          </HeaderProvider>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -99,11 +102,13 @@ describe("DependencyManager Integration", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <HeaderProvider>
-          <MemoryRouter>
-            <DependencyManager />
-          </MemoryRouter>
-        </HeaderProvider>
+        <WorkspaceProvider>
+          <HeaderProvider>
+            <MemoryRouter>
+              <DependencyManager />
+            </MemoryRouter>
+          </HeaderProvider>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 

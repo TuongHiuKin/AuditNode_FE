@@ -32,9 +32,9 @@ export function AppTable({
   filterId,
   onSelectResult,
   onClearFilter,
-  selectedIds,
-  onSelectRow,
-  onSelectAll,
+  selectedIds = [],
+  onSelectRow = () => {},
+  onSelectAll = () => {},
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -43,9 +43,9 @@ export function AppTable({
   filterId?: string;
   onSelectResult: (id: string, type: 'SERVER' | 'APP') => void;
   onClearFilter: () => void;
-  selectedIds: string[];
-  onSelectRow: (id: string) => void;
-  onSelectAll: (ids: string[]) => void;
+  selectedIds?: string[];
+  onSelectRow?: (id: string) => void;
+  onSelectAll?: (ids: string[]) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
