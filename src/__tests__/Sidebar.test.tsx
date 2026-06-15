@@ -26,9 +26,9 @@ describe("Sidebar", () => {
   });
 
   it("applies standardized SaaS active state classes", () => {
-    // MemoryRouter defaults to '/'
+    // MemoryRouter defaults to '/inventory' to match Infrastructure Inventory
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/inventory"]}>
         <Sidebar />
       </MemoryRouter>
     );
@@ -40,7 +40,7 @@ describe("Sidebar", () => {
 
   it("applies professional monochromatic inactive state classes", () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/inventory"]}>
         <Sidebar />
       </MemoryRouter>
     );
