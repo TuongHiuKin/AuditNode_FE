@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
-import apiClient, { Schemas } from "../../shared/api/client";
+import { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
-import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
+import { useServers } from "../../hooks/queries/useServers";
 
 type ServerRow = Schemas["ServerResponseDto"];
 
@@ -56,19 +55,8 @@ export function ServerTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
   const navigate = useNavigate();
-  const { activeWorkspace } = useWorkspaceStore();
 
-  const { data: servers = [], isLoading } = useQuery<ServerRow[]>({
-    queryKey: ["servers", activeWorkspace?.id],
-    queryFn: async () => {
-      const response = await apiClient.get<ServerRow[]>("/api/v1/servers");
-      const rawResponse = response as any;
-      // Safely handle both direct array and wrapped response { data: [...] }
-      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
-      return data as ServerRow[];
-    },
-    enabled: !!activeWorkspace?.id,
-  });
+  const { data: servers = [], isLoading } = useServers();
 
   const filteredServers = useMemo(() => {
     if (filterId) {
