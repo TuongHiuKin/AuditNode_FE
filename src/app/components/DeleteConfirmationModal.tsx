@@ -54,7 +54,7 @@ export function DeleteConfirmationModal({
     if (!entityId) return;
     setLoadingImpact(true);
     try {
-      const response = await apiClient.get<any>(`/api/infrastructure/apps/${entityId}/dependencies-count`);
+      const response = await apiClient.get<any>(`/api/v1/infrastructure/apps/${entityId}/dependencies-count`);
       const rawData = response.data ?? response;
       
       let parsedCount = 0;
@@ -79,7 +79,7 @@ export function DeleteConfirmationModal({
     if (!entityId) return;
     setLoadingImpact(true);
     try {
-      const response = await apiClient.get<DeployedApp[]>(`/api/infrastructure/servers/${entityId}/deployed-apps`);
+      const response = await apiClient.get<DeployedApp[]>(`/api/v1/infrastructure/servers/${entityId}/deployed-apps`);
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setDeployedApps(data);
@@ -97,8 +97,8 @@ export function DeleteConfirmationModal({
     setPurging(true);
     try {
       const endpoint = entityType === "APP" 
-        ? `/api/infrastructure/apps/${entityId}/purge`
-        : `/api/infrastructure/servers/${entityId}/purge`;
+        ? `/api/v1/infrastructure/apps/${entityId}/purge`
+        : `/api/v1/infrastructure/servers/${entityId}/purge`;
         
       await apiClient.delete(endpoint);
       toast.success(`${entityType === "APP" ? "Application" : "Server"} purged successfully`);

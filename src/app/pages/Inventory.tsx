@@ -9,7 +9,7 @@ import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useInventoryContext } from "./InventoryLayout";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
-  const { selectedIds, onSelectRow, onSelectAll } = useInventoryContext();
+  const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn } = useInventoryContext();
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [filterId, setFilterId] = useState<string | undefined>(undefined);
 
@@ -68,6 +68,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               selectedIds={selectedIds}
               onSelectRow={onSelectRow}
               onSelectAll={onSelectAll}
+              isSelectionMode={isSelectionMode}
+              selectedColumns={selectedColumns}
+              toggleColumn={toggleColumn}
             />
           : <AppTable
               onRegister={() => setIsRegisterModalOpen(true)}
@@ -80,6 +83,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               selectedIds={selectedIds}
               onSelectRow={onSelectRow}
               onSelectAll={onSelectAll}
+              isSelectionMode={isSelectionMode}
+              selectedColumns={selectedColumns}
+              toggleColumn={toggleColumn}
             />}
       </div>
 

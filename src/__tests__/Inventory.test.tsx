@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Inventory } from "../app/pages/Inventory";
 import apiClient from "../shared/api/client";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock dependencies
 vi.mock("../shared/api/client", () => ({
@@ -44,6 +45,7 @@ const createTestQueryClient = () => new QueryClient({
 describe("Inventory Page Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   const mockApps = [
@@ -64,7 +66,7 @@ describe("Inventory Page Integration", () => {
 
   it("opens delete confirmation modal when clicking delete on an app", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url === "/api/Applications") return Promise.resolve({ data: mockApps });
+      if (url === "/api/v1/applications") return Promise.resolve({ data: mockApps });
       if (url.includes("dependencies-count")) return Promise.resolve({ data: { count: 0 } });
       return Promise.resolve({ data: [] });
     });
@@ -72,9 +74,11 @@ describe("Inventory Page Integration", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <Inventory type="applications" />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter>
+            <Inventory type="applications" />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 

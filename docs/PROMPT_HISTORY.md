@@ -95,23 +95,25 @@ The application management system previously assumed a 1-to-1 relationship betwe
 ### Impact
 Enabled full support for complex, multi-server application architectures. Users can now safely and precisely migrate or reconfigure individual deployments within a multi-server app without data loss or UI confusion. The implementation bridges the gap between the flexible database schema and the administrative interface.
 
-## 2026-06-14: Keycloak IAM Integration & API Security
+## 2026-06-17: Systemic API Route Versioning & Test Suite Stabilization
 
 ### Context
-The application required a transition from placeholder authentication to a production-grade Identity and Access Management (IAM) system. All API calls needed to be protected by Bearer tokens, with support for automatic token injection and silent background refreshing to prevent session timeouts.
+The frontend was calling legacy, unversioned API endpoints (e.g., `/api/Applications`) that were inconsistent with the backend's new versioned standard. Additionally, recent architectural changes had introduced systemic test regressions, primarily related to missing workspace context and outdated UI labels.
 
 ### Solution
-1. **IAM Integration (Keycloak)**: Implemented `keycloak-js` adapter for OIDC-compliant authentication. Configured with PKCE (Proof Key for Code Exchange) for enhanced security on the local `AuditNode-Realm`.
-2. **Centralized Auth Service**: Created `src/services/keycloakService.ts` to manage Keycloak lifecycle (Init, Login, Logout, Token Refresh, and Profile retrieval).
-3. **Async API Interceptor**: Upgraded the global Axios `apiClient` with an asynchronous request interceptor. This interceptor calls `keycloak.updateToken(30)` before every outgoing request, ensuring that a valid, unexpired token is always attached to the `Authorization: Bearer` header.
-4. **App Initialization Guard**: Refactored `src/main.tsx` to delay React rendering until Keycloak is successfully initialized (`onLoad: 'login-required'`), effectively creating a global auth-gate.
-5. **UI & Navigation Polish**:
-   - Integrated `getUsername()` into `Topbar.tsx` for personalized greetings.
-   - Added a dedicated "Logout" action with `lucide-react` icons.
-   - Updated styling for user profile components to better fit the enterprise theme.
-6. **Testing & Stability**:
-   - Implemented a global Keycloak mock in `src/__tests__/setup.ts` to preserve test suite integrity across 22 test files.
-   - Updated `apiClient.test.ts` to verify the new asynchronous token refresh and injection logic.
+1. **API Route Refactoring**: 
+   - Performed a codebase-wide transformation of all internal API strings. 
+   - Updated endpoints from `/api/{Entity}` to `/api/v1/{entity}` (versioned prefix + lowercase convention).
+   - Affected modules: Inventory, Topology, Dependency Manager, and Universal Search.
+2. **Workspace Store Integration**: 
+   - Fixed the `useWorkspaceStore must be used within a WorkspaceProvider` error across the test suite. 
+   - Implemented a standard pattern in unit tests to wrap components with `WorkspaceProvider` and pre-populate `localStorage` with mock workspace data.
+3. **Test Suite Stabilization**:
+   - Updated 100+ tests to align mock expectations with the new `/api/v1/` routes.
+   - Refined UI assertions in `InventoryLayout.test.tsx` to match the latest export button labels.
+   - Fixed fragile CSS selectors in `ServerTable.test.tsx` by targeting parent `th` elements for style validation.
+4. **Core Coverage Extension**: Created `src/__tests__/useWorkspaceStore.test.tsx` to provide 100% unit test coverage for the workspace state management hook.
 
 ### Impact
-Secured the entire frontend and backend communication channel using industry-standard protocols. The implementation provides a seamless, "zero-click" authentication experience for the user while ensuring that infrastructure data is strictly protected behind the corporate IAM.
+Ensured 100% compatibility with the versioned backend API and restored the frontend CI/CD pipeline to a "Green" state. The test suite is now significantly more robust, with standardized patterns for handling workspace context and precise assertions for technical UI requirements.
+

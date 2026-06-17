@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerTable } from "../app/components/ServerTable";
 import apiClient from "../shared/api/client";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock the useNavigate hook
 const mockNavigate = vi.fn();
@@ -37,6 +38,7 @@ const createTestQueryClient = () => new QueryClient({
 describe("ServerTable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   const mockServers = [
@@ -57,16 +59,18 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <ServerTable 
-            onRegister={vi.fn()} 
-            onEditClick={vi.fn()}
-            onMigrateClick={vi.fn()}
-            onDeleteClick={vi.fn()}
-            onSelectResult={vi.fn()} 
-            onClearFilter={vi.fn()} 
-          />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter>
+            <ServerTable 
+              onRegister={vi.fn()} 
+              onEditClick={vi.fn()}
+              onMigrateClick={vi.fn()}
+              onDeleteClick={vi.fn()}
+              onSelectResult={vi.fn()} 
+              onClearFilter={vi.fn()} 
+            />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -86,16 +90,18 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-                  <ServerTable 
-          onRegister={vi.fn()} 
-          onEditClick={vi.fn()}
-          onMigrateClick={vi.fn()}
-          onDeleteClick={vi.fn()}
-          onSelectResult={vi.fn()} 
-          onClearFilter={vi.fn()} 
-        />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter>
+            <ServerTable 
+              onRegister={vi.fn()} 
+              onEditClick={vi.fn()}
+              onMigrateClick={vi.fn()}
+              onDeleteClick={vi.fn()}
+              onSelectResult={vi.fn()} 
+              onClearFilter={vi.fn()} 
+            />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -119,16 +125,18 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-                  <ServerTable 
-          onRegister={vi.fn()} 
-          onEditClick={vi.fn()}
-          onMigrateClick={vi.fn()}
-          onDeleteClick={vi.fn()}
-          onSelectResult={vi.fn()} 
-          onClearFilter={vi.fn()} 
-        />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter>
+            <ServerTable 
+              onRegister={vi.fn()} 
+              onEditClick={vi.fn()}
+              onMigrateClick={vi.fn()}
+              onDeleteClick={vi.fn()}
+              onSelectResult={vi.fn()} 
+              onClearFilter={vi.fn()} 
+            />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -144,23 +152,27 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-                  <ServerTable 
-          onRegister={vi.fn()} 
-          onEditClick={vi.fn()}
-          onMigrateClick={vi.fn()}
-          onDeleteClick={vi.fn()}
-          onSelectResult={vi.fn()} 
-          onClearFilter={vi.fn()} 
-        />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter>
+            <ServerTable 
+              onRegister={vi.fn()} 
+              onEditClick={vi.fn()}
+              onMigrateClick={vi.fn()}
+              onDeleteClick={vi.fn()}
+              onSelectResult={vi.fn()} 
+              onClearFilter={vi.fn()} 
+            />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
     await waitFor(() => {
-      const header = screen.getByText("IP Address");
-      expect(header.className).toContain("font-mono");
-      expect(header.className).toContain("tracking-widest");
+      const headerText = screen.getByText("IP Address");
+      const headerCell = headerText.closest("th");
+      expect(headerCell).toBeDefined();
+      expect(headerCell?.className).toContain("font-mono");
+      expect(headerCell?.className).toContain("tracking-widest");
     });
   });
 });

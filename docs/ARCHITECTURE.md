@@ -57,9 +57,10 @@ Built with **React 18**, **TypeScript**, and **Vite**.
 
 ## 🔄 Communication Flow
 1. The **React Frontend** sends HTTP requests to the **.NET API**.
-2. The API authenticates/authorizes (placeholder for Keycloak) and processes the request.
-3. The **Infrastructure Layer** queries the **PostgreSQL Database** (using optimized Views for complex joins).
-4. Data is returned as JSON and rendered dynamically on the UI.
+2. **API Versioning**: Implements a strict `/api/v1/` versioning strategy with lowercase routing conventions to ensure long-term backend compatibility and predictable endpoint structure.
+3. The API authenticates/authorizes via Keycloak and processes the request.
+4. The **Infrastructure Layer** queries the **PostgreSQL Database** (using optimized Views for complex joins).
+5. Data is returned as JSON and rendered dynamically on the UI.
 
 ## 🛠️ Tech Stack Summary
 - **Backend**: C#, .NET 10, EF Core, Npgsql, PostgreSQL.

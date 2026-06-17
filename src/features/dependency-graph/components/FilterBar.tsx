@@ -32,7 +32,7 @@ export function FilterBar({
   const { data: datacenterData = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/Datacenters");
+      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
       const rawResponse = response as any;
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },

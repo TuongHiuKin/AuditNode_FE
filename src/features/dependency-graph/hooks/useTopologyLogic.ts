@@ -196,7 +196,7 @@ export function useTopologyLogic() {
     queryFn: async () => {
       try {
         const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-          "/api/Topology/map",
+          "/api/v1/topology/map",
           {
             params: {
               environment: selectedEnv === "All" ? undefined : selectedEnv,

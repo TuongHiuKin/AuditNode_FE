@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
+import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
 
 type AppRow = Schemas["ApplicationResponseDto"] & {
   description?: string;
@@ -35,6 +36,9 @@ export function AppTable({
   selectedIds = [],
   onSelectRow = () => {},
   onSelectAll = () => {},
+  isSelectionMode = false,
+  selectedColumns = [],
+  toggleColumn = () => {},
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -46,16 +50,20 @@ export function AppTable({
   selectedIds?: string[];
   onSelectRow?: (id: string) => void;
   onSelectAll?: (ids: string[]) => void;
+  isSelectionMode?: boolean;
+  selectedColumns?: string[];
+  toggleColumn?: (key: string) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
   const navigate = useNavigate();
+  const { activeWorkspace } = useWorkspaceStore();
 
   const { data: apps = [], isLoading } = useQuery({
-    queryKey: ["applications"],
+    queryKey: ["applications", activeWorkspace?.id],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/Applications");
+      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/v1/applications");
       const rawResponse = response as any;
       // Safely destructure: handle both direct array and wrapped response { data: [...] }
       const rawData = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
@@ -65,6 +73,7 @@ export function AppTable({
         description: app.description || app.techStack
       }));
     },
+    enabled: !!activeWorkspace?.id,
   });
 
   const filteredApps = useMemo(() => {
@@ -86,8 +95,8 @@ export function AppTable({
     });
   }, [apps, searchQuery, riskFilter, filterId]);
 
-  const allIdsOnPage = useMemo(() => filteredApps.map(app => app.id!).filter(Boolean), [filteredApps]);
-  const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
+  const allIdsOnPage = useMemo(() => filteredApps.map((app: AppRow) => app.id!).filter(Boolean), [filteredApps]);
+  const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every((id: string) => selectedIds.includes(id));
 
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -102,59 +111,61 @@ export function AppTable({
 
   return (
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
-      {/* Table Action Header */}
-      <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-        <div className="flex items-center gap-3">
-          {!filterId ? (
-            <>
-              <div className="w-72 relative">
-                <UniversalSearch
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  onSelectResult={onSelectResult}
-                  placeholder="Search servers & apps..."
-                />
+      {/* Table Action Header - Hidden in selection mode */}
+      {!isSelectionMode && (
+        <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
+          <div className="flex items-center gap-3">
+            {!filterId ? (
+              <>
+                <div className="w-72 relative">
+                  <UniversalSearch
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    onSelectResult={onSelectResult}
+                    placeholder="Search servers & apps..."
+                  />
+                </div>
+                <div className="w-48 relative">
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                  <select
+                    value={riskFilter}
+                    onChange={(e) => setRiskFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
+                  >
+                    {RISK_OPTIONS.map(opt => (
+                      <option key={opt} value={opt} className="bg-[#050811]">
+                        {opt === "All" ? "Risk Level" : opt}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
+                <span className="font-semibold text-tertiary">FILTERED VIEW</span>
+                <span className="opacity-50">|</span>
+                <span className="truncate max-w-[150px]">ID: {filterId}</span>
+                <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
+                  <X size={12} />
+                </button>
               </div>
-              <div className="w-48 relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                <select
-                  value={riskFilter}
-                  onChange={(e) => setRiskFilter(e.target.value)}
-                  className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
-                >
-                  {RISK_OPTIONS.map(opt => (
-                    <option key={opt} value={opt} className="bg-[#050811]">
-                      {opt === "All" ? "Risk Level" : opt}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
-              <span className="font-semibold text-tertiary">FILTERED VIEW</span>
-              <span className="opacity-50">|</span>
-              <span className="truncate max-w-[150px]">ID: {filterId}</span>
-              <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
-                <X size={12} />
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
-            {isLoading ? "…" : `${filteredApps.length} TOTAL`}
-          </span>
-          <button
-            onClick={onRegister}
-            className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
-          >
-            <Plus size={16} /> Register New Entity
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
+              {isLoading ? "…" : `${filteredApps.length} TOTAL`}
+            </span>
+            <button
+              onClick={onRegister}
+              className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
+            >
+              <Plus size={16} /> Register New Entity
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {isLoading ? (
         <TableSkeleton />
@@ -163,27 +174,52 @@ export function AppTable({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-slate-500 bg-[#050811]/60">
-                <th className="px-6 py-4 w-12">
-                  <div 
-                    onClick={() => onSelectAll(allIdsOnPage)}
-                    className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-                      isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
-                    }`}
-                  >
-                    {isAllSelected && <Check size={10} className="text-white" />}
-                  </div>
-                </th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">App Code</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Application Name</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Owner</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Risk Level</th>
+                {isSelectionMode && (
+                  <th className="px-6 py-4 w-12">
+                    <div 
+                      onClick={() => onSelectAll(allIdsOnPage)}
+                      className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                        isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      {isAllSelected && <Check size={10} className="text-white" />}
+                    </div>
+                  </th>
+                )}
+                {[
+                  { key: "appCode", label: "App Code" },
+                  { key: "appName", label: "Application Name" },
+                  { key: "ownerTeam", label: "Owner" },
+                  { key: "risk", label: "Risk Level" },
+                ].map((col) => {
+                  const isSelected = selectedColumns.includes(col.key);
+                  return (
+                    <th 
+                      key={col.key} 
+                      className={`px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                        isSelectionMode ? "cursor-pointer" : ""
+                      }`}
+                      onClick={() => isSelectionMode && toggleColumn(col.key)}
+                    >
+                      <div className={`px-3 py-2 rounded-md border transition-all duration-200 ${
+                        isSelectionMode 
+                          ? isSelected 
+                            ? "bg-tertiary/20 border-tertiary text-tertiary shadow-[0_0_10px_rgba(255,77,126,0.1)]" 
+                            : "bg-transparent border-transparent hover:bg-slate-800 text-slate-500"
+                          : "border-transparent"
+                      }`}>
+                        {col.label}
+                      </div>
+                    </th>
+                  );
+                })}
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-900/50">
               {filteredApps.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-secondary italic">
+                  <td colSpan={isSelectionMode ? 6 : 5} className="px-6 py-12 text-center text-sm text-secondary italic">
                     {searchQuery ? "No applications match your search." : "No applications found. Check your backend connection."}
                   </td>
                 </tr>
@@ -200,6 +236,7 @@ export function AppTable({
                     onEditClick={onEditClick}
                     onMigrateClick={onMigrateClick}
                     onDeleteClick={onDeleteClick}
+                    isSelectionMode={isSelectionMode}
                   />
                 ))
               )}
@@ -213,7 +250,7 @@ export function AppTable({
 
 // ── AppRowItem ────────────────────────────────────────────────────────────────
 function AppRowItem({
-  app, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
+  app, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick, isSelectionMode,
 }: { 
   app: AppRow; 
   expanded: boolean; 
@@ -224,6 +261,7 @@ function AppRowItem({
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
   onDeleteClick: (id: string, name: string) => void;
+  isSelectionMode: boolean;
 }) {
   const riskStyle =
     app.risk === "Critical" || app.risk === "High" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" :
@@ -232,19 +270,23 @@ function AppRowItem({
   return (
     <>
       <tr className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""} ${isSelected ? "bg-tertiary/5" : ""}`}
-        onClick={onToggle}>
-        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-          <div 
-            onClick={onSelect}
-            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-              isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
-            }`}
-          >
-            {isSelected && <Check size={10} className="text-white" />}
-          </div>
-        </td>
+        onClick={isSelectionMode ? onSelect : onToggle}>
+        {isSelectionMode && (
+          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+            <div 
+              onClick={onSelect}
+              className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+              }`}
+            >
+              {isSelected && <Check size={10} className="text-white" />}
+            </div>
+          </td>
+        )}
         <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
-          {expanded ? <ChevronDown size={14} className="text-secondary" /> : <ChevronRight size={14} className="text-secondary" />}
+          {!isSelectionMode && (
+            expanded ? <ChevronDown size={14} className="text-secondary" /> : <ChevronRight size={14} className="text-secondary" />
+          )}
           {app.appCode}
         </td>
         <td className="px-6 py-4 font-medium text-sm text-primary/90">
@@ -264,7 +306,7 @@ function AppRowItem({
         </td>
       </tr>
 
-      {expanded && (
+      {expanded && !isSelectionMode && (
         <tr className="bg-[#050811]/40">
           <td colSpan={6} className="p-0 border-t border-slate-900">
             <div className="px-12 py-4">

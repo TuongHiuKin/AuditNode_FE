@@ -47,7 +47,7 @@ export function MigrationDrawer({
   const fetchServers = async () => {
     setLoadingServers(true);
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setServers(data);
@@ -61,7 +61,7 @@ export function MigrationDrawer({
   const fetchAppDetails = async () => {
     if (!applicationId) return;
     try {
-      const response = await apiClient.get(`/api/Applications/${applicationId}`);
+      const response = await apiClient.get(`/api/v1/applications/${applicationId}`);
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
       
@@ -91,7 +91,7 @@ export function MigrationDrawer({
       console.log("Raw Form Data:", formData);
       console.log("===============================");
 
-      await apiClient.put("/api/infrastructure/apps/migrate", payload);
+      await apiClient.put("/api/v1/infrastructure/apps/migrate", payload);
       
       toast.success("Deployment updated successfully");
       

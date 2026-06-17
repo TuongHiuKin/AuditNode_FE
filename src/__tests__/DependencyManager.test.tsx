@@ -52,7 +52,7 @@ describe("DependencyManager Integration", () => {
   });
 
   it("renders ServerGroupNode via DependencyManager fetching", async () => {
-    const mockGraph = {
+    const mockMapData = {
       servers: [
         {
           id: "srv-1",
@@ -65,10 +65,10 @@ describe("DependencyManager Integration", () => {
     };
 
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
-      if (url.includes("/api/Topology/map")) {
-        return Promise.resolve({ data: mockGraph });
+      if (url.includes("/api/v1/topology/map")) {
+        return Promise.resolve({ data: mockMapData });
       }
-      if (url.includes("/api/Topology/status")) {
+      if (url.includes("/api/v1/topology/status")) {
         return Promise.resolve({ data: [] });
       }
       return Promise.resolve({ data: [] });

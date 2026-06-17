@@ -194,7 +194,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
     const payload = validRows.map(r => r.data);
 
     try {
-      await apiClient.post("/api/inventory/bulk-import", payload);
+      await apiClient.post("/api/v1/inventory/bulk-import", payload);
       
       toast.success(`Successfully imported ${validRows.length} rows`);
       
@@ -219,7 +219,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await apiClient.get("/api/inventory/import-template", {
+      const response = await apiClient.get("/api/v1/inventory/import-template", {
         responseType: "blob",
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -238,7 +238,8 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl min-w-[600px] flex flex-col overflow-hidden max-h-[95vh] animate-in fade-in zoom-in duration-200"
+        className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl min-w-[600px] flex flex-col overflow-hidden max-h-[95vh]"
+        style={{ animation: "exportModalIn 0.2s ease-out both" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -260,7 +261,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {view === "upload" && rows.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center gap-8">
               {/* Icon + heading */}
@@ -352,7 +353,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Review Phase UI */}
               <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/30">
                 <Tabs value={filterTab} onValueChange={(v: any) => setFilterTab(v)} className="w-auto">
@@ -382,7 +383,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                 </div>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-h-0">
                 <Table>
                   <TableHeader className="sticky top-0 bg-[#0f172a] z-10">
                     <TableRow className="border-slate-800 hover:bg-transparent">

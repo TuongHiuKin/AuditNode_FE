@@ -111,7 +111,7 @@ describe("DeleteConfirmationModal", () => {
     fireEvent.click(screen.getByText("Confirm Delete"));
 
     await waitFor(() => {
-      expect(apiClient.delete).toHaveBeenCalledWith("/api/infrastructure/apps/app-1/purge");
+      expect(apiClient.delete).toHaveBeenCalledWith("/api/v1/infrastructure/apps/app-1/purge");
       expect(toast.success).toHaveBeenCalledWith("Application purged successfully");
       expect(onSuccess).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe("DeleteConfirmationModal", () => {
     fireEvent.click(screen.getByText("Confirm Delete"));
 
     await waitFor(() => {
-      expect(apiClient.delete).toHaveBeenCalledWith("/api/infrastructure/servers/srv-1/purge");
+      expect(apiClient.delete).toHaveBeenCalledWith("/api/v1/infrastructure/servers/srv-1/purge");
       expect(toast.success).toHaveBeenCalledWith("Server purged successfully");
       expect(onSuccess).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();

@@ -65,11 +65,11 @@ export function useDependencyLogic() {
       const targetNode = nodes.find(n => n.id === edge.target);
       
       return {
-        "Source Component": sourceNode?.data?.app?.appName || sourceNode?.data?.server?.hostname || "Unknown",
-        "Source IP": sourceNode?.data?.server?.ipAddress || "Internal",
-        "Target Component": targetNode?.data?.app?.appName || targetNode?.data?.server?.hostname || "Unknown",
-        "Target IP": targetNode?.data?.server?.ipAddress || "Internal",
-        "Port": targetNode?.data?.app?.portNumber || edge.data?.protocol || "Any",
+        "Source Component": (sourceNode?.data as any)?.app?.appName || (sourceNode?.data as any)?.server?.hostname || "Unknown",
+        "Source IP": (sourceNode?.data as any)?.server?.ipAddress || "Internal",
+        "Target Component": (targetNode?.data as any)?.app?.appName || (targetNode?.data as any)?.server?.hostname || "Unknown",
+        "Target IP": (targetNode?.data as any)?.server?.ipAddress || "Internal",
+        "Port": (targetNode?.data as any)?.app?.portNumber || edge.data?.protocol || "Any",
         "Protocol": edge.data?.protocol || "TCP",
         "Workspace": activeWorkspace?.name || "Global"
       };
@@ -141,7 +141,7 @@ export function useDependencyLogic() {
         };
       });
 
-      await apiClient.put("/api/dependencies/sync", { dependencies });
+      await apiClient.put("/api/v1/dependencies/sync", { dependencies });
       
       toast.success("Network state synchronized successfully");
       
@@ -159,7 +159,7 @@ export function useDependencyLogic() {
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
     queryKey: ["all-servers"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       return data as Schemas["ServerResponseDto"][];
@@ -244,7 +244,7 @@ export function useDependencyLogic() {
   const fetchAndMapGraph = useCallback(async (env: string, dc: string) => {
     try {
       const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-        "/api/Topology/map",
+        "/api/v1/topology/map",
         {
           params: {
             environment: env === "All" ? undefined : env,

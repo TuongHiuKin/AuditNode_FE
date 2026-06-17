@@ -104,7 +104,7 @@ export function EditEntityDrawer({
 
   const fetchAvailableServers = async () => {
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setAvailableServers(data);
@@ -117,8 +117,8 @@ export function EditEntityDrawer({
     setLoading(true);
     try {
       const endpoint = entityType === "SERVER" 
-        ? `/api/Servers/${entityId}` 
-        : `/api/Applications/${entityId}`;
+        ? `/api/v1/servers/${entityId}` 
+        : `/api/v1/applications/${entityId}`;
       const response = await apiClient.get(endpoint);
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
@@ -193,8 +193,8 @@ export function EditEntityDrawer({
     setSubmitting(true);
     try {
       const endpoint = entityType === "SERVER" 
-        ? `/api/Servers/${entityId}` 
-        : `/api/Applications/${entityId}`;
+        ? `/api/v1/servers/${entityId}` 
+        : `/api/v1/applications/${entityId}`;
       
       // Debug Payload Audit
       console.log("=== FRONTEND PAYLOAD AUDIT ===");

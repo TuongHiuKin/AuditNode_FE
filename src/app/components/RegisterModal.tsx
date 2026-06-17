@@ -23,7 +23,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   const { data: datacenters = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/Datacenters");
+      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
       return Array.isArray(response.data) ? response.data : [];
     },
   });
@@ -34,7 +34,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   useEffect(() => {
     const fetchServers = async () => {
       try {
-        const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/Servers");
+        const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
         if (Array.isArray(response.data)) {
           setAvailableServers(response.data);
         }
@@ -72,12 +72,12 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
         if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname || !infraData.osType) {
           throw new Error("Datacenter, IP Address, Hostname, and OS Type are required");
         }
-        await apiClient.post("/api/Servers", infraData);
+        await apiClient.post("/api/v1/servers", infraData);
       } else {
         if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerTeam) {
           throw new Error("Server, App Code, App Name, and Owner Team are required");
         }
-        await apiClient.post("/api/Applications", appData);
+        await apiClient.post("/api/v1/applications", appData);
       }
       onSuccess?.();
       onClose();
