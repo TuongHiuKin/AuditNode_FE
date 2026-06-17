@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ComponentType } from "react";
 import {
   ReactFlow,
   Background,
@@ -71,7 +71,7 @@ export function FlowCanvas({
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
-    groupNode: GroupNode,
+    groupNode: GroupNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({

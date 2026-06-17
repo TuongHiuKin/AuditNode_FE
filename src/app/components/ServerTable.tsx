@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
+import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
 
 type ServerRow = Schemas["ServerResponseDto"];
 
@@ -33,6 +34,9 @@ export function ServerTable({
   selectedIds = [],
   onSelectRow = () => {},
   onSelectAll = () => {},
+  isSelectionMode = false,
+  selectedColumns = [],
+  toggleColumn = () => {},
 }: {
   onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
@@ -44,21 +48,26 @@ export function ServerTable({
   selectedIds?: string[];
   onSelectRow?: (id: string) => void;
   onSelectAll?: (ids: string[]) => void;
+  isSelectionMode?: boolean;
+  selectedColumns?: string[];
+  toggleColumn?: (key: string) => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
   const navigate = useNavigate();
+  const { activeWorkspace } = useWorkspaceStore();
 
   const { data: servers = [], isLoading } = useQuery<ServerRow[]>({
-    queryKey: ["servers"],
+    queryKey: ["servers", activeWorkspace?.id],
     queryFn: async () => {
-      const response = await apiClient.get<ServerRow[]>("/api/Servers");
+      const response = await apiClient.get<ServerRow[]>("/api/v1/servers");
       const rawResponse = response as any;
       // Safely handle both direct array and wrapped response { data: [...] }
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       return data as ServerRow[];
     },
+    enabled: !!activeWorkspace?.id,
   });
 
   const filteredServers = useMemo(() => {
@@ -95,59 +104,61 @@ export function ServerTable({
 
   return (
     <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
-      {/* Table Action Header */}
-      <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-        <div className="flex items-center gap-3">
-          {!filterId ? (
-            <>
-              <div className="w-72 relative">
-                <UniversalSearch
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  onSelectResult={onSelectResult}
-                  placeholder="Search servers & apps..."
-                />
+      {/* Table Action Header - Hidden in selection mode */}
+      {!isSelectionMode && (
+        <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
+          <div className="flex items-center gap-3">
+            {!filterId ? (
+              <>
+                <div className="w-72 relative">
+                  <UniversalSearch
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    onSelectResult={onSelectResult}
+                    placeholder="Search servers & apps..."
+                  />
+                </div>
+                <div className="w-48 relative">
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                  <select
+                    value={envFilter}
+                    onChange={(e) => setEnvFilter(e.target.value)}
+                    className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
+                  >
+                    {ENV_OPTIONS.map(opt => (
+                      <option key={opt} value={opt} className="bg-[#050811]">
+                        {opt === "All" ? "Environment" : opt}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
+                <span className="font-semibold text-tertiary">FILTERED VIEW</span>
+                <span className="opacity-50">|</span>
+                <span className="truncate max-w-[150px]">ID: {filterId}</span>
+                <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
+                  <X size={12} />
+                </button>
               </div>
-              <div className="w-48 relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                <select
-                  value={envFilter}
-                  onChange={(e) => setEnvFilter(e.target.value)}
-                  className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
-                >
-                  {ENV_OPTIONS.map(opt => (
-                    <option key={opt} value={opt} className="bg-[#050811]">
-                      {opt === "All" ? "Environment" : opt}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
-              <span className="font-semibold text-tertiary">FILTERED VIEW</span>
-              <span className="opacity-50">|</span>
-              <span className="truncate max-w-[150px]">ID: {filterId}</span>
-              <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
-                <X size={12} />
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
-            {isLoading ? "…" : `${filteredServers.length} TOTAL`}
-          </span>
-          <button
-            onClick={onRegister}
-            className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
-          >
-            <Plus size={16} /> Register New Entity
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
+              {isLoading ? "…" : `${filteredServers.length} TOTAL`}
+            </span>
+            <button
+              onClick={onRegister}
+              className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
+            >
+              <Plus size={16} /> Register New Entity
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {isLoading ? (
         <TableSkeleton />
@@ -156,27 +167,52 @@ export function ServerTable({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-slate-500 bg-[#050811]/60">
-                <th className="px-6 py-4 w-12">
-                  <div 
-                    onClick={() => onSelectAll(allIdsOnPage)}
-                    className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-                      isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
-                    }`}
-                  >
-                    {isAllSelected && <Check size={10} className="text-white" />}
-                  </div>
-                </th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">IP Address</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Hostname</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">OS Type</th>
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest">Environment</th>
+                {isSelectionMode && (
+                  <th className="px-6 py-4 w-12">
+                    <div 
+                      onClick={() => onSelectAll(allIdsOnPage)}
+                      className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                        isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      {isAllSelected && <Check size={10} className="text-white" />}
+                    </div>
+                  </th>
+                )}
+                {[
+                  { key: "ipAddress", label: "IP Address" },
+                  { key: "hostname", label: "Hostname" },
+                  { key: "osType", label: "OS Type" },
+                  { key: "environment", label: "Environment" },
+                ].map((col) => {
+                  const isSelected = selectedColumns.includes(col.key);
+                  return (
+                    <th 
+                      key={col.key} 
+                      className={`px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                        isSelectionMode ? "cursor-pointer" : ""
+                      }`}
+                      onClick={() => isSelectionMode && toggleColumn(col.key)}
+                    >
+                      <div className={`px-3 py-2 rounded-md border transition-all duration-200 ${
+                        isSelectionMode 
+                          ? isSelected 
+                            ? "bg-tertiary/20 border-tertiary text-tertiary shadow-[0_0_10px_rgba(255,77,126,0.1)]" 
+                            : "bg-transparent border-transparent hover:bg-slate-800 text-slate-500"
+                          : "border-transparent"
+                      }`}>
+                        {col.label}
+                      </div>
+                    </th>
+                  );
+                })}
                 <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-900/50">
               {filteredServers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-secondary italic">
+                  <td colSpan={isSelectionMode ? 6 : 5} className="px-6 py-12 text-center text-sm text-secondary italic">
                     {searchQuery ? "No servers match your search." : "No servers found. Check your backend connection."}
                   </td>
                 </tr>
@@ -193,6 +229,7 @@ export function ServerTable({
                     onEditClick={onEditClick}
                     onMigrateClick={onMigrateClick}
                     onDeleteClick={onDeleteClick}
+                    isSelectionMode={isSelectionMode}
                   />
                 ))
               )}
@@ -206,7 +243,7 @@ export function ServerTable({
 
 // ── ServerRowItem ─────────────────────────────────────────────────────────────
 function ServerRowItem({
-  server, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick,
+  server, expanded, isSelected, onSelect, onToggle, onDepClick, onEditClick, onMigrateClick, onDeleteClick, isSelectionMode,
 }: { 
   server: ServerRow; 
   expanded: boolean; 
@@ -217,27 +254,31 @@ function ServerRowItem({
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
   onDeleteClick: (id: string, name: string) => void;
+  isSelectionMode: boolean;
 }) {
   return (
     <>
       <tr
         className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""} ${isSelected ? "bg-tertiary/5" : ""}`}
-        onClick={onToggle}
+        onClick={isSelectionMode ? onSelect : onToggle}
       >
-        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-          <div 
-            onClick={onSelect}
-            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-              isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
-            }`}
-          >
-            {isSelected && <Check size={10} className="text-white" />}
-          </div>
-        </td>
-        <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
-          {expanded
-            ? <ChevronDown size={14} className="text-secondary" />
-            : <ChevronRight size={14} className="text-secondary" />}
+        {isSelectionMode && (
+          <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+            <div 
+              onClick={onSelect}
+              className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
+                isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+              }`}
+            >
+              {isSelected && <Check size={10} className="text-white" />}
+            </div>
+          </td>
+        )}        <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
+          {!isSelectionMode && (
+            expanded
+              ? <ChevronDown size={14} className="text-secondary" />
+              : <ChevronRight size={14} className="text-secondary" />
+          )}
           {server.ipAddress}
         </td>
         <td className="px-6 py-4 text-sm font-medium text-primary/90">{server.hostname}</td>
@@ -260,7 +301,7 @@ function ServerRowItem({
         </td>
       </tr>
 
-      {expanded && (
+      {expanded && !isSelectionMode && (
         <tr className="bg-[#050811]/40">
           <td colSpan={6} className="p-0 border-t border-slate-900">
             <div className="px-12 py-4">

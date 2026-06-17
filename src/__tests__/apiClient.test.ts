@@ -39,7 +39,7 @@ describe("apiClient Interceptors", () => {
       const config = { headers: {} } as any;
       const result = await requestInterceptorHandler(config);
       
-      expect(consoleSpy).toHaveBeenCalledWith("Failed to refresh token", expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith("Failed to refresh Keycloak token in interceptor", expect.any(Error));
       expect(result.headers.Authorization).toBeUndefined();
       
       consoleSpy.mockRestore();
@@ -53,11 +53,13 @@ describe("apiClient Interceptors", () => {
         response: {
           data: { message: "API Error Message" }
         },
-        message: "Network Error"
+        message: "Network Error",
+        config: { url: "/test-url" }
       };
 
       await expect(responseInterceptorErrorHandler(error)).rejects.toEqual(error);
-      expect(consoleSpy).toHaveBeenCalledWith("[API Error]", "API Error Message");
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[API Error]"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("API Error Message"));
       
       consoleSpy.mockRestore();
     });
@@ -69,7 +71,8 @@ describe("apiClient Interceptors", () => {
       };
 
       await expect(responseInterceptorErrorHandler(error)).rejects.toEqual(error);
-      expect(consoleSpy).toHaveBeenCalledWith("[API Error]", "Network Error");
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[API Error]"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Network Error"));
       
       consoleSpy.mockRestore();
     });

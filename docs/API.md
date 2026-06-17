@@ -10,13 +10,13 @@ The API integrates with **Keycloak IAM** for identity management.
 - **Development**: Ensure the local Keycloak server is running at `http://localhost:8080` with the `AuditNode-Realm`.
 
 ## 📍 Base URL
-`http://localhost:5000/api` (Default development)
+`http://localhost:5000/api/v1` (Default development)
 
 ## 📊 Analytics Endpoints
 
 ### Get Topology (Legacy Tree)
 Retrieves the hierarchical infrastructure tree (Datacenter -> Server).
-- **URL**: `/api/Topology/tree`
+- **URL**: `/api/v1/topology/tree`
 - **Method**: `GET`
 - **Query Params**: 
   - `datacenterId` (optional): Filter by specific datacenter.
@@ -24,13 +24,13 @@ Retrieves the hierarchical infrastructure tree (Datacenter -> Server).
 
 ### Get Topology Map (Inventory)
 Retrieves the flat infrastructure registry for the Topology Canvas.
-- **URL**: `/api/Topology/map`
+- **URL**: `/api/v1/topology/map`
 - **Method**: `GET`
 - **Success Response**: `200 OK` with servers and their embedded applications.
 
 ### Get Dependencies
 Retrieves the application dependency graph data.
-- **URL**: `/api/Analytics/dependencies`
+- **URL**: `/api/v1/analytics/dependencies`
 - **Method**: `GET`
 - **Query Params**:
   - `environment` (optional): Filter by environment.
@@ -39,7 +39,7 @@ Retrieves the application dependency graph data.
 
 ### Sync Network State
 Synchronizes the current canvas connections with the backend database.
-- **URL**: `/api/dependencies/sync`
+- **URL**: `/api/v1/dependencies/sync`
 - **Method**: `PUT`
 - **Payload**:
   ```json
@@ -59,20 +59,20 @@ Synchronizes the current canvas connections with the backend database.
 ## 🖥️ Infrastructure Endpoints
 
 ### Servers
-- `GET /api/Servers`: List all registered servers.
-- `GET /api/Servers/{id}`: Get details of a specific server.
-- `GET /api/infrastructure/servers/{id}/deployed-apps`: List all applications currently hosted on the server.
-- `POST /api/Servers`: Register a new server.
-- `PUT /api/Servers/{id}`: Update an existing server.
-- `DELETE /api/infrastructure/servers/{id}/purge`: Permanently delete a server and all its hosted applications and network mappings.
+- `GET /api/v1/servers`: List all registered servers.
+- `GET /api/v1/servers/{id}`: Get details of a specific server.
+- `GET /api/v1/infrastructure/servers/{id}/deployed-apps`: List all applications currently hosted on the server.
+- `POST /api/v1/servers`: Register a new server.
+- `PUT /api/v1/servers/{id}`: Update an existing server.
+- `DELETE /api/v1/infrastructure/servers/{id}/purge`: Permanently delete a server and all its hosted applications and network mappings.
 
 ### Applications (Registration Upsert)
-- `GET /api/Applications`: List all applications.
-- `GET /api/Applications/{id}`: Get details of a specific application.
-- `GET /api/infrastructure/apps/{id}/dependencies-count`: Get the number of active network dependencies for an application.
-- `POST /api/Applications`: Register or Update an application.
+- `GET /api/v1/applications`: List all applications.
+- `GET /api/v1/applications/{id}`: Get details of a specific application.
+- `GET /api/v1/infrastructure/apps/{id}/dependencies-count`: Get the number of active network dependencies for an application.
+- `POST /api/v1/applications`: Register or Update an application.
   - **Logic**: Uses a **Transaction-based Upsert pattern**. If an `AppCode` already exists, the system updates the existing record and its port mappings instead of creating a duplicate. This ensures data consistency across the environment.
-- `PUT /api/Applications/{id}`: Update an existing application or a specific deployment mapping.
+- `PUT /api/v1/applications/{id}`: Update an existing application or a specific deployment mapping.
   - **Payload**:
     ```json
     {
@@ -85,31 +85,31 @@ Synchronizes the current canvas connections with the backend database.
     }
     ```
   - **Logic**: Supports multi-server deployments. If `portMappingId` is provided, the system updates that specific deployment record's server and port.
-- `PUT /api/infrastructure/apps/migrate`: Update the server residency and port mapping of an application.
-- `DELETE /api/infrastructure/apps/{id}/purge`: Permanently delete an application and cascade-delete all its linked dependencies.
+- `PUT /api/v1/infrastructure/apps/migrate`: Update the server residency and port mapping of an application.
+- `DELETE /api/v1/infrastructure/apps/{id}/purge`: Permanently delete an application and cascade-delete all its linked dependencies.
 
 ### Datacenters
-- `GET /api/Datacenters`: List all available datacenters.
-- `POST /api/Datacenters`: Create a new datacenter location.
+- `GET /api/v1/datacenters`: List all available datacenters.
+- `POST /api/v1/datacenters`: Create a new datacenter location.
 
 ## 📥 Inventory Bulk Import
 
 ### Download Import Template
 Retrieves an Excel template (.xlsx) for bulk importing servers and applications.
-- **URL**: `/api/inventory/import-template`
+- **URL**: `/api/v1/inventory/import-template`
 - **Method**: `GET`
 - **Success Response**: `200 OK` (binary/blob)
 
 ### Bulk Import Inventory (Multipart)
 Uploads an Excel file to process and save multiple servers and applications.
-- **URL**: `/api/inventory/import`
+- **URL**: `/api/v1/inventory/import`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Success Response**: `200 OK`
 
 ### Partial Bulk Import (JSON)
 Saves a list of pre-validated and normalized inventory records.
-- **URL**: `/api/inventory/bulk-import`
+- **URL**: `/api/v1/inventory/bulk-import`
 - **Method**: `POST`
 - **Content-Type**: `application/json`
 - **Payload**:

@@ -52,7 +52,7 @@ describe('UniversalSearch Component', () => {
 
     // Wait for debounce (500ms)
     await waitFor(() => {
-      expect(apiClient.get).toHaveBeenCalledWith('/api/search', {
+      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/search', {
         params: { keyword: 'alpha' },
       });
     }, { timeout: 1000 });

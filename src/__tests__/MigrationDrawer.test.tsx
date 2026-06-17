@@ -38,8 +38,8 @@ describe("MigrationDrawer", () => {
 
   it("renders correctly when open and fetches data", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url === "/api/Servers") return Promise.resolve({ data: mockServers });
-      if (url === "/api/Applications/app-1") return Promise.resolve({ data: mockApp });
+      if (url === "/api/v1/servers") return Promise.resolve({ data: mockServers });
+      if (url === "/api/v1/applications/app-1") return Promise.resolve({ data: mockApp });
       return Promise.reject(new Error("Not found"));
     });
 
@@ -65,8 +65,8 @@ describe("MigrationDrawer", () => {
 
   it("submits the migration form successfully and stays open", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url === "/api/Servers") return Promise.resolve({ data: mockServers });
-      if (url === "/api/Applications/app-1") return Promise.resolve({ data: mockApp });
+      if (url === "/api/v1/servers") return Promise.resolve({ data: mockServers });
+      if (url === "/api/v1/applications/app-1") return Promise.resolve({ data: mockApp });
       return Promise.reject(new Error("Not found"));
     });
 
@@ -97,7 +97,7 @@ describe("MigrationDrawer", () => {
     fireEvent.click(screen.getByText("Update Configuration"));
 
     await waitFor(() => {
-      expect(apiClient.put).toHaveBeenCalledWith("/api/infrastructure/apps/migrate", {
+      expect(apiClient.put).toHaveBeenCalledWith("/api/v1/infrastructure/apps/migrate", {
         applicationId: "app-1",
         serverId: "srv-2",
         portNumber: 9090,
@@ -111,8 +111,8 @@ describe("MigrationDrawer", () => {
 
   it("handles submission error", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url === "/api/Servers") return Promise.resolve({ data: mockServers });
-      if (url === "/api/Applications/app-1") return Promise.resolve({ data: mockApp });
+      if (url === "/api/v1/servers") return Promise.resolve({ data: mockServers });
+      if (url === "/api/v1/applications/app-1") return Promise.resolve({ data: mockApp });
       return Promise.reject(new Error("Not found"));
     });
 

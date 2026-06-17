@@ -35,10 +35,10 @@ describe("RegisterModal", () => {
     vi.clearAllMocks();
     queryClient = createTestQueryClient();
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
-      if (url === "/api/Datacenters") {
+      if (url === "/api/v1/datacenters") {
         return Promise.resolve({ data: mockDatacenters });
       }
-      if (url === "/api/Servers") {
+      if (url === "/api/v1/servers") {
         return Promise.resolve({ data: mockServers });
       }
       return Promise.reject(new Error("Unknown URL"));
@@ -95,7 +95,7 @@ describe("RegisterModal", () => {
     fireEvent.click(screen.getByText("Submit Server"));
     
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalledWith("/api/Servers", expect.objectContaining({
+      expect(apiClient.post).toHaveBeenCalledWith("/api/v1/servers", expect.objectContaining({
         datacenterId: "dc-1",
         ipAddress: "192.168.1.1",
         hostname: "web-01",
@@ -122,7 +122,7 @@ describe("RegisterModal", () => {
     fireEvent.click(screen.getByText("Deploy App"));
     
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalledWith("/api/Applications", expect.objectContaining({
+      expect(apiClient.post).toHaveBeenCalledWith("/api/v1/applications", expect.objectContaining({
         serverId: "1",
         ownerTeam: "Team-A",
         appCode: "APP-01",

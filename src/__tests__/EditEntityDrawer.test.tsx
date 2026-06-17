@@ -69,13 +69,13 @@ describe("EditEntityDrawer", () => {
       expect(screen.getByDisplayValue("10.0.0.1")).toBeDisabled();
     });
 
-    expect(apiClient.get).toHaveBeenCalledWith("/api/Servers/srv-123");
+    expect(apiClient.get).toHaveBeenCalledWith("/api/v1/servers/srv-123");
   });
 
   it("renders and fetches application data and available servers when opened", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url.includes("/api/Applications")) return Promise.resolve({ data: mockAppData });
-      if (url === "/api/Servers") return Promise.resolve({ data: [mockServerData] });
+      if (url.includes("/api/v1/applications")) return Promise.resolve({ data: mockAppData });
+      if (url === "/api/v1/servers") return Promise.resolve({ data: [mockServerData] });
       return Promise.reject(new Error("Not found"));
     });
 
@@ -95,14 +95,14 @@ describe("EditEntityDrawer", () => {
       expect(screen.getByPlaceholderText("Select Target Infrastructure...")).toBeDefined();
     });
 
-    expect(apiClient.get).toHaveBeenCalledWith("/api/Applications/app-456");
-    expect(apiClient.get).toHaveBeenCalledWith("/api/Servers");
+    expect(apiClient.get).toHaveBeenCalledWith("/api/v1/applications/app-456");
+    expect(apiClient.get).toHaveBeenCalledWith("/api/v1/servers");
   });
 
   it("submits the application form with migration fields and stays open", async () => {
     vi.mocked(apiClient.get).mockImplementation((url) => {
-      if (url.includes("/api/Applications")) return Promise.resolve({ data: mockAppData });
-      if (url === "/api/Servers") return Promise.resolve({ data: [mockServerData] });
+      if (url.includes("/api/v1/applications")) return Promise.resolve({ data: mockAppData });
+      if (url === "/api/v1/servers") return Promise.resolve({ data: [mockServerData] });
       return Promise.reject(new Error("Not found"));
     });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
@@ -139,7 +139,7 @@ describe("EditEntityDrawer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {
-      expect(apiClient.put).toHaveBeenCalledWith("/api/Applications/app-456", expect.objectContaining({
+      expect(apiClient.put).toHaveBeenCalledWith("/api/v1/applications/app-456", expect.objectContaining({
         appName: "Updated App",
         serverId: "srv-123", // Aligned property name
         portNumber: 9090,     // Aligned property name

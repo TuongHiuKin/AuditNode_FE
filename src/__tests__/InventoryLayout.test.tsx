@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InventoryLayout } from "../app/pages/InventoryLayout";
+import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 vi.mock("../app/hooks/useHeader", () => ({
   useHeader: () => ({
@@ -21,15 +22,18 @@ const createTestQueryClient = () => new QueryClient({
 describe("InventoryLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   it("renders navigation tabs correctly", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/inventory/servers"]}>
-          <InventoryLayout />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter initialEntries={["/inventory/servers"]}>
+            <InventoryLayout />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -41,9 +45,11 @@ describe("InventoryLayout", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/inventory/servers"]}>
-          <InventoryLayout />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter initialEntries={["/inventory/servers"]}>
+            <InventoryLayout />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
@@ -57,21 +63,22 @@ describe("InventoryLayout", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/inventory/servers"]}>
-          <InventoryLayout />
-        </MemoryRouter>
+        <WorkspaceProvider>
+          <MemoryRouter initialEntries={["/inventory/servers"]}>
+            <InventoryLayout />
+          </MemoryRouter>
+        </WorkspaceProvider>
       </QueryClientProvider>
     );
 
     const exportBtn = screen.getByText("Export View");
     fireEvent.click(exportBtn);
 
-    expect(screen.getByText("Export as PNG Image")).toBeDefined();
-    expect(screen.getByText("Export as JPEG")).toBeDefined();
-    expect(screen.getByText("Export Raw Data (.csv)")).toBeDefined();
+    expect(screen.getByText("Selective Excel Export (.xlsx)")).toBeDefined();
+    expect(screen.getByText("Selective Raw Data (.csv)")).toBeDefined();
 
     // Click outside or click again to close (clicking again here)
     fireEvent.click(exportBtn);
-    expect(screen.queryByText("Export as PNG Image")).toBeNull();
+    expect(screen.queryByText("Selective Excel Export (.xlsx)")).toBeNull();
   });
 });

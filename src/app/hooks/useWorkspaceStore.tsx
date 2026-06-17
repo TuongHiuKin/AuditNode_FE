@@ -10,7 +10,7 @@ interface WorkspaceState {
   workspaces: Workspace[];
   activeWorkspace: Workspace | null;
   setWorkspaces: (list: Workspace[]) => void;
-  setActiveWorkspace: (workspace: Workspace) => void;
+  setActiveWorkspace: (workspace: Workspace | null) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceState | undefined>(undefined);
@@ -21,23 +21,37 @@ export const getActiveWorkspaceId = () => currentWorkspaceId;
 
 export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [workspaces, setWorkspacesState] = useState<Workspace[]>([]);
-  const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
+  
+  // Initialize state eagerly from localStorage
+  const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(() => {
+    try {
+      const saved = localStorage.getItem('auditNode_activeWorkspace');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Synchronize the external getter whenever the active workspace changes
   useEffect(() => {
     currentWorkspaceId = activeWorkspace?.id || null;
   }, [activeWorkspace]);
 
-  const setWorkspaces = (list: Workspace[]) => {
-    setWorkspacesState(list);
-    // Auto-select first workspace if none selected
-    if (list.length > 0 && !activeWorkspace) {
-      setActiveWorkspaceState(list[0]);
+  const setActiveWorkspace = (workspace: Workspace | null) => {
+    setActiveWorkspaceState(workspace);
+    if (workspace) {
+      localStorage.setItem('auditNode_activeWorkspace', JSON.stringify(workspace));
+    } else {
+      localStorage.removeItem('auditNode_activeWorkspace');
     }
   };
 
-  const setActiveWorkspace = (workspace: Workspace) => {
-    setActiveWorkspaceState(workspace);
+  const setWorkspaces = (list: Workspace[]) => {
+    setWorkspacesState(list);
+    // Auto-select first workspace if none selected
+    if (!activeWorkspace && list.length > 0) {
+      setActiveWorkspace(list[0]);
+    }
   };
 
   return (

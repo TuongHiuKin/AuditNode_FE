@@ -6,7 +6,7 @@ export function useAppPalette() {
   const { data: allApps = [], isLoading, refetch } = useQuery<PaletteApp[]>({
     queryKey: ["topology-status"],
     queryFn: async () => {
-      const response = await apiClient.get<PaletteApp[]>("/api/Topology/status");
+      const response = await apiClient.get<PaletteApp[]>("/api/v1/topology/status");
       const rawResponse = response as any;
       // Handle potential wrapped response from common client patterns
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);

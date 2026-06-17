@@ -60,7 +60,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await apiClient.get<SearchResult[]>(`/api/search`, {
+      const response = await apiClient.get<SearchResult[]>(`/api/v1/search`, {
         params: { keyword: searchKeyword },
       });
       setResults(response.data);
@@ -125,7 +125,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
 
       {/* Autocomplete Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-[#0c1322] text-primary rounded-md shadow-2xl border border-slate-900 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute z-50 w-full mt-1 bg-[#0c1322] text-primary rounded-md shadow-2xl border border-slate-900 max-h-64 overflow-y-auto" style={{ animation: "exportModalIn 0.1s ease-out both" }}>
           <ul className="py-1 list-none m-0">
             {results.map((result) => (
               <li
