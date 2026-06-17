@@ -139,7 +139,6 @@ export function EditEntityDrawer({
         
         // Populate deployments for selector (supports both 'servers' and 'portMappings' from API)
         const deployments = data.servers || data.portMappings || [];
-        console.log("Drawer Deployments Array:", deployments);
         setPortMappings(deployments);
 
         // Pre-fill migration fields if available
@@ -196,12 +195,6 @@ export function EditEntityDrawer({
         ? `/api/v1/servers/${entityId}` 
         : `/api/v1/applications/${entityId}`;
       
-      // Debug Payload Audit
-      console.log("=== FRONTEND PAYLOAD AUDIT ===");
-      console.log("Entity Type:", entityType);
-      console.log("Raw FormData:", formData);
-      console.log("Selected Mapping ID:", selectedMappingId);
-
       // Aligned with Backend DTO properties
       const payload = entityType === "APP" 
         ? {
@@ -217,8 +210,6 @@ export function EditEntityDrawer({
             portNumber: Number(formData.portNumber), // Deployment Port
           }
         : formData;
-
-      console.log("Constructed Payload sending to API:", payload);
 
       await apiClient.put(endpoint, payload);
       
