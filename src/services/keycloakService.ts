@@ -1,9 +1,9 @@
 import Keycloak from "keycloak-js";
 
 const keycloakConfig = {
-  url: "http://localhost:8080",
-  realm: "AuditNode-Realm",
-  clientId: "audit-frontend",
+  url: import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:8080",
+  realm: import.meta.env.VITE_KEYCLOAK_REALM || "AuditNode-Realm",
+  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "audit-frontend",
 };
 
 const keycloak = new Keycloak(keycloakConfig);

@@ -82,15 +82,6 @@ export function MigrationDrawer({
         portNumber: Number(formData.portNumber),
       };
 
-      // Payload Tracing Audit
-      console.log("=== DEBUG MIGRATION PAYLOAD ===");
-      console.log("Payload Object:", payload);
-      console.log("Application ID:", payload.applicationId);
-      console.log("Server ID Value:", payload.serverId);
-      console.log("Port Number Value:", payload.portNumber);
-      console.log("Raw Form Data:", formData);
-      console.log("===============================");
-
       await apiClient.put("/api/v1/infrastructure/apps/migrate", payload);
       
       toast.success("Deployment updated successfully");

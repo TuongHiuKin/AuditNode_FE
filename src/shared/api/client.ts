@@ -61,13 +61,6 @@ export const requestInterceptorHandler = async (config: InternalAxiosRequestConf
     console.error("Failed to refresh Keycloak token in interceptor", error);
   }
 
-  console.log("[Axios Outbound]", {
-    url: config.url,
-    method: config.method,
-    hasAuthHeader: !!(config.headers && (config.headers['Authorization'] || (typeof config.headers.get === 'function' && config.headers.get('Authorization')))),
-    workspaceHeaderValue: workspaceId || "MISSING"
-  });
-
   return config;
 };
 

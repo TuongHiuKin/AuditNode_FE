@@ -20,15 +20,6 @@ function DependencyManagerContent() {
   const hasInitialized = useRef(false);
   const reactFlowInstance = useReactFlow();
 
-  // Debug payload to confirm search params are captured
-  useEffect(() => {
-    console.log("=== DEBUG DEPENDENCY INITIALIZATION ===");
-    console.log("Passed Entity ID (URL):", entityId);
-    console.log("Passed Entity Type (URL):", type);
-    console.log("Passed Environment (URL):", envParam);
-    console.log("======================================");
-  }, [entityId, type, envParam]);
-
   const {
     nodes, setNodes, edges, setEdges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
     onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
@@ -70,7 +61,6 @@ function DependencyManagerContent() {
       hasInitialized.current = true;
 
       if (entityId) {
-        console.log(">>> [INIT] Executing PRIORITY 1: Deep Link Auto-Map for ID:", entityId);
         // PRIORITY 1: Deep Linking
         sessionStorage.removeItem('dependencyGraphState'); // Clear old session
         
@@ -82,16 +72,12 @@ function DependencyManagerContent() {
           setTimeout(() => {
             const targetNode = reactFlowInstance.getNode(entityId);
             if (targetNode) {
-              console.log(">>> [INIT] Deep link target node found, focusing camera.");
               onSelectionChange({ nodes: [targetNode], edges: [] });
               reactFlowInstance.fitView({ nodes: [{ id: entityId }], duration: 800, padding: 0.5 });
-            } else {
-              console.warn(">>> [INIT] Target node not found in graph data after Auto-Map.");
             }
           }, 500);
         });
       } else {
-        console.log(">>> [INIT] Executing PRIORITY 2: Session Restore");
         // PRIORITY 2: State Persistence (Restore)
         const cached = sessionStorage.getItem('dependencyGraphState');
         if (cached) {

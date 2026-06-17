@@ -137,3 +137,27 @@ dist-ssr
 *.sln
 *.sw?
 .DS_Store
+
+# --- AUTO-DISCOVERED SECURITY RULES ---
+# Keys and Certificates
+*.pem
+*.key
+*.pfx
+*.crt
+*.keystore
+
+# Additional Environment and Config Files
+appsettings*.json
+secrets.json
+
+# Local Databases and Dumps
+*.sqlite
+*.db
+*.bak
+*.sql
+*.mdf
+*.ldf
+
+# OS and Editor Leftovers
+Thumbs.db
+*.user
