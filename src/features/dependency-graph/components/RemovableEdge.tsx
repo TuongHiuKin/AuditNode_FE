@@ -60,7 +60,7 @@ export function RemovableEdge({
         >
           <button
             onClick={onEdgeClick}
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-400 shadow-md transition-all hover:bg-rose-500 hover:text-white hover:border-rose-400 active:scale-90 pointer-events-auto"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground shadow-md transition-all hover:bg-danger hover:text-foreground hover:border-danger active:scale-90 pointer-events-auto"
             title="Remove Connection"
           >
             <X size={10} strokeWidth={3} />

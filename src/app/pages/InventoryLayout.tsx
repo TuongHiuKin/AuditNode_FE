@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useOutletContext, useLocation } from "react-router";
-import { Server, Grid, Download, ChevronDown, FileText, FileSpreadsheet, X, ArrowRight } from "lucide-react";
+import { Server, Grid, Download, ChevronDown, FileText, FileSpreadsheet, X, ArrowRight, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useHeader } from "../hooks/useHeader";
@@ -8,6 +8,7 @@ import { BulkImportModal } from "../components/BulkImportModal";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
 import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
+import { RegisterModal } from "../components/RegisterModal";
 
 // Context type shared with child routes
 type InventoryOutletContext = {
@@ -18,6 +19,7 @@ type InventoryOutletContext = {
   isSelectionMode: boolean;
   selectedColumns: string[];
   toggleColumn: (key: string) => void;
+  toolbarEl: HTMLDivElement | null;
 };
 
 export function useInventoryContext() {
@@ -60,9 +62,11 @@ export function InventoryLayout() {
   const location = useLocation();
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("excel");
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null);
   
   // Row Selection State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -76,11 +80,12 @@ export function InventoryLayout() {
 
   useEffect(() => {
     setHeader(
+      ["INVENTORY", currentTab.type === "servers" ? "SERVER INVENTORY" : "APPLICATION INVENTORY"],
       "Infrastructure Inventory",
-      "Manage expected state of servers and registered applications.",
+      "Manage the expected state of servers and registered applications.",
       <Server size={20} />
     );
-  }, [setHeader]);
+  }, [setHeader, currentTab.type]);
 
   // Sync columns when tab changes
   useEffect(() => {
@@ -198,111 +203,124 @@ export function InventoryLayout() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Tab bar + Action buttons */}
-      <div className="px-8 pt-5 pb-0 shrink-0 bg-background/50 flex items-end justify-between">
-        {/* Left: Servers / Applications tabs */}
-        <div className="flex items-center gap-1 bg-surface p-1 rounded-xl w-max border border-border">
-          {inventoryTabs.map((tab) => (
-            <NavLink
-              key={tab.path}
-              to={tab.path}
-              className={({ isActive }) =>
-                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                ${isActive
-                  ? "bg-background text-primary shadow-sm border border-border"
-                  : "text-secondary hover:text-primary hover:bg-background/50"}`
-              }
-            >
-              {tab.icon}
-              {tab.name}
-            </NavLink>
-          ))}
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-background font-body">
+      {/* Tabs, Toolbar & Action Buttons Row */}
+      <div className="px-8 pt-8 shrink-0 flex items-end justify-between border-b border-border">
+        {/* Left: Servers / Applications tabs & Toolbar */}
+        <div className="flex items-end gap-8">
+          <div className="flex gap-6">
+            {inventoryTabs.map((tab) => (
+              <NavLink
+                key={tab.path}
+                to={tab.path}
+                className={({ isActive }) =>
+                  `-mb-px border-b-2 pb-3 flex items-center gap-2 text-sm font-semibold transition-colors ${
+                    isActive
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`
+                }
+              >
+                {tab.name}
+              </NavLink>
+            ))}
+          </div>
+          
+          {/* Teleport target for Search/Filter */}
+          <div ref={setToolbarEl} className="pb-2" />
         </div>
 
-        {/* Right: Actions or Selection Mode Bar */}
-        <div className="flex items-center gap-3 pb-1">
-          {isSelectionMode ? (
-            <div className="flex items-center gap-4 bg-tertiary/5 border border-tertiary/20 px-4 py-1.5 rounded-xl animate-in slide-in-from-right-4 duration-300">
-              <div className="flex flex-col">
-                <p className="text-[10px] text-tertiary font-bold uppercase tracking-widest leading-none mb-0.5">Export Selection Mode</p>
-                <p className="text-sm font-semibold text-primary">
-                  {selectedIds.length === 0 ? "Select rows to export..." : `${selectedIds.length} entities selected`}
-                </p>
+        {/* Right: Action Buttons */}
+        <div className="flex items-center gap-3 pb-3">
+          <div className="flex items-center gap-3">
+            {isSelectionMode ? (
+              <div className="flex items-center gap-4 bg-primary/5 border border-primary/20 px-4 py-1.5 rounded-xl animate-in slide-in-from-right-4 duration-300">
+                <div className="flex flex-col">
+                  <p className="text-[10px] text-primary font-bold uppercase tracking-widest leading-none mb-0.5 font-label">Export Selection Mode</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {selectedIds.length === 0 ? "Select rows to export..." : `${selectedIds.length} entities selected`}
+                  </p>
+                </div>
+                
+                <div className="h-8 w-[1px] bg-primary/20 mx-1" />
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={disableSelectionMode}
+                    className="px-4 h-[34px] text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleExportNow}
+                    disabled={selectedIds.length === 0 || isExporting}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_20px_oklch(0.62_0.22_25/0.2)] disabled:opacity-50 disabled:shadow-none min-w-[140px] justify-center"
+                  >
+                    {isExporting ? (
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                    {isExporting ? "Exporting..." : "Export Now"}
+                  </button>
+                </div>
               </div>
-              
-              <div className="h-8 w-[1px] bg-tertiary/20 mx-1" />
-              
-              <div className="flex items-center gap-2">
+            ) : (
+              <>
                 <button
-                  onClick={disableSelectionMode}
-                  className="px-4 py-2 text-sm font-medium text-secondary hover:text-primary transition-colors"
+                  onClick={() => setIsBulkImportOpen(true)}
+                  className="bg-surface hover:bg-surface/80 border border-border px-4 h-[34px] rounded-lg text-sm font-bold flex items-center gap-2 text-foreground transition-colors shadow-sm"
                 >
-                  Cancel
+                  <FileSpreadsheet size={16} className="text-muted-foreground" />
+                  Bulk Import
                 </button>
-                <button
-                  onClick={handleExportNow}
-                  disabled={selectedIds.length === 0 || isExporting}
-                  className="flex items-center gap-2 bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_20px_rgba(255,77,126,0.2)] disabled:opacity-50 disabled:shadow-none min-w-[140px] justify-center"
-                >
-                  {isExporting ? (
-                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    <Download size={16} />
-                  )}
-                  {isExporting ? "Exporting..." : "Export Now"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Standard Actions */}
-              <button
-                onClick={() => setIsBulkImportOpen(true)}
-                className="flex items-center gap-2 bg-surface hover:bg-surface/80 border border-border px-4 py-2 rounded-lg text-sm font-medium text-primary transition-colors shadow-sm"
-              >
-                <FileSpreadsheet size={16} className="text-blue-500" />
-                Bulk Import
-              </button>
 
-              <div className="relative">
+                <div className="relative">
+                  <button
+                    onClick={() => setIsExportOpen(!isExportOpen)}
+                    className="bg-surface hover:bg-surface/80 border border-border px-4 h-[34px] rounded-lg text-sm font-bold flex items-center gap-2 text-foreground transition-colors shadow-sm"
+                  >
+                    <Download size={16} className="text-muted-foreground" />
+                    Export
+                    <ChevronDown size={14} className="text-muted-foreground ml-1" />
+                  </button>
+                  {isExportOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <button
+                          onClick={() => enableSelectionMode("excel")}
+                          className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-foreground transition-colors border-b border-border/50"
+                        >
+                          <FileSpreadsheet size={16} className="mr-3 text-success" />
+                          Selective Excel Export (.xlsx)
+                        </button>
+                        <button
+                          onClick={() => enableSelectionMode("csv")}
+                          className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-foreground transition-colors"
+                        >
+                          <FileText size={16} className="mr-3 text-primary" />
+                          Selective Raw Data (.csv)
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <button
-                  onClick={() => setIsExportOpen(!isExportOpen)}
-                  className="flex items-center gap-2 bg-surface hover:bg-surface/80 border border-border px-4 py-2 rounded-lg text-sm font-medium text-primary transition-colors shadow-sm"
+                  onClick={() => setIsRegisterModalOpen(true)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 h-[34px] rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(229,67,95,0.2)]"
                 >
-                  <Download size={16} className="text-tertiary" />
-                  Export View
-                  <ChevronDown size={14} className="text-secondary" />
+                  <Plus size={16} /> Register Entity
                 </button>
-                {isExportOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsExportOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <button
-                        onClick={() => enableSelectionMode("excel")}
-                        className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors border-b border-border/50"
-                      >
-                        <FileSpreadsheet size={16} className="mr-3 text-green-500" />
-                        Selective Excel Export (.xlsx)
-                      </button>
-                      <button
-                        onClick={() => enableSelectionMode("csv")}
-                        className="flex items-center w-full text-left px-4 py-3 hover:bg-background text-sm text-primary transition-colors"
-                      >
-                        <FileText size={16} className="mr-3 text-blue-500" />
-                        Selective Raw Data (.csv)
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Child Content Area */}
-      <div className="flex-1 overflow-y-auto relative bg-background">
+      <div className="flex-1 overflow-hidden flex flex-col relative bg-background min-h-0">
         <Outlet context={{ 
           onRefresh, 
           selectedIds, 
@@ -310,7 +328,8 @@ export function InventoryLayout() {
           onSelectAll, 
           isSelectionMode,
           selectedColumns,
-          toggleColumn
+          toggleColumn,
+          toolbarEl
         }} />
       </div>
 
@@ -319,6 +338,13 @@ export function InventoryLayout() {
         <BulkImportModal
           onClose={() => setIsBulkImportOpen(false)}
           onSuccess={onRefresh}
+        />
+      )}
+      {isRegisterModalOpen && (
+        <RegisterModal
+          onClose={() => setIsRegisterModalOpen(false)}
+          onSuccess={onRefresh}
+          defaultMode={currentTab.type === "servers" ? "infra" : "app"}
         />
       )}
     </div>

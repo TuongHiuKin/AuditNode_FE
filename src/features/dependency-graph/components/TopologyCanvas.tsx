@@ -15,7 +15,7 @@ import { GraphToolbar } from "./GraphToolbar";
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'default',
   animated: true,
-  style: { strokeWidth: 2, stroke: "#3b82f6" },
+  style: { strokeWidth: 2, stroke: "var(--color-primary)" },
 };
 
 interface TopologyCanvasProps {
@@ -45,8 +45,8 @@ export function TopologyCanvas({
     <div className="relative w-full h-full bg-background">
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3 text-secondary">
-            <div className="w-8 h-8 border-2 border-border border-t-tertiary rounded-full animate-spin" />
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
             <span className="text-sm font-label uppercase">Building topology inventory...</span>
           </div>
         </div>
@@ -72,9 +72,9 @@ export function TopologyCanvas({
         <GraphToolbar />
         <MiniMap
           position="bottom-right"
-          nodeColor={(n) => (n.type === "topologyServerNode" ? "#0c1322" : "#FF4D7E")}
-          maskColor="rgba(5, 8, 17, 0.7)"
-          className="bg-[#0c1322] border border-slate-800 rounded-lg overflow-hidden"
+          nodeColor={(n) => (n.type === "topologyServerNode" ? "var(--color-surface)" : "var(--color-primary)")}
+          maskColor="var(--color-background)"
+          className="bg-surface border border-border rounded-lg overflow-hidden"
         />
       </ReactFlow>
     </div>

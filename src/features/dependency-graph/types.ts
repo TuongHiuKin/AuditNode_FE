@@ -27,9 +27,18 @@ export interface ServerNodeData extends Record<string, unknown> {
   height: number;
 }
 
-export type CustomNode = Node<AppNodeData | ServerNodeData>;
+export interface ZoneNodeData extends Record<string, unknown> {
+  label: string;
+  subtitle?: string;
+  variant?: "blue" | "amber" | "emerald" | "violet" | "rose";
+  width?: number;
+  height?: number;
+}
+
+export type CustomNode = Node<AppNodeData | ServerNodeData | ZoneNodeData>;
 export type ServerNode = Node<ServerNodeData, "serverNode">;
 export type AppNode = Node<AppNodeData, "appNode">;
+export type ZoneNodeType = Node<ZoneNodeData, "zoneNode">;
 
 export interface DependencyMap {
   calling: string[];

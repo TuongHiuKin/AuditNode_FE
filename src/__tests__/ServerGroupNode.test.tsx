@@ -84,8 +84,8 @@ describe("ServerGroupNode", () => {
     const selectedProps = { ...mockProps, selected: true };
     const { container } = wrap(<ServerGroupNode {...selectedProps} />);
     const nodeDiv = container.querySelector("div") as HTMLElement;
-    expect(nodeDiv.className).toContain("border-tertiary");
-    expect(nodeDiv.className).toContain("bg-tertiary/5");
+    expect(nodeDiv.className).toContain("border-primary");
+    expect(nodeDiv.className).toContain("bg-primary/5");
   });
 
   it("calculates correct dimensions in handleAutoFit", () => {

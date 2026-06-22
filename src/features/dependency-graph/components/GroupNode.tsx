@@ -14,12 +14,12 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
   return (
     <div className={`relative h-full w-full rounded-xl border-2 border-dashed transition-all duration-300 ${
       selected 
-        ? "border-tertiary bg-tertiary/5 shadow-[0_0_20px_rgba(255,77,126,0.1)]" 
-        : "border-slate-700 bg-slate-900/10 hover:border-slate-500"
+        ? "border-primary bg-primary/5 shadow-[0_0_20px_oklch(0.62_0.22_25/0.1)]" 
+        : "border-border bg-surface/10 hover:border-border/80"
     }`}>
       {/* Node Resizer */}
       <NodeResizer 
-        color="#ff4d7e" 
+        color="var(--color-primary)" 
         isVisible={selected} 
         minWidth={200} 
         minHeight={150} 
@@ -27,9 +27,9 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
       />
 
       {/* Header Label */}
-      <div className="absolute -top-3 left-4 px-2 py-0.5 bg-background border border-slate-800 rounded flex items-center gap-2 z-10">
-        <Briefcase size={12} className="text-tertiary" />
-        <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-widest">
+      <div className="absolute -top-3 left-4 px-2 py-0.5 bg-background border border-border rounded flex items-center gap-2 z-10">
+        <Briefcase size={12} className="text-primary" />
+        <span className="text-[10px] font-label font-bold text-foreground uppercase tracking-widest">
           {label}
         </span>
       </div>
@@ -42,7 +42,7 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
             setShowMenu(!showMenu);
           }}
           onClick={() => setShowMenu(!showMenu)}
-          className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-500 hover:text-white"
+          className="p-1 hover:bg-surface rounded transition-colors text-muted-foreground hover:text-foreground"
         >
           <MoreVertical size={14} />
         </button>
@@ -60,9 +60,9 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
                   setShowMenu(false);
                   data.onExportAudit?.(id, label);
                 }}
-                className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-primary hover:bg-background transition-colors"
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-foreground hover:bg-background transition-colors"
               >
-                <FileSpreadsheet size={14} className="text-green-500" />
+                <FileSpreadsheet size={14} className="text-success" />
                 Export Group Audit Matrix
               </button>
             </div>

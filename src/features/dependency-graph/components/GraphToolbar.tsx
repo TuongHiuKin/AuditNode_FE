@@ -13,7 +13,7 @@ export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
     if (!flowElement) return;
 
     toPng(flowElement, {
-      backgroundColor: "#020617",
+      backgroundColor: "var(--color-background)",
       style: {
         transform: "none",
       },
@@ -35,21 +35,21 @@ export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
         <button
           onClick={handleExport}
           title="Export Canvas to PNG"
-          className="p-2.5 text-secondary hover:text-tertiary hover:bg-background transition-all border-b border-border"
+          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all border-b border-border"
         >
           <Camera size={18} />
         </button>
         <button
           onClick={onAddGroup}
           title="Add Group Box"
-          className="p-2.5 text-secondary hover:text-tertiary hover:bg-background transition-all border-b border-border"
+          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all border-b border-border"
         >
           <Briefcase size={18} />
         </button>
         <button
           onClick={onQuickAdd}
           title="Quick Add Infrastructure"
-          className="p-2.5 text-secondary hover:text-tertiary hover:bg-background transition-all"
+          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all"
         >
           <Plus size={18} />
         </button>

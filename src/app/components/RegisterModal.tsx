@@ -4,8 +4,8 @@ import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
 
-const inputCls = "w-full bg-[#0b1120] border border-gray-800 text-gray-200 text-sm rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all";
-const labelCls = "text-sm font-medium text-gray-300";
+const inputCls = "w-full bg-background border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all";
+const labelCls = "text-sm font-medium text-muted-foreground";
 
 export interface RegisterModalProps {
   onClose: () => void;
@@ -92,27 +92,27 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 p-4" onClick={onClose}>
       <div
         id="register-modal-wrapper"
-        className="bg-[#0f172a] border border-gray-800 rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+        className="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
         style={{ minWidth: '420px' }}
         onClick={(e) => e.stopPropagation()}
       >
           {/* ── Modal Header ── */}
-          <div className="flex justify-between items-center p-5 border-b border-gray-800">
-            <h3 className="text-xl font-bold text-white">Register New Entity</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors focus:outline-none">
+          <div className="flex justify-between items-center p-5 border-b border-border">
+            <h3 className="text-xl font-bold text-foreground font-display">Register New Entity</h3>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none">
               <X size={24} />
             </button>
           </div>
 
           {/* ── Tab Switcher ── */}
           <div className="px-5 pt-5">
-            <div className="flex flex-row bg-[#111827] border border-gray-800 rounded-lg p-1">
+            <div className="flex flex-row bg-panel border border-border rounded-lg p-1">
               <button
                 onClick={() => setFormMode("infra")}
                 className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
                   formMode === "infra"
-                    ? "bg-[#1f2937] text-white shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
+                    ? "bg-surface-hover text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 New Server
@@ -121,8 +121,8 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                 onClick={() => setFormMode("app")}
                 className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
                   formMode === "app"
-                    ? "bg-[#1f2937] text-white shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
+                    ? "bg-surface-hover text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 New Application
@@ -133,7 +133,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
           {/* ── Form Body ── */}
           <div className="p-5 flex flex-col gap-5">
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
                 {error}
               </div>
             )}
@@ -149,9 +149,9 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                     value={infraData.datacenterId}
                     onChange={(e) => setInfraData({ ...infraData, datacenterId: e.target.value })}
                   >
-                    <option value="" className="bg-[#0b1120]">Select Datacenter...</option>
+                    <option value="" className="bg-background">Select Datacenter...</option>
                     {datacenters.map(dc => (
-                      <option key={dc.id} value={dc.id} className="bg-[#0b1120]">{dc.name} ({dc.location})</option>
+                      <option key={dc.id} value={dc.id} className="bg-background">{dc.name} ({dc.location})</option>
                     ))}
                   </select>
                 </div>
@@ -203,9 +203,9 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                       value={infraData.environment}
                       onChange={(e) => setInfraData({ ...infraData, environment: e.target.value })}
                     >
-                      <option className="bg-[#0b1120]">Production</option>
-                      <option className="bg-[#0b1120]">Staging</option>
-                      <option className="bg-[#0b1120]">Development</option>
+                      <option className="bg-background">Production</option>
+                      <option className="bg-background">Staging</option>
+                      <option className="bg-background">Development</option>
                     </select>
                   </div>
                 </div>
@@ -219,9 +219,9 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                     value={infraData.status}
                     onChange={(e) => setInfraData({ ...infraData, status: e.target.value })}
                   >
-                    <option className="bg-[#0b1120]">Active</option>
-                    <option className="bg-[#0b1120]">Inactive</option>
-                    <option className="bg-[#0b1120]">Maintenance</option>
+                    <option className="bg-background">Active</option>
+                    <option className="bg-background">Inactive</option>
+                    <option className="bg-background">Maintenance</option>
                   </select>
                 </div>
               </div>
@@ -237,9 +237,9 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                       value={appData.serverId}
                       onChange={(e) => setAppData({ ...appData, serverId: e.target.value })}
                     >
-                      <option value="" className="bg-[#0b1120]">Select server...</option>
+                      <option value="" className="bg-background">Select server...</option>
                       {availableServers.map((s) => (
-                        <option key={s.id} value={s.id} className="bg-[#0b1120]">
+                        <option key={s.id} value={s.id} className="bg-background">
                           {s.hostname} ({s.ipAddress})
                         </option>
                       ))}
@@ -305,11 +305,11 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                       value={appData.protocol}
                       onChange={(e) => setAppData({ ...appData, protocol: e.target.value })}
                     >
-                      <option className="bg-[#0b1120]">HTTPS</option>
-                      <option className="bg-[#0b1120]">TCP</option>
-                      <option className="bg-[#0b1120]">UDP</option>
-                      <option className="bg-[#0b1120]">HTTP</option>
-                      <option className="bg-[#0b1120]">gRPC</option>
+                      <option className="bg-background">HTTPS</option>
+                      <option className="bg-background">TCP</option>
+                      <option className="bg-background">UDP</option>
+                      <option className="bg-background">HTTP</option>
+                      <option className="bg-background">gRPC</option>
                     </select>
                   </div>
                 </div>
@@ -318,18 +318,18 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
           </div>
 
           {/* ── Modal Footer ── */}
-          <div className="flex justify-end items-center gap-4 p-5 border-t border-gray-800">
+          <div className="flex justify-end items-center gap-4 p-5 border-t border-border">
             <button
               onClick={onClose}
               disabled={loading}
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-50 active:scale-95"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 active:scale-95"
             >
               {loading ? "Submitting..." : (formMode === "infra" ? "Submit Server" : "Deploy App")}
             </button>

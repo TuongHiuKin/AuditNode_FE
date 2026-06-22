@@ -71,7 +71,7 @@ describe("InventoryLayout", () => {
       </QueryClientProvider>
     );
 
-    const exportBtn = screen.getByText("Export View");
+    const exportBtn = screen.getByText("Export");
     fireEvent.click(exportBtn);
 
     expect(screen.getByText("Selective Excel Export (.xlsx)")).toBeDefined();

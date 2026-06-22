@@ -63,7 +63,7 @@ export function FilterBar({
         />
       </div>
 
-      <div className="h-4 w-px bg-border mx-1" />
+      <div className="h-5 w-px bg-border mx-1" />
 
       {/* Search Bar - matches Inventory page style */}
       {(onQueryChange || onSelectResult) && (
@@ -73,6 +73,7 @@ export function FilterBar({
             onChange={onQueryChange ?? (() => {})}
             onSelectResult={onSelectResult ?? (() => {})}
             placeholder="Search servers & apps..."
+            inputClassName="py-1.5 h-[34px]"
           />
         </div>
       )}

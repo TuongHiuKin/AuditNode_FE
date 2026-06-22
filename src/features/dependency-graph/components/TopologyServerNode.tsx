@@ -45,40 +45,41 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
   };
 
   const isProd = data.server.environment?.toUpperCase() === "PROD";
-  const accentColor = isProd ? "blue" : "slate";
-  const borderClass = isProd ? "border-blue-500/60" : "border-slate-700/60";
-  const glowClass = isProd ? "shadow-[0_0_20px_rgba(59,130,246,0.15)]" : "";
+  const borderClass = isProd ? "border-primary/60" : "border-border";
+  const glowClass = isProd ? "shadow-[0_0_20px_oklch(0.62_0.22_25/0.15)]" : "";
+  const iconBgBorder = isProd ? "bg-primary/10 border-primary/20" : "bg-background border-border/50";
+  const iconColor = isProd ? "text-primary" : "text-muted-foreground/80";
 
   // ─── Collapsed State ──────────────────────────────────────────────────
   if (!data.isExpanded) {
     return (
       <div
-        className={`bg-[#0c1322] border ${borderClass} ${glowClass} rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg transition-all duration-300 hover:scale-[1.02] group relative cursor-pointer`}
+        className={`bg-surface border ${borderClass} ${glowClass} rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg transition-all duration-300 hover:scale-[1.02] group relative cursor-pointer`}
         style={{ width: 280, height: 80 }}
         onClick={toggleExpand}
       >
-        <div className={`p-2 rounded-lg bg-slate-900 border border-${accentColor}-500/20 shrink-0`}>
-          <ServerIcon size={18} className={isProd ? "text-blue-400" : "text-slate-400"} />
+        <div className={`p-2 rounded-lg shrink-0 ${iconBgBorder}`}>
+          <ServerIcon size={18} className={iconColor} />
         </div>
         <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-          <span className="font-bold text-primary truncate text-sm tracking-tight leading-tight">
+          <span className="font-bold text-foreground truncate text-sm tracking-tight leading-tight">
             {data.server.hostname}
           </span>
-          <span className="text-[10px] font-mono text-slate-500 bg-slate-900/50 self-start px-1.5 py-0.5 rounded mt-0.5">
+          <span className="text-[10px] font-label text-muted-foreground bg-background self-start px-1.5 py-0.5 rounded mt-0.5">
             {data.server.ipAddress}
           </span>
         </div>
 
         {/* App Count Badge */}
-        <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 rounded-md px-2 py-1 shrink-0">
-          <Boxes size={12} className="text-blue-400" />
-          <span className="text-[10px] font-bold text-blue-400 font-mono">{appCount}</span>
+        <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded-md px-2 py-1 shrink-0">
+          <Boxes size={12} className="text-primary" />
+          <span className="text-[10px] font-bold text-primary font-label">{appCount}</span>
         </div>
 
         {/* Expand Indicator */}
         <ChevronDown 
           size={14} 
-          className="text-slate-500 group-hover:text-blue-400 transition-colors shrink-0" 
+          className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" 
         />
 
         <Handle type="target" position={Position.Top} className="opacity-0" />
@@ -90,33 +91,33 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
   // ─── Expanded State ───────────────────────────────────────────────────
   return (
     <div
-      className={`bg-[#0c1322]/95 backdrop-blur-sm border ${borderClass} ${glowClass} rounded-2xl flex flex-col relative transition-all duration-300 shadow-2xl`}
+      className={`bg-surface/95 backdrop-blur-sm border ${borderClass} ${glowClass} rounded-2xl flex flex-col relative transition-all duration-300 shadow-2xl`}
       style={{ width: data.width, minHeight: data.height }}
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-slate-800/50 cursor-pointer group shrink-0"
+        className="flex items-center justify-between px-4 py-3 border-b border-border/50 cursor-pointer group shrink-0"
         onClick={toggleExpand}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`p-2 rounded-lg bg-slate-900 border border-${accentColor}-500/20 shrink-0`}>
-            <ServerIcon size={16} className={isProd ? "text-blue-400" : "text-slate-400"} />
+          <div className={`p-2 rounded-lg shrink-0 ${iconBgBorder}`}>
+            <ServerIcon size={16} className={iconColor} />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-primary text-sm tracking-tight leading-tight truncate">
+            <span className="font-bold text-foreground text-sm tracking-tight leading-tight truncate">
               {data.server.hostname}
             </span>
-            <span className="text-[10px] font-mono text-slate-500">{data.server.ipAddress}</span>
+            <span className="text-[10px] font-label text-muted-foreground">{data.server.ipAddress}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">
+          <span className="text-[9px] font-label text-muted-foreground uppercase tracking-wider">
             {appCount} app{appCount !== 1 ? "s" : ""}
           </span>
           <ChevronUp
             size={14}
-            className="text-slate-500 group-hover:text-blue-400 transition-colors"
+            className="text-muted-foreground group-hover:text-primary transition-colors"
           />
         </div>
       </div>
@@ -134,7 +135,7 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-slate-600 text-[11px] font-mono italic">
+          <div className="flex items-center justify-center h-full text-muted-foreground/60 text-[11px] font-label italic">
             No applications registered
           </div>
         )}

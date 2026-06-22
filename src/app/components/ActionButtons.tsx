@@ -14,7 +14,7 @@ export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: Action
           e.stopPropagation();
           onEditClick?.();
         }}
-        className="p-1.5 text-secondary hover:text-primary hover:bg-surface rounded-md transition-colors"
+        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-md transition-colors"
         title="Edit"
       >
         <Edit2 size={16} />
@@ -24,7 +24,7 @@ export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: Action
           e.stopPropagation();
           onDepClick?.();
         }}
-        className="p-1.5 text-secondary hover:text-tertiary hover:bg-tertiary/10 rounded-md transition-colors"
+        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
         title="View Dependency"
       >
         <Network size={16} />
@@ -34,7 +34,7 @@ export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: Action
           e.stopPropagation();
           onDeleteClick?.();
         }}
-        className="p-1.5 text-secondary hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+        className="p-1.5 text-muted-foreground hover:text-danger hover:bg-danger/10 rounded-md transition-colors"
         title="Delete"
       >
         <Trash2 size={16} />

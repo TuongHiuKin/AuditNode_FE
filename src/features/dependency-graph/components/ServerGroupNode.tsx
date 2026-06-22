@@ -58,7 +58,7 @@ export function ServerGroupNode({ id, data, selected, width, height }: NodeProps
   return (
     <div
       className={`border border-dashed rounded-xl transition-all duration-200 ease-in-out relative flex flex-col ${
-        selected ? "border-tertiary bg-tertiary/5" : "border-slate-800 bg-[#0c1322]/30 hover:bg-[#0c1322]/50 hover:border-slate-700"
+        selected ? "border-primary bg-primary/5" : "border-border bg-surface/30 hover:bg-surface/50 hover:border-border/80"
       }`}
       style={{ 
         width: width ? `${width}px` : (data.width ? `${data.width}px` : '280px'), 
@@ -74,7 +74,7 @@ export function ServerGroupNode({ id, data, selected, width, height }: NodeProps
           width: 8, 
           height: 8, 
           borderRadius: '2px',
-          background: '#FF4D7E',
+          background: 'var(--color-primary)',
           border: 'none',
           margin: 0 // Ensures handles sit perfectly on the border
         }}
@@ -82,20 +82,20 @@ export function ServerGroupNode({ id, data, selected, width, height }: NodeProps
 
       {/* Header Container */}
       <div className="absolute -top-8 left-0 flex items-center gap-2 px-1 w-full">
-        <div className="p-1 bg-[#0c1322] border border-slate-800 rounded shadow-sm">
-          <ServerIcon size={12} className="text-secondary" />
+        <div className="p-1 bg-surface border border-border rounded shadow-sm">
+          <ServerIcon size={12} className="text-muted-foreground" />
         </div>
-        <span className="text-xs font-bold text-primary font-display whitespace-nowrap">
+        <span className="text-xs font-bold text-foreground font-display whitespace-nowrap">
           {data.server.hostname}
         </span>
-        <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 uppercase tracking-tight">
+        <span className="text-[10px] font-label text-muted-foreground/80 bg-background px-1.5 py-0.5 rounded border border-border uppercase tracking-tight">
           {data.server.ipAddress}
         </span>
         
         <button 
           onClick={handleAutoFit}
           title="Auto-fit to children"
-          className="ml-auto p-1 bg-[#0c1322] border border-slate-800 rounded hover:bg-slate-800 hover:text-white text-slate-400 transition-colors shadow-sm flex items-center justify-center"
+          className="ml-auto p-1 bg-surface border border-border rounded hover:bg-border hover:text-foreground text-muted-foreground/80 transition-colors shadow-sm flex items-center justify-center"
         >
           <Maximize size={10} />
         </button>

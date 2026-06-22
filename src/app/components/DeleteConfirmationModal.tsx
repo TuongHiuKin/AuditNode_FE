@@ -133,120 +133,69 @@ export function DeleteConfirmationModal({
 
       {/* Modal card */}
       <div
+        className="bg-surface border border-danger/20 rounded-2xl shadow-2xl"
         style={{
           position: "relative",
           width: "100%",
           maxWidth: "460px",
-          backgroundColor: "#0c1322",
-          border: "1px solid rgba(255,77,126,0.2)",
-          borderRadius: "16px",
-          boxShadow: "0 0 0 1px rgba(255,77,126,0.08), 0 24px 64px rgba(0,0,0,0.6), 0 0 40px rgba(255,77,126,0.06)",
           overflow: "hidden",
           animation: "deleteModalIn 0.2s ease-out forwards",
+          boxShadow: "0 0 0 1px oklch(0.62 0.22 25 / 0.08), 0 24px 64px rgba(0,0,0,0.6), 0 0 40px oklch(0.62 0.22 25 / 0.06)",
         }}
       >
         {/* Top accent bar */}
-        <div style={{ height: "3px", background: "linear-gradient(90deg, #FF4D7E, #ff8a65)" }} />
+        <div className="h-[3px] bg-gradient-to-r from-primary to-warning" />
 
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "20px 24px",
-            borderBottom: "1px solid rgba(122,134,153,0.1)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "36px",
-                height: "36px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "rgba(255,77,126,0.12)",
-                borderRadius: "10px",
-                border: "1px solid rgba(255,77,126,0.2)",
-                color: "#FF4D7E",
-              }}
-            >
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 flex items-center justify-center bg-danger/12 rounded-[10px] border border-danger/20 text-danger">
               <Trash2 size={18} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#F2F2F5", lineHeight: 1.2 }}>
+              <h2 className="text-base font-bold text-foreground leading-tight font-display">
                 Hard Delete {entityType === "SERVER" ? "Server" : "Application"}
               </h2>
-              <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#7A8699" }}>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {entityName || "Resource"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "#7A8699",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "6px",
-              borderRadius: "8px",
-              transition: "color 0.15s, background 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#F2F2F5";
-              (e.currentTarget as HTMLButtonElement).style.background = "rgba(122,134,153,0.1)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "#7A8699";
-              (e.currentTarget as HTMLButtonElement).style.background = "none";
-            }}
+            className="text-muted-foreground hover:text-foreground hover:bg-surface-hover p-1.5 rounded-lg transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: "24px" }}>
+        <div className="p-6">
           {loadingImpact ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 0", gap: "12px", color: "#7A8699" }}>
-              <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: "#FF4D7E" }} />
-              <p style={{ margin: 0, fontSize: "13px" }}>Analyzing infrastructure impact...</p>
+            <div className="flex flex-col items-center justify-center py-10 gap-3 text-muted-foreground">
+              <Loader2 size={24} className="animate-spin text-primary" />
+              <p className="text-[13px]">Analyzing infrastructure impact...</p>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div className="flex flex-col gap-5">
               {/* Impact Banner */}
               {hasImpact ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "14px",
-                    padding: "16px",
-                    backgroundColor: "rgba(255,77,126,0.08)",
-                    border: "1px solid rgba(255,77,126,0.2)",
-                    borderRadius: "12px",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <ShieldAlert size={22} style={{ color: "#FF4D7E", flexShrink: 0, marginTop: "1px" }} />
+                <div className="flex flex-col gap-3.5 p-4 bg-danger/8 border border-danger/20 rounded-xl">
+                  <div className="flex gap-3">
+                    <ShieldAlert size={22} className="text-danger shrink-0 mt-0.5" />
                     <div>
-                      <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 700, color: "#FF4D7E", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                      <p className="text-[11px] font-bold text-danger tracking-wider uppercase mb-1 font-label">
                         Critical Impact Warning
                       </p>
-                      <p style={{ margin: 0, fontSize: "13px", color: "#c8d0de", lineHeight: 1.6 }}>
+                      <p className="text-[13px] text-foreground/80 leading-relaxed">
                         {entityType === "APP" ? (
                           <>
-                            This application has <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{dependencyCount} active network connection{dependencyCount !== 1 ? "s" : ""}</span>.
+                            This application has <span className="font-bold text-foreground">{dependencyCount} active network connection{dependencyCount !== 1 ? "s" : ""}</span>.
                             Purging will permanently sever all linked dependencies.
                           </>
                         ) : (
                           <>
-                            Warning: This server is actively hosting <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{deployedApps.length} application{deployedApps.length !== 1 ? "s" : ""}</span>. 
+                            Warning: This server is actively hosting <span className="font-bold text-foreground">{deployedApps.length} application{deployedApps.length !== 1 ? "s" : ""}</span>. 
                             Deleting it will permanently purge the server and cascade-delete the following network deployments:
                           </>
                         )}
@@ -255,19 +204,13 @@ export function DeleteConfirmationModal({
                   </div>
 
                   {entityType === "SERVER" && deployedApps.length > 0 && (
-                    <div style={{ 
-                      marginTop: "4px",
-                      padding: "12px",
-                      backgroundColor: "rgba(0,0,0,0.2)",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(255,77,126,0.1)"
-                    }}>
-                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
+                    <div className="mt-1 p-3 bg-background/30 rounded-lg border border-danger/10">
+                      <ul className="m-0 p-0 list-none grid grid-cols-1 gap-2">
                         {deployedApps.map(app => (
-                          <li key={app.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#F2F2F5" }}>
-                            <Box size={14} style={{ color: "#FF4D7E" }} />
-                            <span style={{ fontWeight: 600 }}>{app.appName}</span>
-                            <span style={{ color: "#7A8699", fontSize: "11px" }}>(Port {app.portNumber})</span>
+                          <li key={app.id} className="flex items-center gap-2 text-xs text-foreground">
+                            <Box size={14} className="text-danger" />
+                            <span className="font-semibold">{app.appName}</span>
+                            <span className="text-muted-foreground text-[11px] font-label">(Port {app.portNumber})</span>
                           </li>
                         ))}
                       </ul>
@@ -275,20 +218,11 @@ export function DeleteConfirmationModal({
                   )}
                 </div>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "14px",
-                    padding: "16px",
-                    backgroundColor: "rgba(59,130,246,0.07)",
-                    border: "1px solid rgba(59,130,246,0.15)",
-                    borderRadius: "12px",
-                  }}
-                >
-                  <Info size={22} style={{ color: "#60a5fa", flexShrink: 0, marginTop: "1px" }} />
-                  <p style={{ margin: 0, fontSize: "13px", color: "#c8d0de", lineHeight: 1.6 }}>
+                <div className="flex gap-3.5 p-4 bg-primary/5 border border-primary/15 rounded-xl">
+                  <Info size={22} className="text-primary shrink-0 mt-0.5" />
+                  <p className="text-[13px] text-foreground/80 leading-relaxed">
                     Are you sure you want to permanently delete{" "}
-                    <span style={{ fontWeight: 700, color: "#F2F2F5" }}>{entityName || "this resource"}</span>?
+                    <span className="font-bold text-foreground">{entityName || "this resource"}</span>?
                     {entityType === "SERVER" ? " This server is currently empty." : " This resource has no active dependencies."}
                   </p>
                 </div>
@@ -298,64 +232,25 @@ export function DeleteConfirmationModal({
         </div>
 
         {/* Footer actions */}
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            padding: "16px 24px 24px",
-          }}
-        >
+        <div className="flex gap-2.5 px-6 pb-6">
           <button
             onClick={onClose}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              borderRadius: "10px",
-              border: "1px solid rgba(122,134,153,0.2)",
-              backgroundColor: "rgba(122,134,153,0.08)",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#7A8699",
-              cursor: "pointer",
-              transition: "background 0.15s, color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(122,134,153,0.15)";
-              (e.currentTarget as HTMLButtonElement).style.color = "#F2F2F5";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(122,134,153,0.08)";
-              (e.currentTarget as HTMLButtonElement).style.color = "#7A8699";
-            }}
+            className="flex-1 py-2.5 px-4 rounded-[10px] border border-border bg-surface-hover/30 text-[13px] font-semibold text-muted-foreground hover:bg-surface-hover hover:text-foreground cursor-pointer transition-colors"
           >
             Cancel
           </button>
           <button
             disabled={purging || loadingImpact}
             onClick={handlePurge}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              borderRadius: "10px",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              cursor: !purging ? "pointer" : "not-allowed",
-              transition: "all 0.15s",
-              background: !purging
-                ? "linear-gradient(135deg, #FF4D7E, #e0365e)"
-                : "rgba(122,134,153,0.12)",
-              color: !purging ? "#fff" : "#4a5568",
-              boxShadow: !purging ? "0 4px 16px rgba(255,77,126,0.3)" : "none",
-            }}
+            className={`flex-1 py-2.5 px-4 rounded-[10px] border-none text-[13px] font-bold flex items-center justify-center gap-2 transition-all ${
+              !purging
+                ? "bg-gradient-to-br from-primary to-danger text-primary-foreground cursor-pointer shadow-[0_4px_16px_oklch(0.62_0.22_25/0.3)]"
+                : "bg-surface-hover text-muted-foreground cursor-not-allowed"
+            }`}
           >
             {purging ? (
               <>
-                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+                <Loader2 size={16} className="animate-spin" />
                 Purging...
               </>
             ) : (

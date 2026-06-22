@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
 import GroupNode from "./GroupNode";
+import ZoneNode from "./ZoneNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
@@ -20,12 +21,12 @@ import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
   animated: true,
-  style: { strokeWidth: 2, stroke: "#3b82f6", strokeDasharray: '5,5' },
+  style: { strokeWidth: 2, stroke: "var(--color-primary)", strokeDasharray: '5,5' },
   markerEnd: {
     type: MarkerType.ArrowClosed,
     width: 20,
     height: 20,
-    color: "#3b82f6",
+    color: "var(--color-primary)",
   },
 };
 
@@ -72,6 +73,7 @@ export function FlowCanvas({
     appNode: AppNode,
     serverNode: ServerGroupNode,
     groupNode: GroupNode as ComponentType<any>,
+    zoneNode: ZoneNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({
@@ -88,8 +90,8 @@ export function FlowCanvas({
     >
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3 text-secondary">
-            <div className="w-8 h-8 border-2 border-border border-t-tertiary rounded-full animate-spin" />
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
             <span className="text-sm font-label uppercase">Building dependency graph...</span>
           </div>
         </div>
@@ -98,7 +100,7 @@ export function FlowCanvas({
       {/* Drawing Box Overlay */}
       {drawBox && (
         <div
-          className="absolute z-50 border-2 border-tertiary bg-tertiary/10 pointer-events-none rounded-lg"
+          className="absolute z-50 border-2 border-primary bg-primary/10 pointer-events-none rounded-lg"
           style={{
             left: Math.min(drawBox.startX, drawBox.currentX),
             top: Math.min(drawBox.startY, drawBox.currentY),
@@ -136,9 +138,9 @@ export function FlowCanvas({
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
         <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} />
         <MiniMap
-          nodeColor={(n) => (n.type === "serverNode" ? "#0c1322" : "#FF4D7E")}
-          maskColor="rgba(5, 8, 17, 0.7)"
-          className="bg-[#0c1322] border border-slate-800 rounded-lg overflow-hidden"
+          nodeColor={(n) => (n.type === "serverNode" ? "var(--color-surface)" : "var(--color-primary)")}
+          maskColor="var(--color-background)"
+          className="bg-surface border border-border rounded-lg overflow-hidden"
         />
       </ReactFlow>
     </div>

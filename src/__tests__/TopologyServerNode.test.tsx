@@ -48,8 +48,8 @@ describe("TopologyServerNode (Isolated)", () => {
     expect(screen.getByText("iso-srv-01")).toBeDefined();
     expect(screen.getByText("5")).toBeDefined();
     
-    const nodeDiv = screen.getByText("iso-srv-01").closest("div.bg-\\[\\#0c1322\\]");
-    expect(nodeDiv?.className).toContain("border-blue-500/60");
+    const nodeDiv = screen.getByText("iso-srv-01").closest("div.bg-surface");
+    expect(nodeDiv?.className).toContain("border-primary/60");
   });
 
   it("toggles expansion state in data on click", () => {
