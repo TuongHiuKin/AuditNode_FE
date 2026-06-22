@@ -49,6 +49,7 @@ function DependencyManagerContent() {
 
     useEffect(() => {
       setHeader(
+        ["DEPENDENCIES", "GRAPH MANAGER"],
         "Dependency Graph Manager",
         "Visualize and manage inter-service dependencies and network flows.",
         <Network size={20} />
@@ -143,36 +144,25 @@ function DependencyManagerContent() {
       {/* Main Viewport Wrapper */}
       <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
 
-        {/* Docked Utility Toolbar - always full width */}
-        <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
-          <SubToolbar
-            onAutoMap={handleAutoMap}
-            onSync={handleSync}
-            isSyncing={isSyncing}
-          />
-          <div className="w-px h-5 bg-border shrink-0"></div>
+        {/* Top Utility Bar */}
+        <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between px-8 pt-8 pb-3 z-10 shrink-0">
           <FilterBar
             selectedEnv={selectedEnv}
             setSelectedEnv={setSelectedEnv}
             selectedDatacenter={selectedDatacenter}
             setSelectedDatacenter={setSelectedDatacenter}
           />
+          <SubToolbar
+            onAutoMap={handleAutoMap}
+            onSync={handleSync}
+            isSyncing={isSyncing}
+            onTogglePalette={() => setIsPaletteOpen(!isPaletteOpen)}
+            isPaletteOpen={isPaletteOpen}
+          />
         </div>
 
         {/* Canvas + Details Panel Row */}
         <div className="flex flex-row flex-1 min-h-0 overflow-hidden relative">
-          {/* Toggle Button for Palette (Floating) */}
-          {!isPaletteOpen && (
-            <button
-              onClick={() => setIsPaletteOpen(true)}
-              className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg shadow-xl hover:scale-105 active:scale-95 transition-all font-bold text-xs uppercase tracking-wider"
-              title="Open App Palette"
-            >
-              <Plus size={16} />
-              <span>Apps</span>
-              <ChevronRight size={14} className="opacity-50" />
-            </button>
-          )}
 
           {/* React Flow Canvas Wrapper */}
           <div className="flex-1 h-full relative min-w-0">

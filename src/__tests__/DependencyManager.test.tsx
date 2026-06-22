@@ -117,7 +117,7 @@ describe("DependencyManager Integration", () => {
     expect(drawer?.className).toContain("-translate-x-full");
 
     // Toggle button should be visible
-    const openButton = await screen.findByRole("button", { name: /Apps/i });
+    const openButton = await screen.findByText(/\+ App Palette/i);
     expect(openButton).toBeDefined();
 
     // Click to reopen
@@ -159,6 +159,6 @@ describe("ServerGroupNode", () => {
     // Check for dashed border class
     const container = screen.getByText("prod-web-01").closest(".border-dashed");
     expect(container).toBeDefined();
-    expect(container?.className).toContain("border-slate-800");
+    expect(container?.className).toContain("border-border");
   });
 });

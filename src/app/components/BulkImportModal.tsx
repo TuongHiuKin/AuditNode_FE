@@ -238,24 +238,24 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl w-full max-w-6xl min-w-[600px] flex flex-col overflow-hidden max-h-[95vh]"
+        className="bg-panel border border-border rounded-2xl shadow-2xl w-full max-w-6xl min-w-[600px] flex flex-col overflow-hidden max-h-[95vh]"
         style={{ animation: "exportModalIn 0.2s ease-out both" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-surface/50">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2 font-display">
               Iterative Bulk Import
               {rows.length > 0 && (
-                <Badge variant="outline" className="border-slate-700 text-slate-400 font-normal">
+                <Badge variant="outline" className="border-border text-muted-foreground font-normal">
                   {stats.total} Total Rows
                 </Badge>
               )}
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Parse, fix errors inline, and selectively import valid records.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Parse, fix errors inline, and selectively import valid records.</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-full">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-surface-hover rounded-full">
             <X size={20} />
           </button>
         </div>
@@ -266,12 +266,12 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
             <div className="p-12 flex flex-col items-center justify-center gap-8">
               {/* Icon + heading */}
               <div className="flex flex-col items-center gap-4 text-center">
-                <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center text-blue-500 ring-1 ring-blue-500/20">
+                <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary ring-1 ring-primary/20">
                   <Upload size={32} />
                 </div>
                 <div className="space-y-2 w-80 text-center">
-                  <h4 className="text-2xl font-bold text-white">Import Your Inventory</h4>
-                  <p className="text-slate-400 leading-relaxed">
+                  <h4 className="text-2xl font-bold text-foreground font-display">Import Your Inventory</h4>
+                  <p className="text-muted-foreground leading-relaxed">
                     Drop your Excel file here. Our system will automatically detect errors and let you fix them before committing to the database.
                   </p>
                 </div>
@@ -279,7 +279,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
               {/* Action buttons */}
               <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2 border-slate-700 text-slate-300 hover:text-white hover:border-slate-500">
+                <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground">
                   <Download size={16} />
                   Download Template
                 </Button>
@@ -292,7 +292,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     disabled={isProcessing}
                   />
-                  <Button disabled={isProcessing} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-900/30">
+                  <Button disabled={isProcessing} className="gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
                     {isProcessing ? "Processing..." : "Select Excel File"}
                     {!isProcessing && <ChevronRight size={16} />}
                   </Button>
@@ -300,11 +300,11 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
               </div>
 
               {/* Feature hints */}
-              <div className="pt-6 border-t border-slate-800 w-full max-w-lg">
-                <div className="flex justify-center gap-8 text-xs text-slate-500">
-                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> Automatic Validation</span>
-                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> Inline Fixing</span>
-                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> Partial Imports</span>
+              <div className="pt-6 border-t border-border w-full max-w-lg">
+                <div className="flex justify-center gap-8 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-success" /> Automatic Validation</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-success" /> Inline Fixing</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-success" /> Partial Imports</span>
                 </div>
               </div>
             </div>
@@ -312,24 +312,24 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
             <div className="p-10 h-full flex flex-col justify-center gap-8">
               {/* Stat Cards */}
               <div className="grid grid-cols-3 gap-5 max-w-2xl mx-auto w-full">
-                <Card className="p-6 bg-slate-900/50 border-slate-800 text-center">
-                  <p className="text-slate-400 text-sm mb-2">Total Found</p>
-                  <p className="text-4xl font-bold text-white">{stats.total}</p>
+                <Card className="p-6 bg-surface/50 border-border text-center">
+                  <p className="text-muted-foreground text-sm mb-2">Total Found</p>
+                  <p className="text-4xl font-bold text-foreground">{stats.total}</p>
                 </Card>
-                <Card className="p-6 bg-green-500/5 border-green-500/20 text-center">
-                  <p className="text-green-500/70 text-sm mb-2">Ready to Import</p>
-                  <p className="text-4xl font-bold text-green-400">{stats.valid}</p>
+                <Card className="p-6 bg-success/5 border-success/20 text-center">
+                  <p className="text-success/70 text-sm mb-2">Ready to Import</p>
+                  <p className="text-4xl font-bold text-success">{stats.valid}</p>
                 </Card>
-                <Card className="p-6 bg-red-500/5 border-red-500/20 text-center">
-                  <p className="text-red-500/70 text-sm mb-2">Needs Correction</p>
-                  <p className="text-4xl font-bold text-red-400">{stats.error}</p>
+                <Card className="p-6 bg-danger/5 border-danger/20 text-center">
+                  <p className="text-danger/70 text-sm mb-2">Needs Correction</p>
+                  <p className="text-4xl font-bold text-danger">{stats.error}</p>
                 </Card>
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 mx-auto" style={{ width: "320px" }}>
                 <Button
-                  className="w-full h-11 text-base bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-900/20"
+                  className="w-full h-11 text-base bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20"
                   onClick={() => setView("review")}
                 >
                   Review & Edit Data
@@ -337,7 +337,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
                 <Button
                   variant="outline"
-                  className="w-full h-10 border-slate-700 text-slate-300 hover:text-white hover:border-slate-500"
+                  className="w-full h-10 border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground"
                   disabled={stats.valid === 0}
                   onClick={handlePartialImport}
                 >
@@ -346,7 +346,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
                 <button
                   onClick={() => { setRows([]); setFile(null); }}
-                  className="text-slate-500 hover:text-red-400 text-sm transition-colors mt-1 text-center"
+                  className="text-muted-foreground hover:text-danger text-sm transition-colors mt-1 text-center"
                 >
                   Start over with new file
                 </button>
@@ -355,28 +355,28 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Review Phase UI */}
-              <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/30">
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface/30">
                 <Tabs value={filterTab} onValueChange={(v: any) => setFilterTab(v)} className="w-auto">
-                  <TabsList className="bg-slate-950 border border-slate-800">
+                  <TabsList className="bg-background border border-border">
                     <TabsTrigger value="all" className="gap-2">
-                      All <Badge variant="secondary" className="bg-slate-800 text-slate-400">{stats.total}</Badge>
+                      All <Badge variant="secondary" className="bg-surface text-muted-foreground">{stats.total}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="valid" className="gap-2 data-[state=active]:text-green-400">
-                      Ready <Badge variant="secondary" className="bg-green-500/10 text-green-500">{stats.valid}</Badge>
+                    <TabsTrigger value="valid" className="gap-2 data-[state=active]:text-success">
+                      Ready <Badge variant="secondary" className="bg-success/10 text-success">{stats.valid}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="error" className="gap-2 data-[state=active]:text-red-400">
-                      Needs Fix <Badge variant="secondary" className="bg-red-500/10 text-red-500">{stats.error}</Badge>
+                    <TabsTrigger value="error" className="gap-2 data-[state=active]:text-danger">
+                      Needs Fix <Badge variant="secondary" className="bg-danger/10 text-danger">{stats.error}</Badge>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
 
                 <div className="flex items-center gap-3">
-                  <p className="text-xs text-slate-500 mr-2">Click any cell to edit</p>
+                  <p className="text-xs text-muted-foreground mr-2">Click any cell to edit</p>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => setView("upload")}
-                    className="h-8 border-slate-800"
+                    className="h-8 border-border"
                   >
                     Summary
                   </Button>
@@ -385,8 +385,8 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
               <ScrollArea className="flex-1 min-h-0">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-[#0f172a] z-10">
-                    <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHeader className="sticky top-0 bg-panel z-10">
+                    <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="w-12 text-center">#</TableHead>
                       <TableHead className="w-24">Status</TableHead>
                       <TableHead>Server Name</TableHead>
@@ -401,18 +401,18 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                     {filteredRows.map((row, index) => (
                       <TableRow 
                         key={row._id} 
-                        className={`border-slate-800/50 group ${row.status === 'error' ? 'bg-red-500/[0.02]' : ''}`}
+                        className={`border-border/50 group ${row.status === 'error' ? 'bg-danger/[0.02]' : ''}`}
                       >
-                        <TableCell className="text-center text-slate-500 font-mono text-xs">
+                        <TableCell className="text-center text-muted-foreground font-label text-xs">
                           {index + 1}
                         </TableCell>
                         <TableCell>
                           {row.status === "valid" ? (
-                            <Badge className="bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20 h-5 px-1.5">
+                            <Badge className="bg-success/10 text-success border-success/20 hover:bg-success/20 h-5 px-1.5">
                               Ready
                             </Badge>
                           ) : (
-                            <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 h-5 px-1.5">
+                            <Badge variant="destructive" className="bg-danger/10 text-danger border-danger/20 hover:bg-danger/20 h-5 px-1.5">
                               Error
                             </Badge>
                           )}
@@ -456,7 +456,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                         <TableCell>
                           <button 
                             onClick={() => removeRow(row._id)}
-                            className="p-1.5 text-slate-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-1.5 text-muted-foreground/50 hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -467,7 +467,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                 </Table>
                 {filteredRows.length === 0 && (
                   <div className="p-12 text-center">
-                    <p className="text-slate-500">No rows found matching this filter.</p>
+                    <p className="text-muted-foreground">No rows found matching this filter.</p>
                   </div>
                 )}
               </ScrollArea>
@@ -476,10 +476,10 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 flex justify-between items-center bg-slate-900/50">
+        <div className="px-6 py-4 border-t border-border flex justify-between items-center bg-surface/50">
           <div className="flex gap-4">
             {stats.error > 0 && (
-              <div className="flex items-center gap-2 text-red-400 text-xs animate-pulse">
+              <div className="flex items-center gap-2 text-danger text-xs animate-pulse">
                 <AlertTriangle size={14} />
                 <span>{stats.error} rows still need fixing before they can be imported.</span>
               </div>
@@ -487,18 +487,18 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
           </div>
           
           <div className="flex gap-3">
-            <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-white">
+            <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground">
               Cancel
             </Button>
             
             <Button 
               disabled={stats.valid === 0 || isImporting}
-              className="bg-green-600 hover:bg-green-700 min-w-[180px] relative overflow-hidden group"
+              className="bg-success hover:bg-success/90 min-w-[180px] relative overflow-hidden group"
               onClick={handlePartialImport}
             >
               {isImporting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin mr-2" />
                   Importing...
                 </>
               ) : (
@@ -541,13 +541,13 @@ function EditableCell({
           onChange(e.target.value);
         }}
         placeholder={placeholder}
-        className={`h-8 text-xs bg-transparent border-transparent hover:border-slate-700 focus:border-blue-500 focus:bg-slate-900/50 px-2 transition-all ${
-          error ? "border-red-500/50 text-red-400 bg-red-500/5" : "text-slate-300"
+        className={`h-8 text-xs bg-transparent border-transparent hover:border-border focus:border-primary focus:bg-surface/50 px-2 transition-all ${
+          error ? "border-danger/50 text-danger bg-danger/5" : "text-foreground/80"
         }`}
       />
       {error && (
         <div className="absolute left-0 -bottom-1 translate-y-full z-20 hidden group-hover/cell:block">
-          <div className="bg-red-900 text-red-100 text-[10px] px-2 py-1 rounded shadow-lg border border-red-700 whitespace-nowrap">
+          <div className="bg-danger/90 text-primary-foreground text-[10px] px-2 py-1 rounded shadow-lg border border-danger whitespace-nowrap">
             {error}
           </div>
         </div>

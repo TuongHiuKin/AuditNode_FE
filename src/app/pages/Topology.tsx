@@ -53,8 +53,9 @@ function TopologyContent() {
 
   useEffect(() => {
     setHeader(
+      ["TOPOLOGY", "NETWORK MAP"],
       "Topology Network Map",
-      "Static Resource Inventory view with nested server containers and auto-layout.",
+      "Static resource inventory with nested server containers.",
       <Network size={20} />
     );
   }, [setHeader]);
@@ -62,9 +63,8 @@ function TopologyContent() {
   return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
       <div className="flex flex-col h-full overflow-hidden relative flex-1 min-w-0">
-        
         {/* Top Utility Bar */}
-        <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center gap-3 px-4 py-2 z-10 shadow-sm shrink-0 min-h-[3.5rem]">
+        <div className="bg-surface/90 backdrop-blur-md border-b border-border flex items-center justify-between px-8 pt-8 pb-3 z-10 shrink-0">
           <FilterBar
             selectedEnv={selectedEnv}
             setSelectedEnv={setSelectedEnv}
@@ -74,8 +74,10 @@ function TopologyContent() {
             onQueryChange={setAppSearchQuery}
             onSelectResult={handleSelectResult}
           />
-          <div className="ml-auto text-[10px] font-mono text-secondary bg-slate-900/50 px-2 py-1 rounded border border-border">
-            Inventory Assets: {nodes.filter(n => n.type === "topologyServerNode").length}
+          
+          <div className="text-[10px] font-bold text-muted-foreground bg-surface/50 px-3 h-[34px] rounded-lg border border-border uppercase tracking-widest flex items-center gap-2 font-label">
+            <Network size={14} className="text-primary" />
+            Total Assets: {nodes.filter(n => n.type === "topologyServerNode").length}
           </div>
         </div>
 

@@ -40,9 +40,9 @@ export function TopologyAppCard({ app, onDoubleClick }: TopologyAppCardProps) {
   return (
     <div
       className={`
-        group relative bg-slate-900/80 border border-slate-700/50 rounded-lg p-2.5
+        group relative bg-surface/80 border border-border/50 rounded-lg p-2.5
         cursor-pointer transition-all duration-200 ease-out
-        hover:border-slate-600 hover:bg-slate-800/90 hover:scale-[1.03]
+        hover:border-border hover:bg-surface-hover/90 hover:scale-[1.03]
         active:scale-[0.98]
         ${riskStyle.glow}
       `}
@@ -54,11 +54,11 @@ export function TopologyAppCard({ app, onDoubleClick }: TopologyAppCardProps) {
     >
       {/* Top Row: Icon + Port + Protocol Badge */}
       <div className="flex items-center gap-2 mb-1.5">
-        <div className="flex items-center justify-center w-6 h-6 rounded-md bg-slate-800 border border-slate-700/50 shrink-0 group-hover:border-slate-600 transition-colors">
-          <Icon size={12} className="text-slate-400 group-hover:text-slate-300 transition-colors" />
+        <div className="flex items-center justify-center w-6 h-6 rounded-md bg-panel border border-border/50 shrink-0 group-hover:border-border transition-colors">
+          <Icon size={12} className="text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
 
-        <span className="text-[11px] font-mono font-bold text-blue-400 leading-none">
+        <span className="text-[11px] font-label font-bold text-primary leading-none">
           :{app.portNumber}
         </span>
 
@@ -79,7 +79,7 @@ export function TopologyAppCard({ app, onDoubleClick }: TopologyAppCardProps) {
       </div>
 
       {/* App Name */}
-      <p className="text-[11px] font-medium text-slate-300 truncate leading-tight group-hover:text-primary transition-colors pl-0.5">
+      <p className="text-[11px] font-medium text-foreground truncate leading-tight group-hover:text-primary transition-colors pl-0.5">
         {app.appName}
       </p>
 

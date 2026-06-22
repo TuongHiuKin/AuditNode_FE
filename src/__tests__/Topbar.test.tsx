@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Topbar } from "../app/components/Topbar";
 import * as keycloakService from "../services/keycloakService";
@@ -19,8 +19,7 @@ vi.mock("../shared/api/client", () => ({
 
 vi.mock("../app/hooks/useHeader", () => ({
   useHeader: () => ({
-    title: "Test Title",
-    subtitle: "Test Subtitle",
+    breadcrumbs: ["Test Title", "Test Subtitle"],
     icon: <span>Icon</span>,
   }),
 }));
@@ -50,27 +49,23 @@ describe("Topbar", () => {
     );
   };
 
-  it("renders user information correctly", () => {
-    vi.mocked(keycloakService.getUsername).mockReturnValue("testuser");
+  it("renders breadcrumbs correctly", () => {
     renderWithProviders(<Topbar />);
-    expect(screen.getAllByText("testuser")).toBeDefined();
-    expect(screen.getAllByText("Authenticated User")).toBeDefined();
+    expect(screen.getByText("Test Title")).toBeDefined();
+    expect(screen.getByText("Test Subtitle")).toBeDefined();
   });
 
-  it("toggles dropdown when user profile is clicked", () => {
-    vi.mocked(keycloakService.getUsername).mockReturnValue("testuser");
+  it("renders workspace switcher and toggles dropdown", async () => {
     renderWithProviders(<Topbar />);
+    
+    await waitFor(() => {
+      expect(screen.getByText("Default Workspace")).toBeDefined();
+    });
+    
+    const workspaceBtn = screen.getByText("Default Workspace").closest("button");
+    if (workspaceBtn) fireEvent.click(workspaceBtn);
 
-    // User profile button is the second button (first is workspace)
-    const profileBtn = screen.getAllByRole("button")[1];
-    fireEvent.click(profileBtn);
-
-    expect(screen.getByText("Logout")).toBeDefined();
-  });
-
-  it("renders workspace switcher", () => {
-    renderWithProviders(<Topbar />);
-    expect(screen.getByText("Active Workspace")).toBeDefined();
+    expect(screen.getByText("Switch Workspace")).toBeDefined();
   });
 });
 

@@ -43,7 +43,7 @@ describe("AppNode", () => {
     handles.forEach(handle => {
       expect(handle.className).toContain("opacity-0");
       expect(handle.className).not.toContain("pointer-events-none");
-      expect(handle.className).toContain("bg-blue-500");
+      expect(handle.className).toContain("bg-primary");
     });
   });
 
@@ -51,13 +51,13 @@ describe("AppNode", () => {
     const selectedProps = { ...mockProps, selected: true };
     const { container } = wrap(<AppNode {...selectedProps} />);
     const nodeDiv = container.firstChild as HTMLElement;
-    expect(nodeDiv.className).toContain("border-tertiary");
-    expect(nodeDiv.className).toContain("shadow-[0_0_15px_rgba(255,77,126,0.15)]");
+    expect(nodeDiv.className).toContain("border-primary");
+    expect(nodeDiv.className).toContain("shadow-[0_0_15px_oklch(0.62_0.22_25/0.15)]");
   });
 
   it("enforces monospaced font for port number", () => {
     wrap(<AppNode {...mockProps} />);
     const portSpan = screen.getByText("443");
-    expect(portSpan.className).toContain("font-mono");
+    expect(portSpan.className).toContain("font-label");
   });
 });

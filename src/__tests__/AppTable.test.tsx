@@ -62,7 +62,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -105,7 +104,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -146,7 +144,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -164,8 +161,8 @@ describe("AppTable Reproduction", () => {
       const riskBadge = badges.find(el => el.tagName === "SPAN" && el.className.includes("border"));
       expect(riskBadge).toBeDefined();
       if (riskBadge) {
-        expect(riskBadge.className).toContain("text-rose-400");
-        expect(riskBadge.className).toContain("bg-rose-500/10");
+        expect(riskBadge.className).toContain("text-danger");
+        expect(riskBadge.className).toContain("bg-danger/10");
       }
     });
   });
@@ -190,7 +187,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -207,8 +203,8 @@ describe("AppTable Reproduction", () => {
       const riskBadge = badges.find(el => el.tagName === "SPAN" && el.className.includes("border"));
       expect(riskBadge).toBeDefined();
       if (riskBadge) {
-        expect(riskBadge.className).toContain("text-amber-400");
-        expect(riskBadge.className).toContain("bg-amber-500/10");
+        expect(riskBadge.className).toContain("text-warning");
+        expect(riskBadge.className).toContain("bg-warning/10");
       }
     });
   });
@@ -242,7 +238,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -295,7 +290,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -348,7 +342,6 @@ describe("AppTable Reproduction", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <AppTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}

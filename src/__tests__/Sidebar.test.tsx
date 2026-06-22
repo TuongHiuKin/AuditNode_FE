@@ -20,9 +20,9 @@ describe("Sidebar", () => {
         <Sidebar />
       </MemoryRouter>
     );
-    expect(screen.getByText("Infrastructure Inventory")).toBeDefined();
+    expect(screen.getByText("Inventory")).toBeDefined();
     expect(screen.getByText("Topology Map")).toBeDefined();
-    expect(screen.getByText("Dependency Manager")).toBeDefined();
+    expect(screen.getByText("Dependencies")).toBeDefined();
   });
 
   it("applies standardized SaaS active state classes", () => {
@@ -32,10 +32,10 @@ describe("Sidebar", () => {
         <Sidebar />
       </MemoryRouter>
     );
-    const activeLink = screen.getByText("Infrastructure Inventory").closest("a");
-    expect(activeLink?.className).toContain("bg-slate-900/50");
-    expect(activeLink?.className).toContain("text-tertiary");
-    expect(activeLink?.className).toContain("border-slate-800");
+    const activeLink = screen.getByText("Inventory").closest("a");
+    expect(activeLink?.className).toContain("bg-primary/10");
+    expect(activeLink?.className).toContain("text-primary");
+    expect(activeLink?.className).toContain("ring-1");
   });
 
   it("applies professional monochromatic inactive state classes", () => {
@@ -45,7 +45,7 @@ describe("Sidebar", () => {
       </MemoryRouter>
     );
     const inactiveLink = screen.getByText("Topology Map").closest("a");
-    expect(inactiveLink?.className).toContain("text-secondary");
-    expect(inactiveLink?.className).toContain("hover:text-primary");
+    expect(inactiveLink?.className).toContain("text-muted-foreground");
+    expect(inactiveLink?.className).toContain("hover:text-foreground");
   });
 });

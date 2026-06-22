@@ -109,21 +109,21 @@ export function MigrationDrawer({
       />
 
       <div 
-        className={`relative w-[450px] h-screen bg-slate-900 border-l border-slate-700 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`relative w-[450px] h-screen bg-panel border-l border-border shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-tertiary/10 rounded-lg text-tertiary">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
               <MoveHorizontal size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Edit Deployment</h2>
-              <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-mono">
+              <h2 className="text-xl font-bold text-foreground font-display">Edit Deployment</h2>
+              <p className="text-xs text-muted-foreground mt-1 font-label">
                 MODIFY SERVER BINDING AND PORT SETTINGS
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-surface-hover rounded-full text-muted-foreground hover:text-foreground transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -132,12 +132,12 @@ export function MigrationDrawer({
           <form id="migration-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-white uppercase mb-2 tracking-widest">Target Server</label>
+                <label className="block text-xs font-bold text-foreground uppercase mb-2 tracking-widest font-label">Target Server</label>
                 <div className="relative">
                   <select 
                     {...register("serverId", { required: true })}
                     disabled={loadingServers}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer disabled:opacity-50"
+                    className="w-full bg-surface border border-border rounded-lg p-3 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer disabled:opacity-50"
                   >
                     <option value="">Select a server...</option>
                     {servers.map((srv) => (
@@ -146,38 +146,38 @@ export function MigrationDrawer({
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 </div>
-                {loadingServers && <p className="text-[10px] text-slate-500 mt-1 animate-pulse">Loading available infrastructure...</p>}
+                {loadingServers && <p className="text-[10px] text-muted-foreground mt-1 animate-pulse font-label">Loading available infrastructure...</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-white uppercase mb-2 tracking-widest">Target Port Number</label>
+                <label className="block text-xs font-bold text-foreground uppercase mb-2 tracking-widest font-label">Target Port Number</label>
                 <input 
                   type="number"
                   {...register("portNumber", { required: true, min: 1, max: 65535 })}
                   placeholder="e.g. 8080"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" 
+                  className="w-full bg-surface border border-border rounded-lg p-3 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" 
                 />
               </div>
             </div>
 
-            <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
-              <p className="text-xs text-blue-400 leading-relaxed">
+            <div className="bg-primary/5 border border-primary/15 rounded-lg p-4">
+              <p className="text-xs text-primary/80 leading-relaxed">
                 <span className="font-bold">Note:</span> Updating the server binding or port will automatically reposition this application on the Topology Map and recalculate its connected network flows.
               </p>
             </div>
           </form>
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50 shrink-0">
+        <div className="p-6 border-t border-border bg-panel/50 shrink-0">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-3 rounded-lg border border-slate-700 text-sm font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition-all">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-3 rounded-lg border border-border text-sm font-bold text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all">Cancel</button>
             <button 
               type="submit" 
               form="migration-form" 
               disabled={submitting || loadingServers} 
-              className="flex-1 bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(255,77,126,0.2)] disabled:opacity-50"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_oklch(0.62_0.22_25/0.2)] disabled:opacity-50"
             >
               {submitting ? <><Loader2 className="animate-spin" size={18} />Updating...</> : <><Save size={18} />Update Configuration</>}
             </button>

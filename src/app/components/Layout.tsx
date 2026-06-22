@@ -6,7 +6,7 @@ import { HeaderProvider } from "../hooks/useHeader";
 export function Layout() {
   return (
     <HeaderProvider>
-      <div className="flex h-screen bg-background text-primary overflow-hidden font-body selection:bg-tertiary/30">
+      <div className="flex h-screen bg-background text-foreground overflow-hidden font-body selection:bg-primary/20">
         <Sidebar />
 
         <main className="flex-1 flex flex-col relative z-30 overflow-hidden">

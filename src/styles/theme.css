@@ -1,177 +1,261 @@
+/* ============================================================================
+   PRECISION TECHNICAL DARK — Design System
+   Tailwind v4 CSS-First Configuration
+   ============================================================================
+   color-scheme: dark
+   Fonts: Sora (headings), Manrope (body), JetBrains Mono (tech data)
+   Primary accent: Rose/Red #e5435f (high-risk/active states only)
+   ============================================================================ */
+
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens — Source of Truth)
+   --------------------------------------------------------------------------- */
 :root {
-  --font-size: 16px;
-  --background: #050811;
-  --foreground: #F2F2F5;
-  --card: #0c1322;
-  --card-foreground: #F2F2F5;
-  --popover: #0c1322;
-  --popover-foreground: #F2F2F5;
-  --primary: #F2F2F5;
-  --primary-foreground: #050811;
-  --secondary: #7A8699;
-  --secondary-foreground: #F2F2F5;
-  --muted: #0c1322;
-  --muted-foreground: #7A8699;
-  --accent: #0c1322;
-  --accent-foreground: #FF4D7E;
-  --destructive: #FF4D7E;
-  --destructive-foreground: #F2F2F5;
-  --border: rgba(122, 134, 153, 0.1);
-  --input: transparent;
-  --input-background: #0c1322;
-  --switch-background: #7A8699;
+  color-scheme: dark;
+
+  /* ── Core surfaces ── */
+  --background:       oklch(0.13 0.02 260);    /* #0b0e1a — deepest layer */
+  --panel:            oklch(0.16 0.02 260);    /* #10142a — sidebar/structural panels */
+  --surface:          oklch(0.19 0.018 258);   /* #161b2e — cards, drawers, modals */
+  --surface-hover:    oklch(0.22 0.018 258);   /* #1c2238 — interactive surface hover */
+
+  /* ── Text hierarchy ── */
+  --foreground:          oklch(0.94 0.005 260);  /* #e8e9ec — primary text */
+  --muted-foreground:    oklch(0.60 0.015 255);  /* #7b8298 — secondary/muted text */
+
+  /* ── Semantic status ── */
+  --success:    oklch(0.72 0.18 155);   /* #2dd4a0 — healthy, online, pass */
+  --warning:    oklch(0.80 0.16 85);    /* #eab308 — caution, degraded */
+  --danger:     oklch(0.62 0.22 25);    /* #e5435f — critical, error, destructive */
+
+  /* ── Accent / Primary (Rose) ── */
+  --primary:    #e5435f;
+
+  /* ── Borders & dividers ── */
+  --border:     oklch(0.25 0.015 258);  /* #262d42 — subtle structural borders */
+
+  /* ── Ring / Focus ── */
+  --ring:       oklch(0.62 0.22 25);    /* matches --danger / primary accent */
+
+  /* ── Legacy bridge tokens (for shadcn/ui compatibility) ── */
+  --card:                 var(--surface);
+  --card-foreground:      var(--foreground);
+  --popover:              var(--surface);
+  --popover-foreground:   var(--foreground);
+  --primary-foreground:   oklch(0.98 0 0);
+  --secondary:            var(--muted-foreground);
+  --secondary-foreground: var(--foreground);
+  --muted:                var(--panel);
+  --accent:               var(--surface);
+  --accent-foreground:    var(--foreground);
+  --destructive:          var(--danger);
+  --destructive-foreground: var(--foreground);
+  --input:                transparent;
+  --input-background:     var(--surface);
+  --switch-background:    var(--muted-foreground);
+
+  /* ── Sidebar ── */
+  --sidebar:                    var(--panel);
+  --sidebar-foreground:         var(--foreground);
+  --sidebar-primary:            var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent:             var(--surface);
+  --sidebar-accent-foreground:  var(--primary);
+  --sidebar-border:             var(--border);
+  --sidebar-ring:               var(--ring);
+
+  /* ── Charts ── */
+  --chart-1: oklch(0.62 0.22 25);
+  --chart-2: oklch(0.72 0.18 155);
+  --chart-3: oklch(0.80 0.16 85);
+  --chart-4: oklch(0.60 0.20 280);
+  --chart-5: oklch(0.70 0.15 320);
+
+  /* ── Misc ── */
+  --color-tertiary:  var(--primary);
+  --radius:          12px;
+  --font-size:       16px;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #FF4D7E;
-  --radius: 14px;
-  
-  /* Tokyo Midnight specific colors */
-  --color-tertiary: #FF4D7E;
-  
-  --sidebar: #050811;
-  --sidebar-foreground: #F2F2F5;
-  --sidebar-primary: #FF4D7E;
-  --sidebar-primary-foreground: #050811;
-  --sidebar-accent: #0c1322;
-  --sidebar-accent-foreground: #FF4D7E;
-  --sidebar-border: rgba(122, 134, 153, 0.1);
-  --sidebar-ring: #FF4D7E;
 }
 
-/* Tokyo Midnight is a dark-first theme, so .dark remains similar or slightly adjusted if needed */
-.dark {
-  --background: #050811;
-  --foreground: #F2F2F5;
-  --card: #0c1322;
-  --card-foreground: #F2F2F5;
-  --popover: #0c1322;
-  --popover-foreground: #F2F2F5;
-  --primary: #F2F2F5;
-  --primary-foreground: #050811;
-  --secondary: #7A8699;
-  --secondary-foreground: #F2F2F5;
-  --muted: #0c1322;
-  --muted-foreground: #7A8699;
-  --accent: #0c1322;
-  --accent-foreground: #FF4D7E;
-  --destructive: #FF4D7E;
-  --destructive-foreground: #F2F2F5;
-  --border: rgba(122, 134, 153, 0.1);
-}
-
+/* ---------------------------------------------------------------------------
+   Tailwind v4 @theme — Semantic Token Registration
+   Maps CSS custom properties → Tailwind utility classes
+   --------------------------------------------------------------------------- */
 @theme inline {
-  --font-family-display: "Space Grotesk", sans-serif;
-  --font-family-body: "Inter", sans-serif;
-  --font-family-label: "JetBrains Mono", monospace;
+  /* ── Typography ── */
+  --font-family-display: "Sora", system-ui, sans-serif;
+  --font-family-body:    "Manrope", system-ui, sans-serif;
+  --font-family-label:   "JetBrains Mono", ui-monospace, monospace;
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-tertiary: var(--color-tertiary);
-  --color-muted: var(--muted);
+  /* ── Colors: Surfaces ── */
+  --color-background:     var(--background);
+  --color-panel:          var(--panel);
+  --color-surface:        var(--surface);
+  --color-surface-hover:  var(--surface-hover);
+
+  /* ── Colors: Text ── */
+  --color-foreground:       var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success:          var(--success);
+  --color-warning:          var(--warning);
+  --color-danger:           var(--danger);
+
+  /* ── Colors: Accent / Primary ── */
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* ── Colors: Borders ── */
   --color-border: var(--border);
-  --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
-  --color-ring: var(--ring);
-  --color-surface: var(--card);
-  
+  --color-ring:   var(--ring);
+
+  /* ── Colors: Legacy bridge (shadcn/ui compat) ── */
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-popover:              var(--popover);
+  --color-popover-foreground:   var(--popover-foreground);
+  --color-secondary:            var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:                var(--muted);
+  --color-tertiary:             var(--color-tertiary);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input:                var(--input);
+  --color-input-background:     var(--input-background);
+  --color-switch-background:    var(--switch-background);
+
+  /* ── Colors: Sidebar ── */
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
+
+  /* ── Colors: Charts ── */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* ── Radii ── */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: var(--radius);
   --radius-xl: 18px;
 
+  /* ── Spacing ── */
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 32px;
-
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ---------------------------------------------------------------------------
+   Base Layer — Global Resets & Defaults
+   --------------------------------------------------------------------------- */
 @layer base {
   * {
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
-    scrollbar-color: rgba(122, 134, 153, 0.25) transparent;
+    scrollbar-color: oklch(0.30 0.015 258 / 0.5) transparent;
   }
 
-  /* WebKit (Chrome, Edge, Safari) custom scrollbar */
+  /* WebKit scrollbar */
   *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
-
   *::-webkit-scrollbar-track {
     background: transparent;
   }
-
   *::-webkit-scrollbar-thumb {
-    background: rgba(122, 134, 153, 0.25);
-    border-radius: 3px;
+    background: oklch(0.30 0.015 258 / 0.5);
+    border-radius: 999px;
   }
-
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(122, 134, 153, 0.4);
+    background: oklch(0.35 0.015 258 / 0.6);
   }
-
   *::-webkit-scrollbar-corner {
     background: transparent;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-family-body);
-    line-height: 1.55;
   }
 
   html {
     font-size: var(--font-size);
   }
 
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Headings: Sora ── */
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-family-display);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
   }
 
   h1 {
-    font-size: 2.25rem;
+    font-size: 2rem;
     font-weight: 700;
     line-height: 1.2;
   }
 
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* ── Technical labels: JetBrains Mono ── */
   label, .font-label {
     font-family: var(--font-family-label);
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  /* ── Code / monospace inline ── */
+  code, .font-mono, .font-tech {
+    font-family: var(--font-family-label);
   }
 
   button {
     font-weight: 600;
   }
+
+  /* ── Focus ring for accessibility ── */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background: oklch(0.62 0.22 25 / 0.25);
+    color: var(--foreground);
+  }
 }
 
+/* ---------------------------------------------------------------------------
+   Animations
+   --------------------------------------------------------------------------- */
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
@@ -192,4 +276,14 @@
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.62 0.22 25 / 0.3); }
+  50%      { box-shadow: 0 0 12px 4px oklch(0.62 0.22 25 / 0.15); }
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
 }

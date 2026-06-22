@@ -100,9 +100,9 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
       <div className="relative group w-full">
         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
           {isLoading ? (
-            <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
           ) : (
-            <Search className="w-4 h-4 text-slate-500 group-focus-within:text-tertiary transition-colors" />
+            <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           )}
         </div>
         <input
@@ -116,7 +116,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
           }}
           onFocus={() => value.trim() && results.length > 0 && setIsOpen(true)}
           className={cn(
-            "block w-full pl-9 pr-3 py-2 border border-slate-800 bg-[#050811] text-sm text-primary placeholder-slate-500 rounded-lg focus:outline-none focus:ring-1 focus:ring-tertiary transition-all",
+            "block w-full pl-9 pr-3 py-2 border border-border bg-background text-sm text-foreground placeholder-muted-foreground rounded-lg focus:outline-none focus:ring-1 focus:ring-primary transition-all",
             inputClassName
           )}
           placeholder={placeholder}
@@ -125,30 +125,30 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
 
       {/* Autocomplete Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-[#0c1322] text-primary rounded-md shadow-2xl border border-slate-900 max-h-64 overflow-y-auto" style={{ animation: "exportModalIn 0.1s ease-out both" }}>
+        <div className="absolute z-50 w-full mt-1 bg-surface text-foreground rounded-md shadow-2xl border border-border max-h-64 overflow-y-auto" style={{ animation: "exportModalIn 0.1s ease-out both" }}>
           <ul className="py-1 list-none m-0">
             {results.map((result) => (
               <li
                 key={`${result.type}-${result.id}`}
                 onClick={() => handleSelect(result)}
-                className="px-4 py-2 hover:bg-[#161f38] cursor-pointer transition-colors border-b last:border-0 border-slate-900"
+                className="px-4 py-2 hover:bg-surface-hover cursor-pointer transition-colors border-b last:border-0 border-border"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-sm truncate pr-2 text-primary">{result.title}</span>
+                  <span className="font-semibold text-sm truncate pr-2 text-foreground">{result.title}</span>
                   <Badge
                     variant="outline"
                     className={cn(
-                      'text-[10px] px-1.5 py-0 uppercase font-bold border',
+                      'text-[10px] px-1.5 py-0 uppercase font-bold border font-label',
                       result.type === 'SERVER'
-                        ? 'border-blue-500/30 text-blue-400 bg-blue-500/10'
-                        : 'border-green-500/30 text-green-400 bg-green-500/10'
+                        ? 'border-primary/30 text-primary bg-primary/10'
+                        : 'border-success/30 text-success bg-success/10'
                     )}
                   >
                     {result.type}
                   </Badge>
                 </div>
-                <div className="text-xs text-slate-400 truncate">{result.subtitle}</div>
-                <div className="text-[10px] italic text-slate-500 mt-1">
+                <div className="text-xs text-muted-foreground truncate">{result.subtitle}</div>
+                <div className="text-[10px] italic text-muted-foreground/70 mt-1">
                   Matched by: {result.matchReason}
                 </div>
               </li>

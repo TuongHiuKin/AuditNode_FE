@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { Server, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
+import { ToolbarDropdown } from "../../features/dependency-graph/components/ToolbarDropdown";
 import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
 
 type AppRow = Schemas["ApplicationResponseDto"] & {
@@ -26,7 +28,6 @@ function TableSkeleton() {
 
 // ── AppTable ──────────────────────────────────────────────────────────────────
 export function AppTable({
-  onRegister,
   onEditClick,
   onMigrateClick,
   onDeleteClick,
@@ -39,8 +40,8 @@ export function AppTable({
   isSelectionMode = false,
   selectedColumns = [],
   toggleColumn = () => {},
+  toolbarEl = null,
 }: {
-  onRegister: () => void;
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
   onDeleteClick: (id: string, name: string) => void;
@@ -53,6 +54,7 @@ export function AppTable({
   isSelectionMode?: boolean;
   selectedColumns?: string[];
   toggleColumn?: (key: string) => void;
+  toolbarEl?: HTMLDivElement | null;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,80 +111,67 @@ export function AppTable({
     navigate(url);
   };
 
-  return (
-    <div className="flex-1 bg-[#0c1322] border border-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col">
-      {/* Table Action Header - Hidden in selection mode */}
-      {!isSelectionMode && (
-        <div className="flex justify-between items-center p-4 border-b border-slate-900 bg-[#0c1322]">
-          <div className="flex items-center gap-3">
-            {!filterId ? (
-              <>
-                <div className="w-72 relative">
-                  <UniversalSearch
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    onSelectResult={onSelectResult}
-                    placeholder="Search servers & apps..."
-                  />
-                </div>
-                <div className="w-48 relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                  <select
-                    value={riskFilter}
-                    onChange={(e) => setRiskFilter(e.target.value)}
-                    className="w-full appearance-none bg-[#050811] border border-slate-800 text-sm text-primary rounded-lg py-2 pl-9 pr-8 focus:outline-none focus:ring-1 focus:ring-tertiary transition-all cursor-pointer"
-                  >
-                    {RISK_OPTIONS.map(opt => (
-                      <option key={opt} value={opt} className="bg-[#050811]">
-                        {opt === "All" ? "Risk Level" : opt}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-xs text-secondary bg-[#050811] px-3 py-2 rounded-lg border border-slate-800">
-                <span className="font-semibold text-tertiary">FILTERED VIEW</span>
-                <span className="opacity-50">|</span>
-                <span className="truncate max-w-[150px]">ID: {filterId}</span>
-                <button onClick={onClearFilter} className="text-slate-500 hover:text-primary ml-1 transition-colors">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-slate-500 font-mono font-bold bg-[#050811] px-2.5 py-1.5 rounded-full border border-slate-800 uppercase tracking-widest">
-              {isLoading ? "…" : `${filteredApps.length} TOTAL`}
-            </span>
-            <button
-              onClick={onRegister}
-              className="bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-[0_0_15px_rgba(255,77,126,0.2)]"
-            >
-              <Plus size={16} /> Register New Entity
+  // Toolbar content — teleported via portal into InventoryLayout's shrink-0 slot
+  const toolbarContent = !isSelectionMode ? (
+    <div className="flex justify-between items-center bg-transparent">
+      <div className="flex items-center gap-3">
+        {!filterId ? (
+          <>
+            <div className="w-64">
+              <UniversalSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onSelectResult={onSelectResult}
+                placeholder="Filter results..."
+                inputClassName="py-1.5 h-[34px]"
+              />
+            </div>
+            
+            <div className="h-5 w-px bg-border mx-1" />
+            
+            <ToolbarDropdown
+              label="Risk Level"
+              value={riskFilter}
+              options={RISK_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Risk Level" : opt }))}
+              onChange={setRiskFilter}
+            />
+          </>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-surface px-3 py-2 rounded-lg border border-border">
+            <span className="font-semibold text-primary">FILTERED VIEW</span>
+            <span className="opacity-50">|</span>
+            <span className="truncate max-w-[150px] font-label">ID: {filterId}</span>
+            <button onClick={onClearFilter} className="text-muted-foreground hover:text-foreground ml-1 transition-colors">
+              <X size={12} />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    </div>
+  ) : null;
 
-      {isLoading ? (
-        <TableSkeleton />
-      ) : (
-        <div className="overflow-x-auto flex-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-900 text-slate-500 bg-[#050811]/60">
+  return (
+    <>
+      {/* Teleport toolbar into InventoryLayout's fixed shrink-0 slot */}
+      {toolbarEl && toolbarContent && createPortal(toolbarContent, toolbarEl)}
+
+      <div className="overflow-hidden rounded-xl border border-border bg-panel flex-1 flex flex-col min-h-0">
+        {isLoading ? (
+          <TableSkeleton />
+        ) : (
+          <div className="overflow-auto flex-1 relative min-h-0">
+          <table className="w-full text-left">
+            <thead className="sticky top-0 z-10 bg-panel shadow-sm outline outline-1 outline-border outline-offset-[-1px]">
+              <tr className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {isSelectionMode && (
                   <th className="px-6 py-4 w-12">
                     <div 
                       onClick={() => onSelectAll(allIdsOnPage)}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-                        isAllSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                        isAllSelected ? "bg-primary border-primary" : "border-border hover:border-muted-foreground"
                       }`}
                     >
-                      {isAllSelected && <Check size={10} className="text-white" />}
+                      {isAllSelected && <Check size={10} className="text-primary-foreground" />}
                     </div>
                   </th>
                 )}
@@ -196,7 +185,7 @@ export function AppTable({
                   return (
                     <th 
                       key={col.key} 
-                      className={`px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                      className={`px-3 py-2 font-label text-[10px] font-bold uppercase tracking-widest transition-all duration-200 ${
                         isSelectionMode ? "cursor-pointer" : ""
                       }`}
                       onClick={() => isSelectionMode && toggleColumn(col.key)}
@@ -204,8 +193,8 @@ export function AppTable({
                       <div className={`px-3 py-2 rounded-md border transition-all duration-200 ${
                         isSelectionMode 
                           ? isSelected 
-                            ? "bg-tertiary/20 border-tertiary text-tertiary shadow-[0_0_10px_rgba(255,77,126,0.1)]" 
-                            : "bg-transparent border-transparent hover:bg-slate-800 text-slate-500"
+                            ? "bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(229,67,95,0.1)]" 
+                            : "bg-transparent border-transparent hover:bg-surface-hover text-muted-foreground"
                           : "border-transparent"
                       }`}>
                         {col.label}
@@ -213,13 +202,13 @@ export function AppTable({
                     </th>
                   );
                 })}
-                <th className="px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-4 font-label text-[10px] font-bold uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900/50">
+            <tbody className="divide-y divide-border/50">
               {filteredApps.length === 0 ? (
                 <tr>
-                  <td colSpan={isSelectionMode ? 6 : 5} className="px-6 py-12 text-center text-sm text-secondary italic">
+                  <td colSpan={isSelectionMode ? 6 : 5} className="px-6 py-12 text-center text-sm text-muted-foreground italic">
                     {searchQuery ? "No applications match your search." : "No applications found. Check your backend connection."}
                   </td>
                 </tr>
@@ -245,6 +234,7 @@ export function AppTable({
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -264,38 +254,38 @@ function AppRowItem({
   isSelectionMode: boolean;
 }) {
   const riskStyle =
-    app.risk === "Critical" || app.risk === "High" ? "text-rose-400 bg-rose-500/10 border-rose-500/20" :
-    app.risk === "Medium"   ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
-                              "text-slate-400 bg-slate-500/10 border-slate-500/20";
+    app.risk === "Critical" || app.risk === "High" ? "text-danger bg-danger/10 border-danger/20" :
+    app.risk === "Medium"   ? "text-warning bg-warning/10 border-warning/20" :
+                              "text-muted-foreground bg-surface-hover border-border";
   return (
     <>
-      <tr className={`hover:bg-[#0c1322] transition-all duration-200 ease-in-out cursor-pointer ${expanded ? "bg-[#0c1322]/60" : ""} ${isSelected ? "bg-tertiary/5" : ""}`}
+      <tr className={`group cursor-pointer border-b border-border last:border-0 hover:bg-white/[0.02] transition-colors ${expanded ? "bg-surface/60" : ""} ${isSelected ? "bg-primary/5" : ""}`}
         onClick={isSelectionMode ? onSelect : onToggle}>
         {isSelectionMode && (
           <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
             <div 
               onClick={onSelect}
               className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-                isSelected ? "bg-tertiary border-tertiary" : "border-slate-700 hover:border-slate-500"
+                isSelected ? "bg-primary border-primary" : "border-border hover:border-muted-foreground"
               }`}
             >
-              {isSelected && <Check size={10} className="text-white" />}
+              {isSelected && <Check size={10} className="text-primary-foreground" />}
             </div>
           </td>
         )}
-        <td className="px-6 py-4 font-mono text-[11px] font-bold text-primary flex items-center gap-2 tracking-tight">
+        <td className="px-6 py-4 font-label text-[11px] font-bold text-foreground flex items-center gap-2 tracking-tight">
           {!isSelectionMode && (
-            expanded ? <ChevronDown size={14} className="text-secondary" /> : <ChevronRight size={14} className="text-secondary" />
+            expanded ? <ChevronDown size={14} className="text-muted-foreground" /> : <ChevronRight size={14} className="text-muted-foreground" />
           )}
           {app.appCode}
         </td>
-        <td className="px-6 py-4 font-medium text-sm text-primary/90">
+        <td className="px-6 py-4 font-medium text-sm text-foreground/90">
           <div>{app.appName}</div>
-          {app.description && <div className="text-[10px] text-secondary/60 font-normal mt-0.5">{app.description}</div>}
+          {app.description && <div className="text-[10px] text-muted-foreground/60 font-normal mt-0.5">{app.description}</div>}
         </td>
-        <td className="px-6 py-4 text-sm text-secondary/80">{(app as any).ownerTeam || app.ownerId}</td>
+        <td className="px-6 py-4 text-sm text-muted-foreground/80">{(app as any).ownerTeam || app.ownerId}</td>
         <td className="px-6 py-4">
-          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
+          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 
@@ -307,15 +297,15 @@ function AppRowItem({
       </tr>
 
       {expanded && !isSelectionMode && (
-        <tr className="bg-[#050811]/40">
-          <td colSpan={6} className="p-0 border-t border-slate-900">
+        <tr className="bg-background/40">
+          <td colSpan={6} className="p-0 border-t border-border">
             <div className="px-12 py-4">
-              <h4 className="text-[10px] font-mono font-bold text-slate-500 uppercase mb-3 flex items-center gap-2 tracking-widest">
+              <h4 className="text-[10px] font-label font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2 tracking-widest">
                 <Server size={12} /> DEPLOYED SERVERS
               </h4>
               {(app.servers?.length || 0) > 0 ? (
-                <table className="w-full text-left bg-[#0c1322]/40 rounded-lg overflow-hidden border border-slate-800/50">
-                  <thead className="bg-[#0c1322] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
+                <table className="w-full text-left bg-surface/40 rounded-lg overflow-hidden border border-border/50">
+                  <thead className="bg-surface text-[10px] text-muted-foreground font-label uppercase tracking-wider">
                     <tr>
                       <th className="px-4 py-2 font-bold">Hostname</th>
                       <th className="px-4 py-2 font-bold">IP Address</th>
@@ -323,14 +313,14 @@ function AppRowItem({
                       <th className="px-4 py-2 font-bold">Protocol</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-900/50">
+                  <tbody className="divide-y divide-border/50">
                     {app.servers?.map((srv) => (
-                      <tr key={srv.id} className="hover:bg-slate-900/30 transition-colors text-primary/80">
+                      <tr key={srv.id} className="hover:bg-surface-hover transition-colors text-foreground/80">
                         <td className="px-4 py-2 text-sm">{srv.hostname}</td>
-                        <td className="px-4 py-2 font-mono text-[11px]">{srv.ipAddress}</td>
-                        <td className="px-4 py-2 font-mono text-[11px]">{srv.portNumber}</td>
+                        <td className="px-4 py-2 font-label text-[11px]">{srv.ipAddress}</td>
+                        <td className="px-4 py-2 font-label text-[11px]">{srv.portNumber}</td>
                         <td className="px-4 py-2">
-                          <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border text-slate-400 bg-slate-500/10 border-slate-500/20">
+                          <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-label font-bold border text-muted-foreground bg-surface-hover border-border">
                             {srv.protocol?.toUpperCase() ?? "UNKNOWN"}
                           </span>
                         </td>
@@ -339,7 +329,7 @@ function AppRowItem({
                   </tbody>
                 </table>
               ) : (
-                <p className="text-xs text-slate-500 italic px-2 font-body tracking-tight">This application is not associated with any known servers.</p>
+                <p className="text-xs text-muted-foreground italic px-2 font-body tracking-tight">This application is not associated with any known servers.</p>
               )}
             </div>
           </td>

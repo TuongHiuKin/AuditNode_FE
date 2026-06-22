@@ -27,7 +27,7 @@ global.URL.revokeObjectURL = vi.fn();
 
 // Mock crypto.randomUUID
 if (!global.crypto.randomUUID) {
-  global.crypto.randomUUID = vi.fn(() => "test-uuid-" + Math.random());
+  global.crypto.randomUUID = vi.fn(() => "123e4567-e89b-12d3-a456-426614174000" as `${string}-${string}-${string}-${string}-${string}`);
 }
 
 describe("BulkImportModal - Iterative Workflow", () => {

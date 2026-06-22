@@ -120,6 +120,6 @@ describe("Topology Page (Isolated Refactor)", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText(/Inventory Assets: 2/)).toBeDefined();
+    expect(screen.getByText(/Total Assets: 2/)).toBeDefined();
   });
 });

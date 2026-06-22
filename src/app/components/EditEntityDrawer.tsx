@@ -209,7 +209,11 @@ export function EditEntityDrawer({
             serverId: formData.serverId,     // Target Infrastructure ID
             portNumber: Number(formData.portNumber), // Deployment Port
           }
-        : formData;
+        : {
+            ...formData,
+            // Ensure values not explicitly registered but set via setValue are included
+            datacenterId: watch("datacenterId"),
+          };
 
       await apiClient.put(endpoint, payload);
       
@@ -251,127 +255,127 @@ export function EditEntityDrawer({
       />
 
       <div 
-        className={`relative w-[450px] h-screen bg-slate-900 border-l border-slate-700 shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`relative w-[450px] h-screen bg-panel border-l border-border shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-white">Edit Resource</h2>
-            <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-mono">
+            <h2 className="text-xl font-bold text-foreground font-display">Edit Resource</h2>
+            <p className="text-xs text-muted-foreground mt-1 font-label">
               {entityType} ID: {entityId?.substring(0, 8)}...
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-surface-hover rounded-full text-muted-foreground hover:text-foreground transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {loading ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-              <Loader2 className="animate-spin text-tertiary" size={32} />
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <Loader2 className="animate-spin text-primary" size={32} />
               <p className="text-sm font-medium">Synchronizing resource data...</p>
             </div>
           ) : fetchError ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 gap-4">
-              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500">
+              <div className="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center text-danger">
                 <X size={32} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white mb-1">Fetch Failed</h3>
-                <p className="text-sm text-slate-400">{fetchError}</p>
+                <h3 className="text-lg font-bold text-foreground mb-1 font-display">Fetch Failed</h3>
+                <p className="text-sm text-muted-foreground">{fetchError}</p>
               </div>
-              <button onClick={fetchData} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-medium text-white transition-colors">Retry Connection</button>
+              <button onClick={fetchData} className="px-4 py-2 bg-surface hover:bg-surface-hover border border-border rounded-lg text-sm font-medium text-foreground transition-colors">Retry Connection</button>
             </div>
           ) : (
             <form id="edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {entityType === "SERVER" ? (
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="ipAddress" className="block text-xs font-bold text-slate-400 uppercase mb-2">IP Address (Read-only)</label>
-                    <input id="ipAddress" {...register("ipAddress")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
+                    <label htmlFor="ipAddress" className="block text-xs font-bold text-muted-foreground uppercase mb-2 font-label">IP Address (Read-only)</label>
+                    <input id="ipAddress" {...register("ipAddress", { disabled: true })} className="w-full bg-background border border-border rounded-lg p-2.5 text-sm text-muted-foreground cursor-not-allowed" />
                   </div>
                   <div>
-                    <label htmlFor="hostname" className="block text-xs font-bold text-white uppercase mb-2">Hostname</label>
-                    <input id="hostname" {...register("hostname")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="hostname" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Hostname</label>
+                    <input id="hostname" {...register("hostname")} className="w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="osType" className="block text-xs font-bold text-white uppercase mb-2">OS Type</label>
-                      <input id="osType" {...register("osType")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                      <label htmlFor="osType" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">OS Type</label>
+                      <input id="osType" {...register("osType")} className="w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" />
                     </div>
                     <div>
-                      <label htmlFor="environment" className="block text-xs font-bold text-white uppercase mb-2">Environment</label>
+                      <label htmlFor="environment" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Environment</label>
                       <div className="relative">
-                        <select id="environment" {...register("environment")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                        <select id="environment" {...register("environment")} className="w-full bg-surface border border-border rounded-lg p-2.5 pr-10 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer">
                           {envOptions.map(opt => <option key={opt}>{opt}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       </div>
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="status" className="block text-xs font-bold text-white uppercase mb-2">Status</label>
+                    <label htmlFor="status" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Status</label>
                     <div className="relative">
-                      <select id="status" {...register("status")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                      <select id="status" {...register("status")} className="w-full bg-surface border border-border rounded-lg p-2.5 pr-10 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer">
                         {statusOptions.map(opt => <option key={opt}>{opt}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="appCode" className="block text-xs font-bold text-slate-400 uppercase mb-2">App Code (Read-only)</label>
-                    <input id="appCode" {...register("appCode")} disabled className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-slate-500 cursor-not-allowed" />
+                    <label htmlFor="appCode" className="block text-xs font-bold text-muted-foreground uppercase mb-2 font-label">App Code (Read-only)</label>
+                    <input id="appCode" {...register("appCode", { disabled: true })} className="w-full bg-background border border-border rounded-lg p-2.5 text-sm text-muted-foreground cursor-not-allowed" />
                   </div>
                   <div>
-                    <label htmlFor="appName" className="block text-xs font-bold text-white uppercase mb-2">Application Name</label>
-                    <input id="appName" {...register("appName")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="appName" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Application Name</label>
+                    <input id="appName" {...register("appName")} className="w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" />
                   </div>
                   <div>
-                    <label htmlFor="ownerTeam" className="block text-xs font-bold text-white uppercase mb-2">Owner Team</label>
-                    <input id="ownerTeam" {...register("ownerTeam")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" />
+                    <label htmlFor="ownerTeam" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Owner Team</label>
+                    <input id="ownerTeam" {...register("ownerTeam")} className="w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" />
                   </div>
                   <div>
-                    <label htmlFor="risk" className="block text-xs font-bold text-white uppercase mb-2">Risk Level</label>
+                    <label htmlFor="risk" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Risk Level</label>
                     <div className="relative">
-                      <select id="risk" {...register("risk")} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none appearance-none cursor-pointer">
+                      <select id="risk" {...register("risk")} className="w-full bg-surface border border-border rounded-lg p-2.5 pr-10 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer">
                         {riskOptions.map(opt => <option key={opt}>{opt}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </div>
 
                   {/* Network Migration Section */}
-                  <div className="pt-4 border-t border-slate-800">
+                  <div className="pt-4 border-t border-border">
                     <div className="flex items-center gap-2 mb-4">
-                      <MoveHorizontal size={14} className="text-tertiary" />
-                      <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Mapping</h3>
+                      <MoveHorizontal size={14} className="text-primary" />
+                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-label">Network Mapping</h3>
                     </div>
                     
                     <div className="space-y-4">
                       {portMappings && portMappings.length > 1 && (
-                        <div className="mb-6 p-4 border border-slate-700 bg-slate-900/50 rounded-lg">
-                          <label className="text-[10px] font-bold mb-3 block text-slate-400 uppercase tracking-widest">
+                        <div className="mb-6 p-4 border border-border bg-panel/50 rounded-lg">
+                          <label className="text-[10px] font-bold mb-3 block text-muted-foreground uppercase tracking-widest font-label">
                             Select Deployment to Modify
                           </label>
                           <div className="space-y-3">
                             {portMappings.map((dep: any) => (
-                              <label key={dep.id} className="flex items-center space-x-3 text-sm text-slate-300 cursor-pointer hover:text-white group">
+                              <label key={dep.id} className="flex items-center space-x-3 text-sm text-foreground/80 cursor-pointer hover:text-foreground group">
                                 <input 
                                   type="radio" 
                                   name="deploymentSelector"
                                   value={dep.id}
                                   checked={selectedMappingId === dep.id}
                                   onChange={() => handleSelectMapping(dep)}
-                                  className="w-4 h-4 text-tertiary bg-slate-800 border-slate-600 focus:ring-tertiary focus:ring-offset-slate-900"
+                                  className="w-4 h-4 text-primary bg-surface border-border focus:ring-primary focus:ring-offset-panel"
                                 />
                                 <span className="flex flex-col">
-                                  <span className={`font-medium ${selectedMappingId === dep.id ? 'text-white' : ''}`}>
+                                  <span className={`font-medium ${selectedMappingId === dep.id ? 'text-foreground' : ''}`}>
                                     {dep.hostname || dep.serverName}
                                   </span>
-                                  <span className="text-[10px] text-slate-500 font-mono">
+                                  <span className="text-[10px] text-muted-foreground font-label">
                                     {dep.ipAddress} &mdash; Port: {dep.portNumber}
                                   </span>
                                 </span>
@@ -382,7 +386,7 @@ export function EditEntityDrawer({
                       )}
 
                       <div>
-                        <label htmlFor="serverIdSearch" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Target Server</label>
+                        <label htmlFor="serverIdSearch" className="block text-xs font-bold text-foreground uppercase mb-2 tracking-wide font-label">Target Server</label>
                         <div className="relative" ref={dropdownRef}>
                           <input
                             id="serverIdSearch"
@@ -399,13 +403,13 @@ export function EditEntityDrawer({
                               setServerSearchTerm(""); // Clear search term to show full list on click
                             }}
                             placeholder="Select Target Infrastructure..."
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 pr-10 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all"
+                            className="w-full bg-surface border border-border rounded-lg p-2.5 pr-10 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
                             autoComplete="off"
                           />
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
 
                           {isServerDropdownOpen && (
-                            <ul className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 custom-scrollbar list-none m-0 p-0">
+                            <ul className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-surface border border-border rounded-lg shadow-xl z-50 custom-scrollbar list-none m-0 p-0">
                               {filteredServers.length > 0 ? (
                                 filteredServers.map((srv) => (
                                   <li
@@ -413,19 +417,19 @@ export function EditEntityDrawer({
                                     role="option"
                                     aria-selected={watchedServerId === srv.id}
                                     onClick={() => handleSelectServer(srv)}
-                                    className={`p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 last:border-0 transition-colors flex items-center ${watchedServerId === srv.id ? 'bg-slate-700' : ''}`}
+                                    className={`p-3 hover:bg-surface-hover cursor-pointer border-b border-border/50 last:border-0 transition-colors flex items-center ${watchedServerId === srv.id ? 'bg-surface-hover' : ''}`}
                                   >
                                     <Check
-                                      className={`mr-2 h-4 w-4 shrink-0 ${watchedServerId === srv.id ? "opacity-100 text-tertiary" : "opacity-0"}`}
+                                      className={`mr-2 h-4 w-4 shrink-0 ${watchedServerId === srv.id ? "opacity-100 text-primary" : "opacity-0"}`}
                                     />
                                     <div className="flex flex-col">
-                                      <span className="font-medium text-sm text-white">{srv.hostname}</span>
-                                      <span className="text-xs text-slate-400 font-mono">{srv.ipAddress}</span>
+                                      <span className="font-medium text-sm text-foreground">{srv.hostname}</span>
+                                      <span className="text-xs text-muted-foreground font-label">{srv.ipAddress}</span>
                                     </div>
                                   </li>
                                 ))
                               ) : (
-                                <li className="p-4 text-center text-sm text-slate-400">No infrastructure found.</li>
+                                <li className="p-4 text-center text-sm text-muted-foreground">No infrastructure found.</li>
                               )}
                             </ul>
                           )}
@@ -433,12 +437,12 @@ export function EditEntityDrawer({
                       </div>
 
                       <div>
-                        <label htmlFor="portNumber" className="block text-xs font-bold text-white uppercase mb-2 tracking-wide">Port Number</label>
+                        <label htmlFor="portNumber" className="block text-xs font-bold text-foreground uppercase mb-2 tracking-wide font-label">Port Number</label>
                         <input 
                           id="portNumber"
                           type="number"
                           {...register("portNumber")}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:ring-1 focus:ring-tertiary outline-none transition-all" 
+                          className="w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" 
                         />
                       </div>
                     </div>
@@ -449,10 +453,10 @@ export function EditEntityDrawer({
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50 shrink-0">
+        <div className="p-6 border-t border-border bg-panel/50 shrink-0">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-slate-700 text-sm font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition-all">Cancel</button>
-            <button type="submit" form="edit-form" disabled={submitting || loading} className="flex-1 bg-tertiary hover:bg-tertiary/90 text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(255,77,126,0.2)] disabled:opacity-50">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-bold text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-all">Cancel</button>
+            <button type="submit" form="edit-form" disabled={submitting || loading} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_oklch(0.62_0.22_25/0.2)] disabled:opacity-50">
               {submitting ? <><Loader2 className="animate-spin" size={18} />Updating...</> : <><Save size={18} />Save Changes</>}
             </button>
           </div>

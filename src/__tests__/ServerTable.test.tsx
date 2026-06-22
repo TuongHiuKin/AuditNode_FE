@@ -62,7 +62,6 @@ describe("ServerTable", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <ServerTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -93,7 +92,6 @@ describe("ServerTable", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <ServerTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -113,10 +111,10 @@ describe("ServerTable", () => {
     // Check container monochromatic background
     const container = screen.getByText("prod-web-01").closest("div.rounded-xl");
     expect(container).toBeDefined();
-    expect(container?.className).toContain("bg-[#0c1322]");
+    expect(container?.className).toContain("bg-panel");
     
     // Check border
-    expect(container?.className).toContain("border-slate-900");
+    expect(container?.className).toContain("border-border");
   });
 
   it("enforces monospaced font for IP addresses", async () => {
@@ -128,7 +126,6 @@ describe("ServerTable", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <ServerTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -155,7 +152,6 @@ describe("ServerTable", () => {
         <WorkspaceProvider>
           <MemoryRouter>
             <ServerTable 
-              onRegister={vi.fn()} 
               onEditClick={vi.fn()}
               onMigrateClick={vi.fn()}
               onDeleteClick={vi.fn()}
@@ -171,7 +167,7 @@ describe("ServerTable", () => {
       const headerText = screen.getByText("IP Address");
       const headerCell = headerText.closest("th");
       expect(headerCell).toBeDefined();
-      expect(headerCell?.className).toContain("font-mono");
+      expect(headerCell?.className).toContain("font-label");
       expect(headerCell?.className).toContain("tracking-widest");
     });
   });

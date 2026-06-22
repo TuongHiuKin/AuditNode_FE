@@ -2,15 +2,13 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ServerTable } from "../components/ServerTable";
 import { AppTable } from "../components/AppTable";
-import { RegisterModal } from "../components/RegisterModal";
 import { EditEntityDrawer } from "../components/EditEntityDrawer";
 import { MigrationDrawer } from "../components/MigrationDrawer";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useInventoryContext } from "./InventoryLayout";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
-  const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn } = useInventoryContext();
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl } = useInventoryContext();
   const [filterId, setFilterId] = useState<string | undefined>(undefined);
 
   // Edit State
@@ -53,12 +51,11 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
   };
 
   return (
-    <div className="p-8 pt-4 space-y-6 animate-in fade-in duration-500 relative min-h-full flex flex-col bg-background font-body">
+    <div className="p-8 pt-6 space-y-6 animate-in fade-in duration-500 relative flex-1 flex flex-col min-h-0 bg-background font-body">
       {/* Conditional Table */}
-      <div className="flex-1">
+      <div className="flex-1 min-h-0 flex flex-col">
         {type === "servers"
           ? <ServerTable
-              onRegister={() => setIsRegisterModalOpen(true)}
               onEditClick={handleEditClick}
               onMigrateClick={handleMigrateClick}
               onDeleteClick={(id, name) => handleDeleteClick(id, name, "SERVER")}
@@ -71,9 +68,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               isSelectionMode={isSelectionMode}
               selectedColumns={selectedColumns}
               toggleColumn={toggleColumn}
+              toolbarEl={toolbarEl}
             />
           : <AppTable
-              onRegister={() => setIsRegisterModalOpen(true)}
               onEditClick={handleEditClick}
               onMigrateClick={handleMigrateClick}
               onDeleteClick={(id, name) => handleDeleteClick(id, name, "APP")}
@@ -86,16 +83,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               isSelectionMode={isSelectionMode}
               selectedColumns={selectedColumns}
               toggleColumn={toggleColumn}
+              toolbarEl={toolbarEl}
             />}
       </div>
-
-      {isRegisterModalOpen && (
-        <RegisterModal
-          onClose={() => setIsRegisterModalOpen(false)}
-          onSuccess={refreshData}
-          defaultMode={type === "servers" ? "infra" : "app"}
-        />
-      )}
 
       <EditEntityDrawer
         entityId={editEntity.id}
