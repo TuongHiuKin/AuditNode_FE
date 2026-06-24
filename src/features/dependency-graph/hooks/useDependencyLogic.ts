@@ -16,7 +16,7 @@ import { PaletteApp, SelectedItem } from "../types";
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { useWorkspaceStore } from "../../../app/hooks/useWorkspaceStore";
+
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
@@ -40,7 +40,7 @@ export function useDependencyLogic() {
   const hasMountedRef = useRef(false);
 
   // ── Scoped Export Algorithm ─────────────────────────────────────────────
-  const { activeWorkspace } = useWorkspaceStore();
+
 
   const exportGroupAuditMatrix = useCallback((groupId: string, groupLabel: string) => {
     // 1. Identify all child nodes recursively (handling apps inside servers inside groups)
@@ -71,7 +71,7 @@ export function useDependencyLogic() {
         "Target IP": (targetNode?.data as any)?.server?.ipAddress || "Internal",
         "Port": (targetNode?.data as any)?.app?.portNumber || edge.data?.protocol || "Any",
         "Protocol": edge.data?.protocol || "TCP",
-        "Workspace": activeWorkspace?.name || "Global"
+        "Workspace": "Global"
       };
     });
 
@@ -87,11 +87,11 @@ export function useDependencyLogic() {
 
     const date = new Date().toISOString().split('T')[0];
     const cleanGroupLabel = groupLabel.replace(/\s+/g, '_');
-    const workspaceName = activeWorkspace?.name?.replace(/\s+/g, '_') || "Global";
+    const workspaceName = "Global";
     
     XLSX.writeFile(wb, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}.xlsx`);
     toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
-  }, [nodes, edges, activeWorkspace]);
+  }, [nodes, edges]);
 
   const addGroupBox = useCallback(() => {
     const id = `group-${Date.now()}`;

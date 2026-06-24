@@ -4,7 +4,6 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppTable } from "../app/components/AppTable";
 import apiClient from "../shared/api/client";
-import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock the useNavigate hook
 const mockNavigate = vi.fn();
@@ -38,7 +37,6 @@ const createTestQueryClient = () => new QueryClient({
 describe("AppTable Reproduction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   it("routes to dependency manager with lowercase environment parameter", async () => {
@@ -59,7 +57,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -69,7 +67,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -101,7 +99,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -111,7 +109,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -141,7 +139,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -151,7 +149,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -184,7 +182,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -194,7 +192,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -235,7 +233,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -245,7 +243,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -287,7 +285,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -297,7 +295,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -339,7 +337,7 @@ describe("AppTable Reproduction", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <AppTable 
               onEditClick={vi.fn()}
@@ -349,7 +347,7 @@ describe("AppTable Reproduction", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -371,4 +369,45 @@ describe("AppTable Reproduction", () => {
     const deleteButtons = screen.queryAllByTitle("Delete");
     expect(deleteButtons.length).toBe(1); // Only for the main application row
   });
+
+  it("renders labels correctly", async () => {
+    const mockData = [
+      {
+        id: "1",
+        appCode: "APP-001",
+        appName: "Test App",
+        ownerId: "OWNER-1",
+        risk: "Low",
+        labels: [{ key: "ENV", value: "PROD" }, { key: "TIER", value: "1" }],
+        servers: []
+      }
+    ];
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <AppTable 
+            onEditClick={vi.fn()}
+            onMigrateClick={vi.fn()}
+            onDeleteClick={vi.fn()}
+            onSelectResult={vi.fn()} 
+            onClearFilter={vi.fn()} 
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Test App")).toBeDefined();
+      expect(screen.getByText("ENV:")).toBeDefined();
+      expect(screen.getByText("PROD")).toBeDefined();
+      expect(screen.getByText("TIER:")).toBeDefined();
+      expect(screen.getByText("1")).toBeDefined();
+    });
+  });
 });
+
+

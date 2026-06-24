@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Topbar } from "../app/components/Topbar";
 import * as keycloakService from "../services/keycloakService";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 import apiClient from "../shared/api/client";
 
 vi.mock("../../services/keycloakService", () => ({
@@ -42,9 +41,9 @@ describe("Topbar", () => {
     const queryClient = createTestQueryClient();
     return render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           {ui}
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
   };
@@ -55,17 +54,6 @@ describe("Topbar", () => {
     expect(screen.getByText("Test Subtitle")).toBeDefined();
   });
 
-  it("renders workspace switcher and toggles dropdown", async () => {
-    renderWithProviders(<Topbar />);
-    
-    await waitFor(() => {
-      expect(screen.getByText("Default Workspace")).toBeDefined();
-    });
-    
-    const workspaceBtn = screen.getByText("Default Workspace").closest("button");
-    if (workspaceBtn) fireEvent.click(workspaceBtn);
-
-    expect(screen.getByText("Switch Workspace")).toBeDefined();
-  });
 });
+
 

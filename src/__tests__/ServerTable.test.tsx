@@ -4,7 +4,6 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ServerTable } from "../app/components/ServerTable";
 import apiClient from "../shared/api/client";
-import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock the useNavigate hook
 const mockNavigate = vi.fn();
@@ -38,7 +37,6 @@ const createTestQueryClient = () => new QueryClient({
 describe("ServerTable", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   const mockServers = [
@@ -59,7 +57,7 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <ServerTable 
               onEditClick={vi.fn()}
@@ -69,7 +67,7 @@ describe("ServerTable", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -89,7 +87,7 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <ServerTable 
               onEditClick={vi.fn()}
@@ -99,7 +97,7 @@ describe("ServerTable", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -108,10 +106,10 @@ describe("ServerTable", () => {
       expect(screen.getByText("prod-web-01")).toBeDefined();
     });
 
-    // Check container monochromatic background
-    const container = screen.getByText("prod-web-01").closest("div.rounded-xl");
+    // Check row styles
+    const container = screen.getByText("prod-web-01").closest("tr");
     expect(container).toBeDefined();
-    expect(container?.className).toContain("bg-panel");
+    expect(container?.className).toContain("group");
     
     // Check border
     expect(container?.className).toContain("border-border");
@@ -123,7 +121,7 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <ServerTable 
               onEditClick={vi.fn()}
@@ -133,7 +131,7 @@ describe("ServerTable", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -149,7 +147,7 @@ describe("ServerTable", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter>
             <ServerTable 
               onEditClick={vi.fn()}
@@ -159,7 +157,7 @@ describe("ServerTable", () => {
               onClearFilter={vi.fn()} 
             />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -172,3 +170,5 @@ describe("ServerTable", () => {
     });
   });
 });
+
+

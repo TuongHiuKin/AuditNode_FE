@@ -7,7 +7,8 @@ import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
 import { ToolbarDropdown } from "../../features/dependency-graph/components/ToolbarDropdown";
-import { useWorkspaceStore } from "../hooks/useWorkspaceStore";
+import { LabelBadge, LabelData } from "./LabelBadge";
+import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
 type AppRow = Schemas["ApplicationResponseDto"] & {
   description?: string;
@@ -59,11 +60,11 @@ export function AppTable({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
+  const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { activeWorkspace } = useWorkspaceStore();
 
   const { data: apps = [], isLoading } = useQuery({
-    queryKey: ["applications", activeWorkspace?.id],
+    queryKey: ["applications"],
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/v1/applications");
       const rawResponse = response as any;
@@ -75,8 +76,19 @@ export function AppTable({
         description: app.description || app.techStack
       }));
     },
-    enabled: !!activeWorkspace?.id,
   });
+
+  const availableLabels = useMemo(() => {
+    const labelsMap = new Map<string, LabelData>();
+    apps.forEach((app: any) => {
+      app.labels?.forEach((l: any) => {
+        if (!labelsMap.has(l.key)) {
+          labelsMap.set(l.key, l);
+        }
+      });
+    });
+    return Array.from(labelsMap.values());
+  }, [apps]);
 
   const filteredApps = useMemo(() => {
     if (filterId) {
@@ -93,7 +105,10 @@ export function AppTable({
         (app as any).ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.risk?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesRisk && matchesSearch;
+      const matchesLabels = selectedLabelKeys.length === 0 || 
+        selectedLabelKeys.some(key => (app as any).labels?.some((l: any) => l.key === key));
+
+      return matchesRisk && matchesSearch && matchesLabels;
     });
   }, [apps, searchQuery, riskFilter, filterId]);
 
@@ -135,6 +150,14 @@ export function AppTable({
               options={RISK_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Risk Level" : opt }))}
               onChange={setRiskFilter}
             />
+            
+            <div className="h-5 w-px bg-border mx-1" />
+            
+            <LabelFilterDropdown
+              availableLabels={availableLabels}
+              selectedKeys={selectedLabelKeys}
+              onChange={setSelectedLabelKeys}
+            />
           </>
         ) : (
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-surface px-3 py-2 rounded-lg border border-border">
@@ -155,7 +178,7 @@ export function AppTable({
       {/* Teleport toolbar into InventoryLayout's fixed shrink-0 slot */}
       {toolbarEl && toolbarContent && createPortal(toolbarContent, toolbarEl)}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-panel flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {isLoading ? (
           <TableSkeleton />
         ) : (
@@ -180,6 +203,7 @@ export function AppTable({
                   { key: "appName", label: "Application Name" },
                   { key: "ownerTeam", label: "Owner" },
                   { key: "risk", label: "Risk Level" },
+                  { key: "labels", label: "Labels" },
                 ].map((col) => {
                   const isSelected = selectedColumns.includes(col.key);
                   return (
@@ -286,6 +310,13 @@ function AppRowItem({
         <td className="px-6 py-4 text-sm text-muted-foreground/80">{(app as any).ownerTeam || app.ownerId}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+            {(app as any).labels?.map((label: LabelData) => (
+              <LabelBadge key={label.key} label={label} />
+            ))}
+          </div>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 

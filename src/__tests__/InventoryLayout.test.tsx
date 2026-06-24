@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InventoryLayout } from "../app/pages/InventoryLayout";
-import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 vi.mock("../app/hooks/useHeader", () => ({
   useHeader: () => ({
@@ -22,18 +21,17 @@ const createTestQueryClient = () => new QueryClient({
 describe("InventoryLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.setItem('auditNode_activeWorkspace', JSON.stringify({ id: 'ws-1', name: 'Test Workspace' }));
   });
 
   it("renders navigation tabs correctly", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter initialEntries={["/inventory/servers"]}>
             <InventoryLayout />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -45,15 +43,15 @@ describe("InventoryLayout", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter initialEntries={["/inventory/servers"]}>
             <InventoryLayout />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
-    const bulkImportBtn = screen.getByText("Bulk Import");
+    const bulkImportBtn = screen.getByText("Import");
     fireEvent.click(bulkImportBtn);
 
     expect(screen.getByText("Iterative Bulk Import")).toBeDefined();
@@ -63,11 +61,11 @@ describe("InventoryLayout", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <WorkspaceProvider>
+        
           <MemoryRouter initialEntries={["/inventory/servers"]}>
             <InventoryLayout />
           </MemoryRouter>
-        </WorkspaceProvider>
+        
       </QueryClientProvider>
     );
 
@@ -82,3 +80,5 @@ describe("InventoryLayout", () => {
     expect(screen.queryByText("Selective Excel Export (.xlsx)")).toBeNull();
   });
 });
+
+

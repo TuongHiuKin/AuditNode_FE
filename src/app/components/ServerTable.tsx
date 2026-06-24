@@ -7,6 +7,8 @@ import { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
 import { ToolbarDropdown } from "../../features/dependency-graph/components/ToolbarDropdown";
 import { useServers } from "../../hooks/queries/useServers";
+import { LabelBadge, LabelData } from "./LabelBadge";
+import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
 type ServerRow = Schemas["ServerResponseDto"];
 
@@ -66,9 +68,22 @@ export function ServerTable({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
+  const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const { data: servers = [], isLoading } = useServers();
+
+  const availableLabels = useMemo(() => {
+    const labelsMap = new Map<string, LabelData>();
+    servers.forEach((s: any) => {
+      s.labels?.forEach((l: any) => {
+        if (!labelsMap.has(l.key)) {
+          labelsMap.set(l.key, l);
+        }
+      });
+    });
+    return Array.from(labelsMap.values());
+  }, [servers]);
 
   const filteredServers = useMemo(() => {
     if (filterId) {
@@ -84,7 +99,10 @@ export function ServerTable({
         s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesEnv && matchesSearch;
+      const matchesLabels = selectedLabelKeys.length === 0 || 
+        selectedLabelKeys.some(key => (s as any).labels?.some((l: any) => l.key === key));
+
+      return matchesEnv && matchesSearch && matchesLabels;
     });
   }, [servers, searchQuery, envFilter, filterId]);
 
@@ -102,43 +120,49 @@ export function ServerTable({
     navigate(url);
   };
 
-  // Toolbar content — teleported via portal into InventoryLayout's shrink-0 slot
+  // Toolbar content — teleported via portal into InventoryLayout's Tier 2 filter bar
   const toolbarContent = !isSelectionMode ? (
-    <div className="flex justify-between items-center bg-transparent">
-      <div className="flex items-center gap-3">
-        {!filterId ? (
-          <>
-            <div className="w-64">
-              <UniversalSearch
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onSelectResult={onSelectResult}
-                placeholder="Filter results..."
-                inputClassName="py-1.5 h-[34px]"
-              />
-            </div>
-            
-            <div className="h-5 w-px bg-border mx-1" />
-            
-            <ToolbarDropdown
-              label="Environment"
-              value={envFilter}
-              options={ENV_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Environment" : opt }))}
-              onChange={setEnvFilter}
+    <>
+      {!filterId ? (
+        <>
+          <div className="w-64">
+            <UniversalSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSelectResult={onSelectResult}
+              placeholder="Filter results..."
+              inputClassName="py-1.5 h-[34px]"
             />
-          </>
-        ) : (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-surface px-3 py-2 rounded-lg border border-border">
-            <span className="font-semibold text-primary">FILTERED VIEW</span>
-            <span className="opacity-50">|</span>
-            <span className="truncate max-w-[150px] font-label">ID: {filterId}</span>
-            <button onClick={onClearFilter} className="text-muted-foreground hover:text-foreground ml-1 transition-colors">
-              <X size={12} />
-            </button>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div className="h-5 w-px bg-border mx-1" />
+
+          <ToolbarDropdown
+            label="Environment"
+            value={envFilter}
+            options={ENV_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Environment" : opt }))}
+            onChange={setEnvFilter}
+          />
+
+          <div className="h-5 w-px bg-border mx-1" />
+
+          <LabelFilterDropdown
+            availableLabels={availableLabels}
+            selectedKeys={selectedLabelKeys}
+            onChange={setSelectedLabelKeys}
+          />
+        </>
+      ) : (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-surface px-3 py-2 rounded-lg border border-border">
+          <span className="font-semibold text-primary">FILTERED VIEW</span>
+          <span className="opacity-50">|</span>
+          <span className="truncate max-w-[150px] font-label">ID: {filterId}</span>
+          <button onClick={onClearFilter} className="text-muted-foreground hover:text-foreground ml-1 transition-colors">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+    </>
   ) : null;
 
   return (
@@ -146,7 +170,7 @@ export function ServerTable({
       {/* Teleport toolbar into InventoryLayout's fixed shrink-0 slot */}
       {toolbarEl && toolbarContent && createPortal(toolbarContent, toolbarEl)}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-panel flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {isLoading ? (
           <TableSkeleton />
         ) : (
@@ -171,6 +195,7 @@ export function ServerTable({
                     { key: "osType", label: "OS Type" },
                     { key: "status", label: "Status" },
                     { key: "environment", label: "Environment" },
+                    { key: "labels", label: "Labels" },
                   ].map((col) => {
                     const isSelected = selectedColumns.includes(col.key);
                     return (
@@ -295,6 +320,15 @@ function ServerRowItem({
             {server.environment?.toUpperCase() ?? "UNKNOWN"}
           </span>
         </td>
+        
+        <td className="px-6 py-4">
+          <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+            {(server as any).labels?.map((label: LabelData) => (
+              <LabelBadge key={label.key} label={label} />
+            ))}
+          </div>
+        </td>
+
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons
             onDepClick={() => onDepClick(server.id || "", server.environment)}
