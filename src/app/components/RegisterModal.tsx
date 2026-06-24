@@ -46,23 +46,110 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   }, []);
 
   // Form State
-  const [infraData, setInfraData] = useState({
+  const [infraData, setInfraData] = useState<{
+    datacenterId: string;
+    ipAddress: string;
+    hostname: string;
+    osType: string;
+    environment: string;
+    status: string;
+    labels: { key: string; value: string }[];
+  }>({
     datacenterId: "",
     ipAddress: "",
     hostname: "",
     osType: "",
     environment: "Production",
-    status: "Active"
+    status: "Active",
+    labels: []
   });
 
-  const [appData, setAppData] = useState({
+  const [appData, setAppData] = useState<{
+    serverId: string;
+    appCode: string;
+    appName: string;
+    ownerTeam: string;
+    portNumber: number;
+    protocol: string;
+    labels: { key: string; value: string }[];
+  }>({
     serverId: "",
     appCode: "",
     appName: "",
     ownerTeam: "",
     portNumber: 443,
     protocol: "HTTPS",
+    labels: []
   });
+
+  const [labelInput, setLabelInput] = useState({ key: "", value: "" });
+
+  const handleAddLabel = (mode: "infra" | "app") => {
+    if (!labelInput.key.trim() || !labelInput.value.trim()) return;
+    const newLabel = { key: labelInput.key.trim(), value: labelInput.value.trim() };
+    if (mode === "infra") {
+      setInfraData(prev => ({ ...prev, labels: [...prev.labels, newLabel] }));
+    } else {
+      setAppData(prev => ({ ...prev, labels: [...prev.labels, newLabel] }));
+    }
+    setLabelInput({ key: "", value: "" });
+  };
+
+  const handleRemoveLabel = (mode: "infra" | "app", index: number) => {
+    if (mode === "infra") {
+      setInfraData(prev => ({ ...prev, labels: prev.labels.filter((_, i) => i !== index) }));
+    } else {
+      setAppData(prev => ({ ...prev, labels: prev.labels.filter((_, i) => i !== index) }));
+    }
+  };
+
+  const renderLabelsSection = (mode: "infra" | "app", currentLabels: { key: string; value: string }[]) => (
+    <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
+      <label className="text-xs font-bold text-foreground uppercase tracking-widest font-mono">Labels / Tags</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          placeholder="Key (e.g. Env)"
+          className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+          value={labelInput.key}
+          onChange={(e) => setLabelInput({ ...labelInput, key: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Value (e.g. Prod)"
+          className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+          value={labelInput.value}
+          onChange={(e) => setLabelInput({ ...labelInput, value: e.target.value })}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLabel(mode))}
+        />
+        <button
+          type="button"
+          onClick={() => handleAddLabel(mode)}
+          className="bg-panel border border-border hover:bg-surface-hover text-foreground text-xs font-bold uppercase px-4 py-2.5 rounded-md transition-colors"
+        >
+          Add
+        </button>
+      </div>
+      {currentLabels.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {currentLabels.map((lbl, idx) => (
+            <div key={idx} className="flex items-center bg-surface border border-border rounded-md px-2.5 py-1.5 gap-2">
+              <span className="font-mono text-xs text-foreground uppercase">
+                <span className="text-muted-foreground">{lbl.key}:</span> {lbl.value}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveLabel(mode, idx)}
+                className="text-muted-foreground hover:text-foreground outline-none"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -224,6 +311,8 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                     <option className="bg-background">Maintenance</option>
                   </select>
                 </div>
+
+                {renderLabelsSection("infra", infraData.labels)}
               </div>
             ) : (
               <div className="flex flex-col gap-5">
@@ -313,6 +402,8 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                     </select>
                   </div>
                 </div>
+
+                {renderLabelsSection("app", appData.labels)}
               </div>
             )}
           </div>

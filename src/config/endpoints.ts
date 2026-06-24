@@ -18,9 +18,6 @@ export const API_ENDPOINTS = {
     PURGE: (id: string) => `/api/v1/infrastructure/apps/${id}/purge`,
     EXPORT: "/api/v1/applications/export",
   },
-  WORKSPACES: {
-    BASE: "/api/v1/workspaces",
-  },
   DATACENTERS: {
     BASE: "/api/v1/datacenters",
   },

@@ -33,8 +33,20 @@ export function EditEntityDrawer({
   const [selectedMappingId, setSelectedMappingId] = useState<string | null>(null);
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [serverSearchTerm, setServerSearchTerm] = useState("");
+  const [labels, setLabels] = useState<{ key: string; value: string }[]>([]);
+  const [labelInput, setLabelInput] = useState({ key: '', value: '' });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { register, handleSubmit, reset, setValue, watch } = useForm();
+
+  const handleAddLabel = () => {
+    if (!labelInput.key.trim() || !labelInput.value.trim()) return;
+    setLabels(prev => [...prev, { key: labelInput.key.trim(), value: labelInput.value.trim() }]);
+    setLabelInput({ key: "", value: "" });
+  };
+
+  const handleRemoveLabel = (index: number) => {
+    setLabels(prev => prev.filter((_, i) => i !== index));
+  };
 
   const isOpen = !!entityId && !!entityType;
 
@@ -99,6 +111,8 @@ export function EditEntityDrawer({
     } else {
       reset();
       setFetchError(null);
+      setLabels([]);
+      setLabelInput({ key: '', value: '' });
     }
   }, [entityId, entityType, isOpen]);
 
@@ -122,6 +136,8 @@ export function EditEntityDrawer({
       const response = await apiClient.get(endpoint);
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
+      
+      setLabels(data.labels || []);
       
       if (entityType === "SERVER") {
         setValue("hostname", data.hostname);
@@ -203,6 +219,7 @@ export function EditEntityDrawer({
             appName: formData.appName,
             ownerTeam: formData.ownerTeam,
             risk: formData.risk,
+            labels,
             
             // Network Mapping Payload - EXACT PROPERTY NAMES FOR BACKEND
             portMappingId: selectedMappingId, 
@@ -213,6 +230,7 @@ export function EditEntityDrawer({
             ...formData,
             // Ensure values not explicitly registered but set via setValue are included
             datacenterId: watch("datacenterId"),
+            labels,
           };
 
       await apiClient.put(endpoint, payload);
@@ -449,6 +467,58 @@ export function EditEntityDrawer({
                   </div>
                 </div>
               )}
+
+              {/* Labels / Tags Section */}
+              <div className="flex flex-col gap-2 pt-4 border-t border-border mt-4">
+                <label className="text-xs font-bold text-foreground uppercase tracking-widest font-mono">Labels / Tags</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Key (e.g. Env)"
+                    className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+                    value={labelInput.key}
+                    onChange={(e) => setLabelInput({ ...labelInput, key: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Value (e.g. Prod)"
+                    className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+                    value={labelInput.value}
+                    onChange={(e) => setLabelInput({ ...labelInput, value: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddLabel();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddLabel}
+                    className="bg-panel border border-border hover:bg-surface-hover text-foreground text-xs font-bold uppercase px-4 py-2.5 rounded-md transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+                {labels.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {labels.map((lbl, idx) => (
+                      <div key={idx} className="flex items-center bg-surface border border-border rounded-md px-2.5 py-1.5 gap-2">
+                        <span className="font-mono text-xs text-foreground uppercase">
+                          <span className="text-muted-foreground">{lbl.key}:</span> {lbl.value}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLabel(idx)}
+                          className="text-muted-foreground hover:text-foreground outline-none"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </form>
           )}
         </div>

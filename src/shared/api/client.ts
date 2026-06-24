@@ -23,29 +23,6 @@ const apiClient: AxiosInstance = axios.create({
  * Includes automatic token refresh logic.
  */
 export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
-  let workspaceId = null;
-
-  // 1. Inject Workspace Context dynamically from localStorage
-  // Reading directly from localStorage breaks circular dependencies with Zustand/React Context
-  try {
-    const savedWorkspaceRaw = localStorage.getItem('auditNode_activeWorkspace');
-    if (savedWorkspaceRaw) {
-      const workspace = JSON.parse(savedWorkspaceRaw);
-      workspaceId = workspace?.id;
-    }
-
-    if (workspaceId && config.headers) {
-      // Axios 1.x compatibility
-      if (typeof config.headers.set === 'function') {
-        config.headers.set('X-Workspace-Id', workspaceId);
-      } else {
-        config.headers['X-Workspace-Id'] = workspaceId;
-      }
-    }
-  } catch (e) {
-    console.error("Failed to parse active workspace from localStorage", e);
-  }
-
   // 2. Ensure Keycloak token is valid for at least 30 seconds
   try {
     await updateToken(30);

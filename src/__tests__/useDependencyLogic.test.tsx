@@ -5,7 +5,6 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
-import { WorkspaceProvider } from "../app/hooks/useWorkspaceStore";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -59,11 +58,11 @@ describe("useDependencyLogic", () => {
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <WorkspaceProvider>
+      
         <ReactFlowProvider>
           {children}
         </ReactFlowProvider>
-      </WorkspaceProvider>
+      
     </QueryClientProvider>
   );
 
@@ -205,3 +204,4 @@ describe("useDependencyLogic", () => {
     // We expect the hook to call setEdges which eventually updates edges state
   });
 });
+

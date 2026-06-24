@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { Server, Network, Workflow, ShieldAlert, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { getUsername, doLogout } from "../../services/keycloakService";
 
 const navGroups = [
@@ -10,12 +10,6 @@ const navGroups = [
       { name: "Inventory", path: "/inventory", icon: Server },
       { name: "Topology Map", path: "/topology", icon: Network },
       { name: "Dependencies", path: "/dependency-manager", icon: Workflow },
-    ],
-  },
-  {
-    group: "Operations",
-    items: [
-      { name: "Risk Audit", path: "/risk", icon: ShieldAlert },
     ],
   },
 ];
@@ -104,27 +98,28 @@ export function Sidebar() {
       </nav>
 
       {/* Footer: user info + collapse button */}
-      <div className="border-t border-border p-3 shrink-0 relative" ref={profileRef}>
-        {!collapsed && (
-          <button 
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-full flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-surface-hover transition-colors text-left"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="size-8 shrink-0 rounded-full bg-surface ring-1 ring-border grid place-items-center text-xs font-semibold text-muted-foreground select-none">
-                {initials}
-              </div>
+      <div className="border-t border-border p-3 shrink-0 relative flex flex-col items-center" ref={profileRef}>
+        <button 
+          onClick={() => setIsProfileOpen(!isProfileOpen)}
+          title={collapsed ? username : undefined}
+          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-3 rounded-md py-2 hover:bg-surface-hover transition-colors text-left ${collapsed ? "px-0" : "px-2"}`}
+        >
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="size-8 shrink-0 rounded-full bg-surface ring-1 ring-border grid place-items-center text-xs font-semibold text-muted-foreground select-none">
+              {initials}
+            </div>
+            {!collapsed && (
               <div className="min-w-0 text-xs">
                 <div className="truncate font-semibold text-foreground">{username}</div>
                 <div className="truncate text-muted-foreground">Enterprise Plan</div>
               </div>
-            </div>
-          </button>
-        )}
+            )}
+          </div>
+        </button>
 
         {/* Profile Dropdown */}
-        {isProfileOpen && !collapsed && (
-          <div className="absolute bottom-[100%] left-3 w-[calc(100%-24px)] mb-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+        {isProfileOpen && (
+          <div className={`absolute bottom-[100%] ${collapsed ? "left-12 w-[180px]" : "left-3 w-[calc(100%-24px)]"} mb-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150`}>
             <button
               onClick={() => doLogout()}
               className="flex items-center w-full gap-3 px-4 py-3 text-sm text-danger hover:bg-danger/10 transition-colors"
@@ -137,7 +132,7 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="mt-1 flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
+          className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors ${collapsed ? "px-0" : "px-3"}`}
         >
           {collapsed ? (
             <ChevronsRight className="size-4" />
