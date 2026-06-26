@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { requestInterceptorHandler, responseInterceptorErrorHandler } from "../shared/api/client";
-import * as keycloakService from "../services/keycloakService";
-
-vi.mock("../services/keycloakService", () => ({
-  getToken: vi.fn(),
-  updateToken: vi.fn().mockResolvedValue(true),
-}));
 
 describe("apiClient Interceptors", () => {
   beforeEach(() => {
@@ -13,36 +7,24 @@ describe("apiClient Interceptors", () => {
   });
 
   describe("requestInterceptorHandler", () => {
-    it("adds Bearer token from keycloakService if present", async () => {
-      vi.mocked(keycloakService.getToken).mockReturnValue("test-token");
+    it("adds Bearer token from localStorage if present", async () => {
+      const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockReturnValue("test-token");
       
       const config = { headers: {} } as any;
       const result = await requestInterceptorHandler(config);
       
-      expect(keycloakService.updateToken).toHaveBeenCalledWith(30);
       expect(result.headers.Authorization).toBe("Bearer test-token");
+      getItemSpy.mockRestore();
     });
 
     it("does not add Authorization header if token is missing", async () => {
-      vi.mocked(keycloakService.getToken).mockReturnValue(undefined);
+      const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
       
       const config = { headers: {} } as any;
       const result = await requestInterceptorHandler(config);
       
       expect(result.headers.Authorization).toBeUndefined();
-    });
-
-    it("handles token refresh failure gracefully", async () => {
-      vi.mocked(keycloakService.updateToken).mockRejectedValue(new Error("Refresh failed"));
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-      
-      const config = { headers: {} } as any;
-      const result = await requestInterceptorHandler(config);
-      
-      expect(consoleSpy).toHaveBeenCalledWith("Failed to refresh Keycloak token in interceptor", expect.any(Error));
-      expect(result.headers.Authorization).toBeUndefined();
-      
-      consoleSpy.mockRestore();
+      getItemSpy.mockRestore();
     });
   });
 

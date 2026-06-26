@@ -53,7 +53,7 @@ describe("BulkImportModal - Iterative Workflow", () => {
     } as any);
     
     vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "Server1", "IP": "10.0.0.1", "App Name": "App1", "App Code": "C1", "Port": "80" }, // Valid
+      { "Server Name": "Server1", "IP": "10.0.0.1", "App Name": "App1", "App Code": "C1", "Port": "80", "Labels": "env:prod" }, // Valid
       { "Server Name": "", "IP": "invalid", "App Name": "App2", "App Code": "C2", "Port": "abc" },      // Error
     ]);
 
@@ -75,7 +75,7 @@ describe("BulkImportModal - Iterative Workflow", () => {
   it("transitions to review grid and allows inline editing", async () => {
     vi.mocked(XLSX.read).mockReturnValue({ SheetNames: ["S1"], Sheets: { S1: {} } } as any);
     vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80" } // Error (missing server name)
+      { "Server Name": "", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80", "Labels": "env:staging" } // Error (missing server name)
     ]);
 
     render(<BulkImportModal onClose={mockOnClose} />);
@@ -109,7 +109,7 @@ describe("BulkImportModal - Iterative Workflow", () => {
   it("executes partial import and removes successful rows", async () => {
     vi.mocked(XLSX.read).mockReturnValue({ SheetNames: ["S1"], Sheets: { S1: {} } } as any);
     vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "S1", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80" }, // Valid
+      { "Server Name": "S1", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80", "Labels": "env:prod" }, // Valid
       { "Server Name": "", "IP": "2.2.2.2", "App Name": "A2", "App Code": "C2", "Port": "443" } // Error
     ]);
 

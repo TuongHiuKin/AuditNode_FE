@@ -36,16 +36,24 @@ export function LabelFilterDropdown({ availableLabels, selectedKeys, onChange }:
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-[34px] rounded-md border border-border bg-surface px-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className={`
+          flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-body
+          transition-all duration-200 cursor-pointer select-none
+          h-[34px]
+          ${isOpen
+            ? "bg-background border-primary/60 text-foreground shadow-[0_0_8px_oklch(0.62_0.22_25/0.15)]"
+            : "bg-background border-border text-foreground hover:border-primary/40"
+          }
+        `}
       >
-        <Filter className="size-3.5" />
-        <span className="font-semibold uppercase tracking-widest text-[10px]">Labels</span>
+        <Filter className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate flex-1 text-left">Labels</span>
         {selectedCount > 0 && (
-          <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">
+          <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0">
             {selectedCount}
           </span>
         )}
-        <ChevronDown className={`size-3.5 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (

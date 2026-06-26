@@ -133,7 +133,8 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
             appName: row['App Name'] || row['AppName'] || '',
             ownerTeam: row['Owner Team'] || row['OwnerTeam'] || '',
             port: row['Port'] || '',
-            protocol: row['Protocol'] || ''
+            protocol: row['Protocol'] || '',
+            labels: row['Labels'] || ''
           };
 
           const errors = validateRow(mappedData);
@@ -394,6 +395,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                       <TableHead>App Name</TableHead>
                       <TableHead className="w-24">Port</TableHead>
                       <TableHead>Env</TableHead>
+                      <TableHead>Labels</TableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -451,6 +453,14 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                             error={row.errors.environment}
                             onChange={(val) => handleCellChange(row._id, "environment", val)}
                             placeholder="Prod..."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell 
+                            value={row.data.labels || ""} 
+                            error={row.errors.labels}
+                            onChange={(val) => handleCellChange(row._id, "labels", val)}
+                            placeholder="env:prod"
                           />
                         </TableCell>
                         <TableCell>

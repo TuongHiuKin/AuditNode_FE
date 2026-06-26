@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
-import { getUsername, doLogout } from "../../services/keycloakService";
+import { getUsername } from "../../services/keycloakService";
 
 const navGroups = [
   {
     group: "Infrastructure",
     items: [
       { name: "Inventory", path: "/inventory", icon: Server },
+      { name: "Datacenters", path: "/datacenters", icon: Server },
       { name: "Topology Map", path: "/topology", icon: Network },
       { name: "Dependencies", path: "/dependency-manager", icon: Workflow },
     ],
@@ -25,6 +26,7 @@ function getInitials(username: string): string {
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -121,7 +123,10 @@ export function Sidebar() {
         {isProfileOpen && (
           <div className={`absolute bottom-[100%] ${collapsed ? "left-12 w-[180px]" : "left-3 w-[calc(100%-24px)]"} mb-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150`}>
             <button
-              onClick={() => doLogout()}
+              onClick={() => {
+                localStorage.removeItem("accessToken");
+                navigate("/login", { replace: true });
+              }}
               className="flex items-center w-full gap-3 px-4 py-3 text-sm text-danger hover:bg-danger/10 transition-colors"
             >
               <LogOut size={16} />
