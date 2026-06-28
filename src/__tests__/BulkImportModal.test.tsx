@@ -46,6 +46,28 @@ if (!global.crypto.randomUUID) {
   global.crypto.randomUUID = vi.fn(() => "123e4567-e89b-12d3-a456-426614174000" as `${string}-${string}-${string}-${string}-${string}`);
 }
 
+/**
+ * Mock FileReader so onload fires synchronously in JSDOM.
+ * The real FileReader is async — JSDOM never triggers onload from
+ * readAsBinaryString in a test environment, so rows never get populated
+ * and the import buttons never appear. This mock calls onload immediately.
+ */
+class MockFileReader {
+  result: string | ArrayBuffer | null = null;
+  onload: ((evt: ProgressEvent<FileReader>) => void) | null = null;
+  onerror: ((evt: ProgressEvent<FileReader>) => void) | null = null;
+
+  readAsBinaryString(_file: Blob) {
+    this.result = "mock-binary-content";
+    if (this.onload) {
+      this.onload({ target: this } as unknown as ProgressEvent<FileReader>);
+    }
+  }
+}
+
+// @ts-expect-error — replace global FileReader with synchronous mock
+global.FileReader = MockFileReader;
+
 describe("BulkImportModal - Direct File Upload", () => {
   const mockOnClose = vi.fn();
   const mockOnSuccess = vi.fn();
@@ -73,6 +95,8 @@ describe("BulkImportModal - Direct File Upload", () => {
     
     fireEvent.change(input, { target: { files: [file] } });
 
+    // FileReader mock fires synchronously → rows are populated immediately →
+    // summary view with action buttons should appear
     await waitFor(() => {
       expect(screen.getAllByText(/Import.*Valid Rows/i)[0]).toBeDefined();
     });
