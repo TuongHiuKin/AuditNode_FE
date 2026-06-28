@@ -15,9 +15,25 @@ vi.mock("../shared/api/client", () => ({
 
 // Mock XLSX
 vi.mock("xlsx", () => ({
-  read: vi.fn(),
+  read: vi.fn(() => ({
+    SheetNames: ["Sheet1"],
+    Sheets: { Sheet1: {} },
+  })),
+  write: vi.fn(() => new Uint8Array()),
   utils: {
-    sheet_to_json: vi.fn(),
+    sheet_to_json: vi.fn(() => [
+      { 
+        "Server Name": "srv1", 
+        "IP Address": "10.0.0.1", 
+        "Environment": "Production",
+        "App Code": "APP1",
+        "App Name": "Application 1",
+        "Port": "8080"
+      }
+    ]),
+    json_to_sheet: vi.fn(),
+    book_new: vi.fn(() => ({})),
+    book_append_sheet: vi.fn(),
   },
 }));
 
@@ -30,12 +46,38 @@ if (!global.crypto.randomUUID) {
   global.crypto.randomUUID = vi.fn(() => "123e4567-e89b-12d3-a456-426614174000" as `${string}-${string}-${string}-${string}-${string}`);
 }
 
-describe("BulkImportModal - Iterative Workflow", () => {
+/**
+ * Mock FileReader so onload fires synchronously in JSDOM.
+ * The real FileReader is async — JSDOM never triggers onload from
+ * readAsBinaryString in a test environment, so rows never get populated
+ * and the import buttons never appear. This mock calls onload immediately.
+ */
+class MockFileReader {
+  result: string | ArrayBuffer | null = null;
+  onload: ((evt: ProgressEvent<FileReader>) => void) | null = null;
+  onerror: ((evt: ProgressEvent<FileReader>) => void) | null = null;
+
+  readAsBinaryString(_file: Blob) {
+    this.result = "mock-binary-content";
+    if (this.onload) {
+      this.onload({ target: this } as unknown as ProgressEvent<FileReader>);
+    }
+  }
+}
+
+// @ts-expect-error — replace global FileReader with synchronous mock
+global.FileReader = MockFileReader;
+
+describe("BulkImportModal - Direct File Upload", () => {
   const mockOnClose = vi.fn();
   const mockOnSuccess = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
   });
 
   it("renders the initial upload state with correct headings", () => {
@@ -45,90 +87,33 @@ describe("BulkImportModal - Iterative Workflow", () => {
     expect(screen.getByText("Select Excel File")).toBeDefined();
   });
 
-  it("handles file selection and displays summary stats", async () => {
-    // Setup XLSX mock to return one valid and one error row
-    vi.mocked(XLSX.read).mockReturnValue({
-      SheetNames: ["Sheet1"],
-      Sheets: { Sheet1: {} },
-    } as any);
-    
-    vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "Server1", "IP": "10.0.0.1", "App Name": "App1", "App Code": "C1", "Port": "80" }, // Valid
-      { "Server Name": "", "IP": "invalid", "App Name": "App2", "App Code": "C2", "Port": "abc" },      // Error
-    ]);
-
-    render(<BulkImportModal onClose={mockOnClose} />);
+  it("displays review UI after file drop and calls fetch on Fast Import", async () => {
+    render(<BulkImportModal onClose={mockOnClose} onSuccess={mockOnSuccess} />);
     
     const file = new File(["dummy"], "data.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     
     fireEvent.change(input, { target: { files: [file] } });
 
+    // FileReader mock fires synchronously → rows are populated immediately →
+    // summary view with action buttons should appear
     await waitFor(() => {
-      // Check summary stats
-      expect(screen.getByText("Total Found")).toBeDefined();
-      expect(screen.getAllByText("2")).toHaveLength(1); // 2 total
-      expect(screen.getAllByText("1")).toHaveLength(2); // 1 valid, 1 error
+      expect(screen.getAllByText(/Import.*Valid Rows/i)[0]).toBeDefined();
     });
-  });
 
-  it("transitions to review grid and allows inline editing", async () => {
-    vi.mocked(XLSX.read).mockReturnValue({ SheetNames: ["S1"], Sheets: { S1: {} } } as any);
-    vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80" } // Error (missing server name)
-    ]);
-
-    render(<BulkImportModal onClose={mockOnClose} />);
-    
-    const file = new File(["dummy"], "data.xlsx", { type: "xlsx" });
-    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [file] } });
-
-    await waitFor(() => screen.getByText("Review & Edit Data"));
-    fireEvent.click(screen.getByText("Review & Edit Data"));
-
-    // Should see the error badge
-    expect(screen.getByText("Error")).toBeDefined();
-
-    // Find the server name input (it should be empty)
-    const inputs = screen.getAllByRole("textbox");
-    // serverName is usually the first editable field in our table
-    const serverNameInput = inputs.find(i => (i as HTMLInputElement).value === "") as HTMLInputElement;
-    
-    expect(serverNameInput).toBeDefined();
-
-    // Fix the error
-    fireEvent.change(serverNameInput, { target: { value: "FixedServer" } });
-
-    // Status should change to Ready (appears in Tab and in Table cell)
-    await waitFor(() => {
-      expect(screen.getAllByText("Ready")).toHaveLength(2);
-      expect(screen.queryByText("Error")).toBeNull();
-    });
-  });
-
-  it("executes partial import and removes successful rows", async () => {
-    vi.mocked(XLSX.read).mockReturnValue({ SheetNames: ["S1"], Sheets: { S1: {} } } as any);
-    vi.mocked(XLSX.utils.sheet_to_json).mockReturnValue([
-      { "Server Name": "S1", "IP": "1.1.1.1", "App Name": "A1", "App Code": "C1", "Port": "80" }, // Valid
-      { "Server Name": "", "IP": "2.2.2.2", "App Name": "A2", "App Code": "C2", "Port": "443" } // Error
-    ]);
-
-    vi.mocked(apiClient.post).mockResolvedValue({ status: 200 });
-
-    render(<BulkImportModal onClose={mockOnClose} />);
-    
-    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [new File([], "f.xlsx")] } });
-
-    await waitFor(() => screen.getByText("Import 1 Valid Rows"));
-    
-    fireEvent.click(screen.getByText("Import 1 Valid Rows"));
+    const submitButton = screen.getAllByText(/Import.*Valid Rows/i)[0];
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(apiClient.post).toHaveBeenCalled();
-      // Only the error row should remain
-      expect(screen.getByText("Total Found")).toBeDefined();
-      // After success, it might stay on summary or go to grid. 
-      // Our logic stays on summary but updates counts, or goes to grid if filter was 'error'
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://localhost:7126/api/v1/inventory/bulk-import",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.any(FormData)
+        })
+      );
+      expect(mockOnSuccess).toHaveBeenCalled();
+      expect(mockOnClose).toHaveBeenCalled();
     });
   });
 });

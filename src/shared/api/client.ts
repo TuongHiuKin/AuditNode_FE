@@ -1,6 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { paths } from "./v1-contract";
-import { getToken, updateToken } from "../../services/keycloakService";
 
 /**
  * Base URL for the API.
@@ -19,23 +18,25 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor handler to inject the Keycloak Bearer Token.
- * Includes automatic token refresh logic.
+ * Request interceptor handler to inject the JWT Bearer Token.
  */
 export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
-  // 2. Ensure Keycloak token is valid for at least 30 seconds
-  try {
-    await updateToken(30);
-    const token = getToken();
-    if (token && config.headers) {
-      if (typeof config.headers.set === 'function') {
-        config.headers.set('Authorization', `Bearer ${token}`);
-      } else {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+  const token = localStorage.getItem("accessToken");
+  if (token && config.headers) {
+    if (typeof config.headers.set === 'function') {
+      config.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-  } catch (error) {
-    console.error("Failed to refresh Keycloak token in interceptor", error);
+  }
+
+  // CRITICAL FIX: Gỡ bỏ ép buộc JSON nếu payload là FormData
+  if (config.data instanceof FormData && config.headers) {
+    if (typeof config.headers.delete === 'function') {
+      config.headers.delete('Content-Type');
+    } else {
+      delete config.headers['Content-Type'];
+    }
   }
 
   return config;
@@ -58,6 +59,15 @@ export const responseInterceptorErrorHandler = (error: any) => {
   
   if (response?.data?.errors) {
     console.error("[Validation Errors]", response.data.errors);
+  }
+
+  // Handle 401 Unauthorized globally
+  if (status === 401) {
+    localStorage.removeItem("accessToken");
+    // Only redirect if we are not already on the login page
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
   }
 
   return Promise.reject(error);

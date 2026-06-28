@@ -4,11 +4,21 @@ import { InventoryLayout } from "./pages/InventoryLayout";
 import { Inventory } from "./pages/Inventory";
 import { Topology } from "./pages/Topology";
 import { DependencyManager } from "./pages/Dependency";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { DatacentersPage } from "./pages/DatacentersPage";
 
 export const router = createBrowserRouter([
+  { path: "/login", Component: LoginPage },
+  { path: "/register", Component: RegisterPage },
   {
     path: "/",
-    Component: Layout,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Navigate to="/inventory" replace /> },
       {
@@ -22,6 +32,7 @@ export const router = createBrowserRouter([
       },
       { path: "topology", Component: Topology },
       { path: "dependency-manager", Component: DependencyManager },
+      { path: "datacenters", Component: DatacentersPage },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

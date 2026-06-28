@@ -1,5 +1,5 @@
 import { X, Download, Upload, AlertCircle, CheckCircle, AlertTriangle, ChevronRight, Save, Trash2 } from "lucide-react";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import apiClient from "../../shared/api/client";
@@ -90,6 +90,13 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  
+  const isFilePickerOpen = useRef(false);
+
+  const handleSafeClose = () => {
+    if (isFilePickerOpen.current) return;
+    onClose();
+  };
 
   // Computed Stats
   const stats = useMemo(() => {
@@ -108,6 +115,9 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
    * PHASE 1: INGESTION & TRIAGE
    */
   const handleFileDrop = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
     
@@ -117,42 +127,55 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
     try {
       const reader = new FileReader();
       reader.onload = (evt) => {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: "binary" });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const rawData = XLSX.utils.sheet_to_json(ws);
+        try {
+          const bstr = evt.target?.result;
+          const wb = XLSX.read(bstr, { type: "binary" });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
+          const rawData = XLSX.utils.sheet_to_json(ws);
 
-        const normalizedRows: ImportRow[] = rawData.map((row: any) => {
-          // Normalize Excel headers to internal camelCase keys
-          const mappedData = {
-            serverName: row['Server Name'] || row['ServerName'] || '',
-            ipAddress: row['IP Address'] || row['IP'] || '',
-            environment: row['Environment'] || '',
-            appCode: row['App Code'] || row['AppCode'] || '',
-            appName: row['App Name'] || row['AppName'] || '',
-            ownerTeam: row['Owner Team'] || row['OwnerTeam'] || '',
-            port: row['Port'] || '',
-            protocol: row['Protocol'] || ''
-          };
+          const normalizedRows: ImportRow[] = rawData.map((row: any) => {
+            // Normalize Excel headers to internal camelCase keys
+            const mappedData = {
+              serverName: row['Server Name'] || row['ServerName'] || row['serverName'] || '',
+              ipAddress: row['IP Address'] || row['IP'] || row['ipAddress'] || '',
+              environment: row['Environment'] || row['environment'] || '',
+              appCode: row['App Code'] || row['AppCode'] || row['appCode'] || '',
+              appName: row['App Name'] || row['AppName'] || row['appName'] || '',
+              ownerTeam: row['Owner Team'] || row['OwnerTeam'] || row['ownerTeam'] || '',
+              port: row['Port'] || row['port'] || '',
+              protocol: row['Protocol'] || row['protocol'] || '',
+              labels: row['Labels'] || row['labels'] || ''
+            };
 
-          const errors = validateRow(mappedData);
-          return {
-            _id: crypto.randomUUID(),
-            status: Object.keys(errors).length === 0 ? "valid" : "error",
-            errors,
-            data: mappedData,
-          };
-        });
-
-        setRows(normalizedRows);
+            const errors = validateRow(mappedData);
+            return {
+              _id: crypto.randomUUID(),
+              status: Object.keys(errors).length === 0 ? "valid" : "error",
+              errors,
+              data: mappedData,
+            };
+          });
+          
+          setRows(normalizedRows);
+        } catch (err: any) {
+          console.error("[Parse Error]", err);
+          toast.error("Failed to parse the Excel file.");
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read the file.");
         setIsProcessing(false);
       };
       reader.readAsBinaryString(selectedFile);
-    } catch (err) {
-      console.error("Parsing error", err);
-      toast.error("Failed to parse Excel file");
+    } catch (err: any) {
+      console.error("[File Read Error]", err);
+      toast.error(err.message || "Failed to process the file.");
       setIsProcessing(false);
+    } finally {
+      e.target.value = "";
     }
   };
 
@@ -190,11 +213,50 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
     setIsImporting(true);
     
-    // Extract only the clean data for backend
-    const payload = validRows.map(r => r.data);
-
     try {
-      await apiClient.post("/api/v1/inventory/bulk-import", payload);
+      // 1. Re-create Excel structure from validRows
+      const exportData = validRows.map(r => ({
+        'Server Name': r.data.serverName,
+        'IP Address': r.data.ipAddress,
+        'Environment': r.data.environment,
+        'App Code': r.data.appCode,
+        'App Name': r.data.appName,
+        'Owner Team': r.data.ownerTeam,
+        'Port': r.data.port,
+        'Protocol': r.data.protocol,
+        'Labels': r.data.labels
+      }));
+
+      // 2. Build workbook
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+
+      // 3. Write to binary and create Blob
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const newFileBlob = new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+
+      // 4. Submit via native fetch & FormData
+      const formData = new FormData();
+      formData.append("file", newFileBlob, "partial_import.xlsx");
+      
+      const token = localStorage.getItem("accessToken");
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
+
+      const response = await fetch(`${baseUrl}/api/v1/inventory/bulk-import`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Bulk import failed on server.");
+      }
       
       toast.success(`Successfully imported ${validRows.length} rows`);
       
@@ -211,7 +273,8 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         setFilterTab("error"); // Focus on what's left to fix
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Bulk import failed");
+      console.error("[Upload Error]", err);
+      toast.error(err.message || "Bulk import failed");
     } finally {
       setIsImporting(false);
     }
@@ -236,7 +299,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 p-4 backdrop-blur-sm" onClick={handleSafeClose}>
       <div
         className="bg-panel border border-border rounded-2xl shadow-2xl w-full max-w-6xl min-w-[600px] flex flex-col overflow-hidden max-h-[95vh]"
         style={{ animation: "exportModalIn 0.2s ease-out both" }}
@@ -288,6 +351,20 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                   <input
                     type="file"
                     accept=".xlsx, .xls"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      isFilePickerOpen.current = true;
+                      
+                      // Lắng nghe sự kiện window focus để biết khi nào OS File Picker thực sự đóng
+                      const handleFocus = () => {
+                        // Thêm timeout để đảm bảo mọi event click/blur của OS đã hoàn tất
+                        setTimeout(() => {
+                          isFilePickerOpen.current = false;
+                        }, 500);
+                        window.removeEventListener("focus", handleFocus);
+                      };
+                      window.addEventListener("focus", handleFocus);
+                    }}
                     onChange={handleFileDrop}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     disabled={isProcessing}
@@ -394,6 +471,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                       <TableHead>App Name</TableHead>
                       <TableHead className="w-24">Port</TableHead>
                       <TableHead>Env</TableHead>
+                      <TableHead>Labels</TableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -451,6 +529,14 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                             error={row.errors.environment}
                             onChange={(val) => handleCellChange(row._id, "environment", val)}
                             placeholder="Prod..."
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell 
+                            value={row.data.labels || ""} 
+                            error={row.errors.labels}
+                            onChange={(val) => handleCellChange(row._id, "labels", val)}
+                            placeholder="env:prod"
                           />
                         </TableCell>
                         <TableCell>
