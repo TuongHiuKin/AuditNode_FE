@@ -29,6 +29,16 @@ export const requestInterceptorHandler = async (config: InternalAxiosRequestConf
       config.headers.Authorization = `Bearer ${token}`;
     }
   }
+
+  // CRITICAL FIX: Gỡ bỏ ép buộc JSON nếu payload là FormData
+  if (config.data instanceof FormData && config.headers) {
+    if (typeof config.headers.delete === 'function') {
+      config.headers.delete('Content-Type');
+    } else {
+      delete config.headers['Content-Type'];
+    }
+  }
+
   return config;
 };
 

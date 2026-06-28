@@ -100,11 +100,11 @@ export function ServerTable({
         s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesLabels = selectedLabelKeys.length === 0 || 
-        selectedLabelKeys.some(key => (s as any).labels?.some((l: any) => l.key === key));
+        selectedLabelKeys.some(val => (s as any).labels?.some((l: any) => l.value === val));
 
       return matchesEnv && matchesSearch && matchesLabels;
     });
-  }, [servers, searchQuery, envFilter, filterId]);
+  }, [servers, searchQuery, envFilter, filterId, selectedLabelKeys]);
 
   const allIdsOnPage = useMemo(() => filteredServers.map(s => s.id!).filter(Boolean), [filteredServers]);
   const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
@@ -323,8 +323,8 @@ function ServerRowItem({
         
         <td className="px-6 py-4">
           <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-            {(server as any).labels?.map((label: LabelData) => (
-              <LabelBadge key={label.key} label={label} />
+            {(server as any).labels?.map((label: LabelData, index: number) => (
+              <LabelBadge key={(label as any).id || index} label={label} />
             ))}
           </div>
         </td>

@@ -82,8 +82,8 @@ export function AppTable({
     const labelsMap = new Map<string, LabelData>();
     apps.forEach((app: any) => {
       app.labels?.forEach((l: any) => {
-        if (!labelsMap.has(l.key)) {
-          labelsMap.set(l.key, l);
+        if (!labelsMap.has(l.value)) {
+          labelsMap.set(l.value, l);
         }
       });
     });
@@ -106,11 +106,11 @@ export function AppTable({
         app.risk?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesLabels = selectedLabelKeys.length === 0 || 
-        selectedLabelKeys.some(key => (app as any).labels?.some((l: any) => l.key === key));
+        selectedLabelKeys.some(val => (app as any).labels?.some((l: any) => l.value === val));
 
       return matchesRisk && matchesSearch && matchesLabels;
     });
-  }, [apps, searchQuery, riskFilter, filterId]);
+  }, [apps, searchQuery, riskFilter, filterId, selectedLabelKeys]);
 
   const allIdsOnPage = useMemo(() => filteredApps.map((app: AppRow) => app.id!).filter(Boolean), [filteredApps]);
   const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every((id: string) => selectedIds.includes(id));
