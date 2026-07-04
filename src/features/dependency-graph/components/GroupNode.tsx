@@ -35,7 +35,7 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
       </div>
 
       {/* Context Menu Trigger */}
-      <div className="absolute top-2 right-2 z-20">
+      <div className="absolute top-2 right-2 z-20 nodrag">
         <button 
           onContextMenu={(e) => {
             e.preventDefault();

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
-import { ToolbarDropdown } from "./ToolbarDropdown";
+import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
 
 interface FilterBarProps {
@@ -49,13 +49,13 @@ export function FilterBar({
   return (
     <div className="flex gap-4 items-center">
       <div className="flex gap-2 items-center">
-        <ToolbarDropdown
+        <Dropdown
           label="Environment"
           value={selectedEnv}
           options={envOptions}
           onChange={setSelectedEnv}
         />
-        <ToolbarDropdown
+        <Dropdown
           label="Datacenter"
           value={selectedDatacenter}
           options={datacenterOptions}

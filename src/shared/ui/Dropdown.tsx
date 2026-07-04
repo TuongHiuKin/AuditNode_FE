@@ -7,14 +7,14 @@ interface DropdownOption {
   label: string;
 }
 
-interface ToolbarDropdownProps {
+interface DropdownProps {
   label: string;
   value: string;
   options: DropdownOption[];
   onChange: (value: string) => void;
 }
 
-export function ToolbarDropdown({ label, value, options, onChange }: ToolbarDropdownProps) {
+export function Dropdown({ label, value, options, onChange }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);

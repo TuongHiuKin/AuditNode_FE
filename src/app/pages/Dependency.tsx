@@ -34,6 +34,8 @@ function DependencyManagerContent() {
     isSyncing,
     exportGroupAuditMatrix,
     addGroupBox,
+    addBoundaryFrame,
+    onNodeDragStop,
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -178,6 +180,8 @@ function DependencyManagerContent() {
               onPaneMouseMove={onPaneMouseMove}
               onPaneMouseUp={onPaneMouseUp}
               onAddGroup={addGroupBox}
+              onAddBoundaryFrame={addBoundaryFrame}
+              onNodeDragStop={onNodeDragStop}
             />
           </div>
 

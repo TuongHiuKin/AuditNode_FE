@@ -7,6 +7,7 @@ import {
   useReactFlow,
   MarkerType,
   type Node,
+  type InternalNode,
   type Edge,
   type Connection,
 } from "@xyflow/react";
@@ -95,19 +96,150 @@ export function useDependencyLogic() {
 
   const addGroupBox = useCallback(() => {
     const id = `group-${Date.now()}`;
-    const newNode: Node = {
-      id,
-      type: 'groupNode',
-      position: { x: 100, y: 100 },
-      data: { 
-        label: "New Infrastructure Cluster",
-        onExportAudit: exportGroupAuditMatrix
-      },
-      style: { width: 400, height: 300 },
-      zIndex: -2,
-    };
-    setNodes((nds) => nds.concat(newNode));
+
+    // Tính vị trí không đè lên các node hiện có
+    // Tìm bounding box của toàn bộ nodes đang có
+    const GROUP_W = 400;
+    const GROUP_H = 300;
+    const PADDING = 40;
+
+    let position = { x: 100, y: 100 };
+
+    setNodes((nds) => {
+      if (nds.length > 0) {
+        // Tìm toạ độ max-Y (bottom) của tất cả nodes để đặt group bên dưới
+        let maxY = 0;
+        let minX = Infinity;
+        nds.forEach((n) => {
+          const w = Number(n.style?.width) || n.measured?.width || 300;
+          const h = Number(n.style?.height) || n.measured?.height || 150;
+          const internalN = n as InternalNode;
+          const absX = internalN.internals?.positionAbsolute?.x ?? n.position.x;
+          const absY = internalN.internals?.positionAbsolute?.y ?? n.position.y;
+          if (absX < minX) minX = absX;
+          if (absY + h > maxY) maxY = absY + h;
+        });
+        position = { x: minX < Infinity ? minX : 100, y: maxY + PADDING };
+      }
+
+      const newNode: Node = {
+        id,
+        type: 'groupNode',
+        position,
+        data: { 
+          label: "New Infrastructure Cluster",
+          onExportAudit: exportGroupAuditMatrix
+        },
+        style: { width: GROUP_W, height: GROUP_H },
+        zIndex: -1,
+      };
+      return nds.concat(newNode);
+    });
   }, [setNodes, exportGroupAuditMatrix]);
+
+  const addBoundaryFrame = useCallback(async () => {
+    try {
+      const response = await apiClient.post("/api/v1/frames", {
+        name: "New Group",
+        x: 100,
+        y: 100,
+        width: 400,
+        height: 300
+      });
+      
+      const newFrame = response.data;
+      
+      const newNode: Node = {
+        id: newFrame.id,
+        type: "boundaryFrame",
+        position: { x: newFrame.x, y: newFrame.y },
+        style: { width: newFrame.width, height: newFrame.height },
+        data: { name: newFrame.name },
+        zIndex: -1,
+        draggable: true,
+        dragHandle: '.custom-drag-handle',
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    } catch (error) {
+      console.error("Failed to spawn boundary frame", error);
+      toast.error("Failed to spawn boundary frame");
+    }
+  }, [setNodes]);
+
+  const onNodeDragStop = useCallback(
+    async (_: React.MouseEvent, node: Node) => {
+      if (node.type === "boundaryFrame") return;
+
+      const frames = nodes.filter((n) => n.type === "boundaryFrame");
+
+      const intersectingFrame = frames.find((frame) => {
+        const frameX = frame.position.x;
+        const frameY = frame.position.y;
+        const frameW = frame.measured?.width || Number(frame.style?.width) || 0;
+        const frameH = frame.measured?.height || Number(frame.style?.height) || 0;
+
+        const internalNode = node as InternalNode;
+        const nodeAbsX = internalNode.internals?.positionAbsolute?.x || node.position.x;
+        const nodeAbsY = internalNode.internals?.positionAbsolute?.y || node.position.y;
+        const nodeW = node.measured?.width || 0;
+        const nodeH = node.measured?.height || 0;
+
+        const nodeCenterX = nodeAbsX + nodeW / 2;
+        const nodeCenterY = nodeAbsY + nodeH / 2;
+
+        return (
+          nodeCenterX >= frameX &&
+          nodeCenterX <= frameX + frameW &&
+          nodeCenterY >= frameY &&
+          nodeCenterY <= frameY + frameH
+        );
+      });
+
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === node.id) {
+            if (intersectingFrame) {
+              const internalDragNode = node as InternalNode;
+              const relativeX = (internalDragNode.internals?.positionAbsolute?.x || node.position.x) - intersectingFrame.position.x;
+              const relativeY = (internalDragNode.internals?.positionAbsolute?.y || node.position.y) - intersectingFrame.position.y;
+
+              return {
+                ...n,
+                parentId: intersectingFrame.id,
+                extent: "parent",
+                position: { x: relativeX, y: relativeY },
+              };
+            } else {
+              return {
+                ...n,
+                parentId: undefined,
+                extent: undefined,
+                position: (node as InternalNode).internals?.positionAbsolute || node.position,
+              };
+            }
+          }
+          return n;
+        })
+      );
+
+      try {
+        if (intersectingFrame) {
+          await apiClient.post(`/api/v1/frames/${intersectingFrame.id}/assign`, {
+            nodeId: node.id,
+          });
+        } else if (node.parentId) {
+          await apiClient.post("/api/v1/frames/unassign", {
+            nodeId: node.id,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to sync node boundary grouping", error);
+      }
+    },
+    [nodes, setNodes]
+  );
+
 
   // ── Sync to Database ─────────────────────────────────────────────────────
   const handleSync = useCallback(async () => {
@@ -256,6 +388,24 @@ export function useDependencyLogic() {
 
       const mappedNodes: Node[] = [];
       const mappedEdges: Edge[] = [];
+
+      try {
+        const framesResponse = await apiClient.get("/api/v1/frames");
+        framesResponse.data.forEach((frame: any) => {
+          mappedNodes.push({
+            id: frame.id,
+            type: "boundaryFrame",
+            position: { x: frame.x, y: frame.y },
+            style: { width: frame.width, height: frame.height },
+            data: { name: frame.name },
+            zIndex: -1,
+            draggable: true,
+            dragHandle: '.custom-drag-handle',
+          });
+        });
+      } catch (e) {
+        console.error("Failed to fetch frames", e);
+      }
 
       // Handle ReactFlow-compatible structure directly if provided
       const rawData = data as any;
@@ -571,6 +721,8 @@ export function useDependencyLogic() {
     isSyncing,
     exportGroupAuditMatrix,
     addGroupBox,
+    addBoundaryFrame,
+    onNodeDragStop,
   };
 }
 
