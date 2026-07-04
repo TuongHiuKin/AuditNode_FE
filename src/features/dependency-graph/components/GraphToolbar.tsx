@@ -1,13 +1,15 @@
 import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
+import { Button } from "../../../shared/ui/Button";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
+  onAddBoundaryFrame?: () => void;
 }
 
-export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
+export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -32,27 +34,42 @@ export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
   return (
     <div className="absolute bottom-4 left-4 z-50 flex gap-2">
       <div className="bg-surface border border-border rounded-lg flex flex-col overflow-hidden shadow-xl">
-        <button
+        <Button
           onClick={handleExport}
           title="Export Canvas to PNG"
-          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all border-b border-border"
+          variant="ghost"
+          size="icon"
+          className="border-b border-border rounded-none"
         >
           <Camera size={18} />
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onAddGroup}
           title="Add Group Box"
-          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all border-b border-border"
+          variant="ghost"
+          size="icon"
+          className="border-b border-border rounded-none"
         >
           <Briefcase size={18} />
-        </button>
-        <button
+        </Button>
+        <Button
+          onClick={onAddBoundaryFrame}
+          title="Add Boundary Frame"
+          variant="ghost"
+          size="icon"
+          className="border-b border-border font-bold uppercase rounded-none"
+        >
+          [ ]
+        </Button>
+        <Button
           onClick={onQuickAdd}
           title="Quick Add Infrastructure"
-          className="p-2.5 text-muted-foreground hover:text-primary hover:bg-background transition-all"
+          variant="ghost"
+          size="icon"
+          className="rounded-none"
         >
           <Plus size={18} />
-        </button>
+        </Button>
       </div>
 
       <Controls

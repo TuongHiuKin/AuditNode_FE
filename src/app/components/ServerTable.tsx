@@ -5,7 +5,7 @@ import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-
 import { ActionButtons } from "./ActionButtons";
 import { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
-import { ToolbarDropdown } from "../../features/dependency-graph/components/ToolbarDropdown";
+import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
@@ -137,7 +137,7 @@ export function ServerTable({
 
           <div className="h-5 w-px bg-border mx-1" />
 
-          <ToolbarDropdown
+          <Dropdown
             label="Environment"
             value={envFilter}
             options={ENV_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Environment" : opt }))}

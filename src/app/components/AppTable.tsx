@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
-import { ToolbarDropdown } from "../../features/dependency-graph/components/ToolbarDropdown";
+import { Dropdown } from "../../shared/ui/Dropdown";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -144,7 +144,7 @@ export function AppTable({
             
             <div className="h-5 w-px bg-border mx-1" />
             
-            <ToolbarDropdown
+            <Dropdown
               label="Risk Level"
               value={riskFilter}
               options={RISK_OPTIONS.map(opt => ({ value: opt, label: opt === "All" ? "Risk Level" : opt }))}
