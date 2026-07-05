@@ -7,8 +7,10 @@ import { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
+import { useDatacenters } from "../../hooks/queries/useDatacenters";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
+import { CreateDatacenterModal } from "./CreateDatacenterModal";
 
 type ServerRow = Schemas["ServerResponseDto"];
 
@@ -68,10 +70,18 @@ export function ServerTable({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
+  const [datacenterFilter, setDatacenterFilter] = useState("All");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
+  const [isCreateDcOpen, setIsCreateDcOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: servers = [], isLoading } = useServers();
+  const { data: datacenters = [] } = useDatacenters();
+  
+  const datacenterOptions = [
+    { value: "All", label: "Datacenter" },
+    ...datacenters.map(dc => ({ value: dc.id!, label: dc.name! }))
+  ];
 
   const availableLabels = useMemo(() => {
     const labelsMap = new Map<string, LabelData>();
@@ -99,12 +109,17 @@ export function ServerTable({
         s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
 
+      const matchesDatacenter = datacenterFilter === "All" ||
+        s.datacenterId === datacenterFilter ||
+        (s as any).datacenter?.id === datacenterFilter ||
+        (s as any).datacenter?.name === datacenterFilter;
+
       const matchesLabels = selectedLabelKeys.length === 0 || 
         selectedLabelKeys.some(val => (s as any).labels?.some((l: any) => l.value === val));
 
-      return matchesEnv && matchesSearch && matchesLabels;
+      return matchesEnv && matchesDatacenter && matchesSearch && matchesLabels;
     });
-  }, [servers, searchQuery, envFilter, filterId, selectedLabelKeys]);
+  }, [servers, searchQuery, envFilter, datacenterFilter, filterId, selectedLabelKeys]);
 
   const allIdsOnPage = useMemo(() => filteredServers.map(s => s.id!).filter(Boolean), [filteredServers]);
   const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
@@ -134,6 +149,17 @@ export function ServerTable({
               inputClassName="py-1.5 h-[34px]"
             />
           </div>
+
+          <div className="h-5 w-px bg-border mx-1" />
+
+          <Dropdown
+            label="Datacenter"
+            value={datacenterFilter}
+            options={datacenterOptions}
+            onChange={setDatacenterFilter}
+            onAdd={() => setIsCreateDcOpen(true)}
+            addLabel="+ Add Datacenter"
+          />
 
           <div className="h-5 w-px bg-border mx-1" />
 
@@ -248,6 +274,13 @@ export function ServerTable({
           </div>
         )}
       </div>
+
+      {isCreateDcOpen && (
+        <CreateDatacenterModal
+          onClose={() => setIsCreateDcOpen(false)}
+          onSuccess={() => setIsCreateDcOpen(false)}
+        />
+      )}
     </>
   );
 }

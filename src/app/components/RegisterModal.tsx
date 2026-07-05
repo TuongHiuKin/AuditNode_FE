@@ -11,11 +11,11 @@ export interface RegisterModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   servers?: { id: string; hostname: string; ipAddress: string }[];
-  defaultMode?: "infra" | "app";
+  defaultMode?: "infra" | "app" | "datacenter";
 }
 
 export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = "infra" }: RegisterModalProps) {
-  const [formMode, setFormMode] = useState<"infra" | "app">(defaultMode);
+  const [formMode, setFormMode] = useState<"infra" | "app" | "datacenter">(defaultMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +80,14 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
     portNumber: 443,
     protocol: "HTTPS",
     labels: []
+  });
+
+  const [dcData, setDcData] = useState<{
+    name: string;
+    location: string;
+  }>({
+    name: "",
+    location: "",
   });
 
   const [labelInput, setLabelInput] = useState({ key: "", value: "" });
@@ -160,16 +168,25 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
           throw new Error("Datacenter, IP Address, Hostname, and OS Type are required");
         }
         await apiClient.post("/api/v1/servers", infraData);
-      } else {
+      } else if (formMode === "app") {
         if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerTeam) {
           throw new Error("Server, App Code, App Name, and Owner Team are required");
         }
         await apiClient.post("/api/v1/applications", appData);
+      } else if (formMode === "datacenter") {
+        if (!dcData.name || !dcData.location) {
+          throw new Error("Datacenter Name and Location are required");
+        }
+        await apiClient.post("/api/v1/datacenters", dcData);
       }
       onSuccess?.();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to register entity");
+      if (err.response?.status === 403) {
+        setError("Access Denied: Admin privileges required");
+      } else {
+        setError(err.response?.data?.message || err.message || "Failed to register entity");
+      }
     } finally {
       setLoading(false);
     }
@@ -214,6 +231,16 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
               >
                 New Application
               </button>
+              <button
+                onClick={() => setFormMode("datacenter")}
+                className={`flex-1 py-2 text-center text-sm font-medium rounded-md transition-colors ${
+                  formMode === "datacenter"
+                    ? "bg-surface-hover text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                New Datacenter
+              </button>
             </div>
           </div>
 
@@ -225,7 +252,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
               </div>
             )}
 
-            {formMode === "infra" ? (
+            {formMode === "infra" && (
               <div className="flex flex-col gap-5">
                 {/* Zone / Datacenter */}
                 <div className="flex flex-col gap-1.5">
@@ -314,7 +341,9 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
 
                 {renderLabelsSection("infra", infraData.labels)}
               </div>
-            ) : (
+            )}
+
+            {formMode === "app" && (
               <div className="flex flex-col gap-5">
                 {/* Server + Owner */}
                 <div className="grid grid-cols-2 gap-4">
@@ -406,6 +435,33 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
                 {renderLabelsSection("app", appData.labels)}
               </div>
             )}
+
+            {formMode === "datacenter" && (
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="dcName" className={labelCls}>Datacenter Name</label>
+                  <input
+                    id="dcName"
+                    type="text"
+                    placeholder="e.g. US-East-1"
+                    className={inputCls}
+                    value={dcData.name}
+                    onChange={(e) => setDcData({ ...dcData, name: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="dcLocation" className={labelCls}>Location</label>
+                  <input
+                    id="dcLocation"
+                    type="text"
+                    placeholder="e.g. Virginia, USA"
+                    className={inputCls}
+                    value={dcData.location}
+                    onChange={(e) => setDcData({ ...dcData, location: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Modal Footer ── */}
@@ -422,7 +478,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
               disabled={loading}
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium py-2 px-5 rounded-lg transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 active:scale-95"
             >
-              {loading ? "Submitting..." : (formMode === "infra" ? "Submit Server" : "Deploy App")}
+              {loading ? "Submitting..." : (formMode === "infra" ? "Submit Server" : formMode === "app" ? "Deploy App" : "Create Datacenter")}
             </button>
           </div>
         </div>

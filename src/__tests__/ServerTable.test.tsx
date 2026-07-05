@@ -52,7 +52,10 @@ describe("ServerTable", () => {
   ];
 
   it("routes to dependency manager with lowercase environment parameter", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
+    vi.mocked(apiClient.get).mockImplementation(async (url) => {
+      if (url === "/api/v1/datacenters") return { data: [] };
+      return { data: mockServers };
+    });
 
     const queryClient = createTestQueryClient();
     render(
@@ -82,7 +85,10 @@ describe("ServerTable", () => {
   });
 
   it("renders server rows and applies SaaS monochromatic container styles", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
+    vi.mocked(apiClient.get).mockImplementation(async (url) => {
+      if (url === "/api/v1/datacenters") return { data: [] };
+      return { data: mockServers };
+    });
 
     const queryClient = createTestQueryClient();
     render(
@@ -116,7 +122,10 @@ describe("ServerTable", () => {
   });
 
   it("enforces monospaced font for IP addresses", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
+    vi.mocked(apiClient.get).mockImplementation(async (url) => {
+      if (url === "/api/v1/datacenters") return { data: [] };
+      return { data: mockServers };
+    });
 
     const queryClient = createTestQueryClient();
     render(
@@ -142,7 +151,10 @@ describe("ServerTable", () => {
   });
 
   it("applies technical mono headers tracking-widest", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockServers });
+    vi.mocked(apiClient.get).mockImplementation(async (url) => {
+      if (url === "/api/v1/datacenters") return { data: [] };
+      return { data: mockServers };
+    });
 
     const queryClient = createTestQueryClient();
     render(
@@ -170,5 +182,3 @@ describe("ServerTable", () => {
     });
   });
 });
-
-

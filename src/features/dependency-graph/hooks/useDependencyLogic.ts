@@ -94,78 +94,29 @@ export function useDependencyLogic() {
     toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
   }, [nodes, edges]);
 
-  const addGroupBox = useCallback(() => {
-    const id = `group-${Date.now()}`;
-
-    // Tính vị trí không đè lên các node hiện có
-    // Tìm bounding box của toàn bộ nodes đang có
-    const GROUP_W = 400;
-    const GROUP_H = 300;
-    const PADDING = 40;
-
-    let position = { x: 100, y: 100 };
-
-    setNodes((nds) => {
-      if (nds.length > 0) {
-        // Tìm toạ độ max-Y (bottom) của tất cả nodes để đặt group bên dưới
-        let maxY = 0;
-        let minX = Infinity;
-        nds.forEach((n) => {
-          const w = Number(n.style?.width) || n.measured?.width || 300;
-          const h = Number(n.style?.height) || n.measured?.height || 150;
-          const internalN = n as InternalNode;
-          const absX = internalN.internals?.positionAbsolute?.x ?? n.position.x;
-          const absY = internalN.internals?.positionAbsolute?.y ?? n.position.y;
-          if (absX < minX) minX = absX;
-          if (absY + h > maxY) maxY = absY + h;
-        });
-        position = { x: minX < Infinity ? minX : 100, y: maxY + PADDING };
-      }
-
-      const newNode: Node = {
-        id,
-        type: 'groupNode',
-        position,
-        data: { 
-          label: "New Infrastructure Cluster",
-          onExportAudit: exportGroupAuditMatrix
-        },
-        style: { width: GROUP_W, height: GROUP_H },
-        zIndex: -1,
-      };
-      return nds.concat(newNode);
+  const checkEmptyFrame = useCallback((type: 'groupNode' | 'boundaryFrame') => {
+    const hasEmpty = nodes.some(n => {
+      if (n.type !== type) return false;
+      return !nodes.some(child => child.parentId === n.id);
     });
-  }, [setNodes, exportGroupAuditMatrix]);
+    if (hasEmpty) {
+      toast.error(`Vui lòng sử dụng ${type === 'groupNode' ? 'Group Box' : 'Boundary Frame'} rỗng hiện tại trước khi tạo mới!`);
+      return true;
+    }
+    return false;
+  }, [nodes]);
+
+  const addGroupBox = useCallback(() => {
+    if (checkEmptyFrame('groupNode')) return;
+    setDrawingMode('groupBox');
+    toast.info("Vẽ một khung trên màn hình để tạo Group");
+  }, [checkEmptyFrame]);
 
   const addBoundaryFrame = useCallback(async () => {
-    try {
-      const response = await apiClient.post("/api/v1/frames", {
-        name: "New Group",
-        x: 100,
-        y: 100,
-        width: 400,
-        height: 300
-      });
-      
-      const newFrame = response.data;
-      
-      const newNode: Node = {
-        id: newFrame.id,
-        type: "boundaryFrame",
-        position: { x: newFrame.x, y: newFrame.y },
-        style: { width: newFrame.width, height: newFrame.height },
-        data: { name: newFrame.name },
-        zIndex: -1,
-        draggable: true,
-        dragHandle: '.custom-drag-handle',
-      };
-
-      setNodes((nds) => [...nds, newNode]);
-    } catch (error) {
-      console.error("Failed to spawn boundary frame", error);
-      toast.error("Failed to spawn boundary frame");
-    }
-  }, [setNodes]);
+    if (checkEmptyFrame('boundaryFrame')) return;
+    setDrawingMode('boundaryFrame');
+    toast.info("Vẽ một khung trên màn hình để tạo Boundary Frame");
+  }, [checkEmptyFrame]);
 
   const onNodeDragStop = useCallback(
     async (_: React.MouseEvent, node: Node) => {
@@ -304,12 +255,13 @@ export function useDependencyLogic() {
 
   const canDrawServer = unmappedServers.length > 0;
 
-  // ── Draw to Create Server Logic ──────────────────────────────────────────
-  const [isDrawingServer, setIsDrawingServer] = useState(false);
+  // ── Draw to Create Logic ──────────────────────────────────────────
+  const [drawingMode, setDrawingMode] = useState<'server' | 'groupBox' | 'boundaryFrame' | null>(null);
   const [drawBox, setDrawBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
 
   const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
-    if (!isDrawingServer || !canDrawServer) return;
+    if (!drawingMode) return;
+    if (drawingMode === 'server' && !canDrawServer) return;
 
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
@@ -322,7 +274,7 @@ export function useDependencyLogic() {
       currentX: position.x,
       currentY: position.y,
     });
-  }, [isDrawingServer, canDrawServer, reactFlowInstance]);
+  }, [drawingMode, canDrawServer, reactFlowInstance]);
 
   const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
     if (!drawBox) return;
@@ -339,38 +291,84 @@ export function useDependencyLogic() {
     }) : null);
   }, [drawBox, reactFlowInstance]);
 
-  const onPaneMouseUp = useCallback(() => {
-    if (!drawBox) return;
+  const onPaneMouseUp = useCallback(async () => {
+    if (!drawBox || !drawingMode) return;
 
     const width = Math.abs(drawBox.currentX - drawBox.startX);
     const height = Math.abs(drawBox.currentY - drawBox.startY);
     const x = Math.min(drawBox.startX, drawBox.currentX);
     const y = Math.min(drawBox.startY, drawBox.currentY);
 
-    if (width > 50 && height > 50 && unmappedServers.length > 0) {
-      const targetServer = unmappedServers[0];
-      const newNode: Node = {
-        id: targetServer.id!,
-        type: "serverNode",
-        position: { x, y },
-        style: { width, height },
-        data: {
-          server: {
-            hostname: targetServer.hostname,
-            ipAddress: targetServer.ipAddress,
-            osType: targetServer.osType
+    if (width > 50 && height > 50) {
+      if (drawingMode === 'server' && unmappedServers.length > 0) {
+        const targetServer = unmappedServers[0];
+        const newNode: Node = {
+          id: targetServer.id!,
+          type: "serverNode",
+          position: { x, y },
+          style: { width, height },
+          data: {
+            server: {
+              hostname: targetServer.hostname,
+              ipAddress: targetServer.ipAddress,
+              osType: targetServer.osType
+            },
+            width,
+            height
           },
-          width,
-          height
-        },
-        zIndex: -1,
-      };
-      setNodes((nds) => nds.concat(newNode));
+          zIndex: -1,
+        };
+        setNodes((nds) => nds.concat(newNode));
+      } else if (drawingMode === 'groupBox') {
+        const id = `group-${Date.now()}`;
+        const newNode: Node = {
+          id,
+          type: 'groupNode',
+          position: { x, y },
+          data: { 
+            label: "New Infrastructure Cluster",
+            onExportAudit: exportGroupAuditMatrix
+          },
+          style: { width, height },
+          zIndex: -1,
+          selected: true,
+        };
+        setNodes((nds) => nds.concat(newNode));
+      } else if (drawingMode === 'boundaryFrame') {
+        try {
+          const response = await apiClient.post("/api/v1/frames", {
+            name: "New Group",
+            x,
+            y,
+            width,
+            height
+          });
+          const newFrame = response.data;
+          const finalX = (typeof newFrame.x === 'number' && !isNaN(newFrame.x)) ? newFrame.x : x;
+          const finalY = (typeof newFrame.y === 'number' && !isNaN(newFrame.y)) ? newFrame.y : y;
+          
+          const newNode: Node = {
+            id: newFrame.id,
+            type: "boundaryFrame",
+            position: { x: finalX, y: finalY },
+            style: { width: newFrame.width || width, height: newFrame.height || height },
+            data: { name: newFrame.name || "New Group" },
+            zIndex: -1,
+            draggable: true,
+            dragHandle: '.custom-drag-handle',
+            selected: true,
+          };
+          setNodes((nds) => [...nds, newNode]);
+        } catch (error) {
+          console.error("Failed to spawn boundary frame", error);
+          toast.error("Failed to spawn boundary frame");
+        }
+      }
     }
 
     setDrawBox(null);
-    setIsDrawingServer(false);
-  }, [drawBox, unmappedServers, setNodes]);
+    setDrawingMode(null);
+  }, [drawBox, unmappedServers, setNodes, drawingMode, exportGroupAuditMatrix]);
 
   // ── Fetch and Map Graph Logic (Internal) ────────────────────────────────
   const fetchAndMapGraph = useCallback(async (env: string, dc: string) => {
@@ -392,12 +390,15 @@ export function useDependencyLogic() {
       try {
         const framesResponse = await apiClient.get("/api/v1/frames");
         framesResponse.data.forEach((frame: any) => {
+          const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
+          const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
+          
           mappedNodes.push({
             id: frame.id,
             type: "boundaryFrame",
-            position: { x: frame.x, y: frame.y },
-            style: { width: frame.width, height: frame.height },
-            data: { name: frame.name },
+            position: { x: safeX, y: safeY },
+            style: { width: frame.width || 400, height: frame.height || 300 },
+            data: { name: frame.name || "Unknown Group" },
             zIndex: -1,
             draggable: true,
             dragHandle: '.custom-drag-handle',
@@ -709,8 +710,8 @@ export function useDependencyLogic() {
     selectedDatacenter,
     setSelectedDatacenter,
     handleAutoMap,
-    isDrawingServer,
-    setIsDrawingServer,
+    drawingMode,
+    setDrawingMode,
     canDrawServer,
     drawBox,
     onPaneMouseDown,

@@ -46,7 +46,7 @@ interface FlowCanvasProps {
   onAddGroup?: () => void;
   onAddBoundaryFrame?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
-  isDrawingServer?: boolean;
+  drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
   drawBox?: { startX: number; startY: number; currentX: number; currentY: number } | null;
   onPaneMouseDown?: (event: React.MouseEvent) => void;
   onPaneMouseMove?: (event: React.MouseEvent) => void;
@@ -68,7 +68,7 @@ export function FlowCanvas({
   onAddGroup,
   onAddBoundaryFrame,
   onNodeDragStop,
-  isDrawingServer,
+  drawingMode,
   drawBox,
   onPaneMouseDown,
   onPaneMouseMove,
@@ -89,7 +89,7 @@ export function FlowCanvas({
 
   return (
     <div
-      className={`relative w-full h-full bg-background ${isDrawingServer ? "cursor-crosshair" : ""}`}
+      className={`relative w-full h-full bg-background ${drawingMode ? "cursor-crosshair" : ""}`}
       onMouseDown={onPaneMouseDown}
       onMouseMove={onPaneMouseMove}
       onMouseUp={onPaneMouseUp}

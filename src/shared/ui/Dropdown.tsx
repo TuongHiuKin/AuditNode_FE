@@ -12,9 +12,11 @@ interface DropdownProps {
   value: string;
   options: DropdownOption[];
   onChange: (value: string) => void;
+  onAdd?: () => void;
+  addLabel?: string;
 }
 
-export function Dropdown({ label, value, options, onChange }: DropdownProps) {
+export function Dropdown({ label, value, options, onChange, onAdd, addLabel }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -108,24 +110,39 @@ export function Dropdown({ label, value, options, onChange }: DropdownProps) {
             animation: "fadeSlideIn 150ms ease-out",
           }}
         >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`
-                w-full text-left px-3 py-2 text-sm font-body transition-colors
-                ${value === option.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-foreground hover:bg-background"
-                }
-              `}
-            >
-              {option.label}
-            </button>
-          ))}
+          <div className="max-h-[250px] overflow-y-auto">
+            {options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`
+                  w-full text-left px-3 py-2 text-sm font-body transition-colors
+                  ${value === option.value
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-foreground hover:bg-background"
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {onAdd && addLabel && (
+            <div className="border-t border-border mt-1">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onAdd();
+                }}
+                className="w-full text-left px-3 py-2 text-sm font-body font-semibold text-primary hover:bg-primary/10 transition-colors"
+              >
+                + {addLabel}
+              </button>
+            </div>
+          )}
         </div>,
         document.body
       )}

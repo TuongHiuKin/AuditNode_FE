@@ -35,6 +35,7 @@ Built with **React 18**, **TypeScript**, and **Vite**.
   - **Custom Nodes Refactor**:
     *   **AppNode**: Redesigned as a sharp rectangle with 4-sided, hover-reveal handles to balance connectivity and visual clarity.
     *   **ServerGroupNode**: Optimized for dynamic resizing with an "Auto-fit to content" function that precisely wraps children nodes using bounding-box geometry.
+  - **Canvas Authoring Mode**: Enables "Draw to Create" UX for defining logical groupings (Infrastructure Clusters and Boundary Frames) directly on the viewport, complete with anti-spam validation to prevent empty frame clutter.
 - **EditEntityDrawer**: 
   - **Design**: Uses **React Portals** (`ReactDOM.createPortal`) to render at the root of the DOM tree (`document.body`).
   - **Adaptive Deployment Selector**: Implements a dynamic UI block that renders when an application has multiple deployments (1-to-Many). Uses a **Radio Group pattern** to target a specific port mapping for modification.
