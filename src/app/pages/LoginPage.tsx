@@ -13,7 +13,6 @@ export function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    console.log("[FE DEBUG] Login Request Data:", { username, password });
 
     try {
       const response = await apiClient.post("/api/v1/auth/login", { username, password });
@@ -26,7 +25,6 @@ export function LoginPage() {
         setError("Authentication failed. No access token received.");
       }
     } catch (err: any) {
-      console.error("[FE DEBUG] Login API Error:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Invalid credentials or server error. Please try again.");
     } finally {
       setLoading(false);

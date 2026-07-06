@@ -59,7 +59,6 @@ export function RegisterPage() {
     }
 
     setLoading(true);
-    console.log("[FE DEBUG] Register Request Data:", { username, email, password });
     try {
       await apiClient.post("/api/v1/auth/register", { username, email, password });
       setSuccess("Account created successfully! Redirecting to login…");
@@ -67,7 +66,6 @@ export function RegisterPage() {
         navigate("/login");
       }, 1500);
     } catch (err: any) {
-      console.error("[FE DEBUG] Register API Error:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Failed to register. Username or email may already exist.");
     } finally {
       setLoading(false);

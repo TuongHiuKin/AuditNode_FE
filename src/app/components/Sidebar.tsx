@@ -8,7 +8,6 @@ const navGroups = [
     group: "Infrastructure",
     items: [
       { name: "Inventory", path: "/inventory", icon: Server },
-      { name: "Datacenters", path: "/datacenters", icon: Server },
       { name: "Topology Map", path: "/topology", icon: Network },
       { name: "Dependencies", path: "/dependency-manager", icon: Workflow },
     ],

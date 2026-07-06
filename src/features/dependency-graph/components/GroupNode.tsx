@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
-import { Handle, Position, NodeResizer, NodeProps } from '@xyflow/react';
-import { Briefcase, MoreVertical, FileSpreadsheet } from 'lucide-react';
+import { Handle, Position, NodeResizer, NodeProps, useReactFlow } from '@xyflow/react';
+import { Briefcase, MoreVertical, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export type GroupNodeData = {
   label: string;
@@ -10,6 +11,25 @@ export type GroupNodeData = {
 const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
   const [showMenu, setShowMenu] = useState(false);
   const label = data.label || "Infrastructure Cluster";
+  const { setNodes } = useReactFlow();
+
+  const handleDelete = () => {
+    setShowMenu(false);
+    toast.success("Đã xoá Group");
+    setNodes((nds) => {
+      const remaining = nds.filter((n) => n.id !== id);
+      return remaining.map((n) => {
+        if (n.parentId === id) {
+          return {
+            ...n,
+            parentId: undefined,
+            extent: undefined,
+          };
+        }
+        return n;
+      });
+    });
+  };
 
   return (
     <div className={`relative h-full w-full rounded-xl border-2 border-dashed transition-all duration-300 ${
@@ -64,6 +84,13 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
               >
                 <FileSpreadsheet size={14} className="text-success" />
                 Export Group Audit Matrix
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
+              >
+                <Trash2 size={14} />
+                Delete Group
               </button>
             </div>
           </>

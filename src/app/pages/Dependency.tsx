@@ -26,7 +26,7 @@ function DependencyManagerContent() {
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
     handleAutoMap,
-    isDrawingServer, setIsDrawingServer, drawBox,
+    drawingMode, setDrawingMode, drawBox,
     onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
     canDrawServer,
     onReconnect,
@@ -94,7 +94,14 @@ function DependencyManagerContent() {
             if (parsed.selectedDatacenter) setSelectedDatacenter(parsed.selectedDatacenter);
             
             if (parsed.nodes && parsed.nodes.length > 0) {
-              setNodes(parsed.nodes);
+              const safeNodes = parsed.nodes.map((n: any) => ({
+                ...n,
+                position: {
+                  x: typeof n.position?.x === 'number' && !isNaN(n.position.x) ? n.position.x : 0,
+                  y: typeof n.position?.y === 'number' && !isNaN(n.position.y) ? n.position.y : 0
+                }
+              }));
+              setNodes(safeNodes);
             }
             if (parsed.edges && parsed.edges.length > 0) {
               setEdges(parsed.edges);
@@ -174,7 +181,7 @@ function DependencyManagerContent() {
               onReconnect={onReconnect}
               onDrop={onDrop} onDragOver={onDragOver}
               onSelectionChange={onSelectionChange} isLoading={isLoading}
-              isDrawingServer={isDrawingServer}
+              drawingMode={drawingMode}
               drawBox={drawBox}
               onPaneMouseDown={onPaneMouseDown}
               onPaneMouseMove={onPaneMouseMove}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
@@ -7,6 +7,7 @@ import { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
+import { useDatacenters } from "../../hooks/queries/useDatacenters";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -50,6 +51,7 @@ export function ServerTable({
   selectedColumns = [],
   toggleColumn = () => { },
   toolbarEl = null,
+  onOpenCreateDc = () => { },
 }: {
   onEditClick: (id: string, type: "SERVER" | "APP") => void;
   onMigrateClick: (id: string) => void;
@@ -64,14 +66,35 @@ export function ServerTable({
   selectedColumns?: string[];
   toggleColumn?: (key: string) => void;
   toolbarEl?: HTMLDivElement | null;
+  onOpenCreateDc?: () => void;
 }) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
+  const [datacenterFilter, setDatacenterFilter] = useState("");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const { data: servers = [], isLoading } = useServers();
+  const { data: datacenters = [] } = useDatacenters();
+  
+  const LAST_DC_KEY = "auditnode_last_datacenter";
+
+  useEffect(() => {
+    if (datacenters && datacenters.length > 0 && !datacenterFilter) {
+      const savedDcId = localStorage.getItem(LAST_DC_KEY);
+      const isValid = savedDcId && datacenters.some(dc => dc.id === savedDcId);
+      const dcToSelect = isValid ? savedDcId : datacenters[0].id!;
+      setDatacenterFilter(dcToSelect);
+    }
+  }, [datacenters, datacenterFilter]);
+
+  const handleDatacenterChange = (newDcId: string) => {
+    setDatacenterFilter(newDcId);
+    localStorage.setItem(LAST_DC_KEY, newDcId);
+  };
+  
+  const datacenterOptions = datacenters.map(dc => ({ value: dc.id!, label: dc.name! }));
 
   const availableLabels = useMemo(() => {
     const labelsMap = new Map<string, LabelData>();
@@ -99,12 +122,17 @@ export function ServerTable({
         s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
 
+      const matchesDatacenter = !datacenterFilter || 
+        s.datacenterId === datacenterFilter ||
+        (s as any).datacenter?.id === datacenterFilter ||
+        (s as any).datacenter?.name === datacenterFilter;
+
       const matchesLabels = selectedLabelKeys.length === 0 || 
         selectedLabelKeys.some(val => (s as any).labels?.some((l: any) => l.value === val));
 
-      return matchesEnv && matchesSearch && matchesLabels;
+      return matchesEnv && matchesDatacenter && matchesSearch && matchesLabels;
     });
-  }, [servers, searchQuery, envFilter, filterId, selectedLabelKeys]);
+  }, [servers, searchQuery, envFilter, datacenterFilter, filterId, selectedLabelKeys]);
 
   const allIdsOnPage = useMemo(() => filteredServers.map(s => s.id!).filter(Boolean), [filteredServers]);
   const isAllSelected = allIdsOnPage.length > 0 && allIdsOnPage.every(id => selectedIds.includes(id));
@@ -134,6 +162,17 @@ export function ServerTable({
               inputClassName="py-1.5 h-[34px]"
             />
           </div>
+
+          <div className="h-5 w-px bg-border mx-1" />
+
+          <Dropdown
+            label="Select Datacenter"
+            value={datacenterFilter}
+            options={datacenterOptions}
+            onChange={handleDatacenterChange}
+            onAdd={onOpenCreateDc}
+            addLabel="Add Datacenter"
+          />
 
           <div className="h-5 w-px bg-border mx-1" />
 
@@ -248,6 +287,7 @@ export function ServerTable({
           </div>
         )}
       </div>
+
     </>
   );
 }
