@@ -257,47 +257,56 @@ export function useDependencyLogic() {
 
   // ── Draw to Create Logic ──────────────────────────────────────────
   const [drawingMode, setDrawingMode] = useState<'server' | 'groupBox' | 'boundaryFrame' | null>(null);
-  const [drawBox, setDrawBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+  const [drawBox, setDrawBox] = useState<{ 
+    screenStartX: number; screenStartY: number; screenCurrentX: number; screenCurrentY: number;
+    flowStartX: number; flowStartY: number; flowCurrentX: number; flowCurrentY: number;
+  } | null>(null);
 
   const onPaneMouseDown = useCallback((event: React.MouseEvent) => {
     if (!drawingMode) return;
     if (drawingMode === 'server' && !canDrawServer) return;
 
-    const position = reactFlowInstance.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+    const flowPos = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const screenX = event.clientX - rect.left;
+    const screenY = event.clientY - rect.top;
 
     setDrawBox({
-      startX: position.x,
-      startY: position.y,
-      currentX: position.x,
-      currentY: position.y,
+      screenStartX: screenX,
+      screenStartY: screenY,
+      screenCurrentX: screenX,
+      screenCurrentY: screenY,
+      flowStartX: flowPos.x,
+      flowStartY: flowPos.y,
+      flowCurrentX: flowPos.x,
+      flowCurrentY: flowPos.y,
     });
   }, [drawingMode, canDrawServer, reactFlowInstance]);
 
   const onPaneMouseMove = useCallback((event: React.MouseEvent) => {
     if (!drawBox) return;
 
-    const position = reactFlowInstance.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+    const flowPos = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const screenX = event.clientX - rect.left;
+    const screenY = event.clientY - rect.top;
 
     setDrawBox((prev) => prev ? ({
       ...prev,
-      currentX: position.x,
-      currentY: position.y,
+      screenCurrentX: screenX,
+      screenCurrentY: screenY,
+      flowCurrentX: flowPos.x,
+      flowCurrentY: flowPos.y,
     }) : null);
   }, [drawBox, reactFlowInstance]);
 
   const onPaneMouseUp = useCallback(async () => {
     if (!drawBox || !drawingMode) return;
 
-    const width = Math.abs(drawBox.currentX - drawBox.startX);
-    const height = Math.abs(drawBox.currentY - drawBox.startY);
-    const x = Math.min(drawBox.startX, drawBox.currentX);
-    const y = Math.min(drawBox.startY, drawBox.currentY);
+    const width = Math.abs(drawBox.flowCurrentX - drawBox.flowStartX);
+    const height = Math.abs(drawBox.flowCurrentY - drawBox.flowStartY);
+    const x = Math.min(drawBox.flowStartX, drawBox.flowCurrentX);
+    const y = Math.min(drawBox.flowStartY, drawBox.flowCurrentY);
 
     if (width > 50 && height > 50) {
       if (drawingMode === 'server' && unmappedServers.length > 0) {
@@ -338,8 +347,8 @@ export function useDependencyLogic() {
         try {
           const response = await apiClient.post("/api/v1/frames", {
             name: "New Group",
-            x,
-            y,
+            xPosition: x,
+            yPosition: y,
             width,
             height
           });

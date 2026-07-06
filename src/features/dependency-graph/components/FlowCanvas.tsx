@@ -47,7 +47,10 @@ interface FlowCanvasProps {
   onAddBoundaryFrame?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
   drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
-  drawBox?: { startX: number; startY: number; currentX: number; currentY: number } | null;
+  drawBox?: { 
+    screenStartX: number; screenStartY: number; screenCurrentX: number; screenCurrentY: number;
+    flowStartX: number; flowStartY: number; flowCurrentX: number; flowCurrentY: number;
+  } | null;
   onPaneMouseDown?: (event: React.MouseEvent) => void;
   onPaneMouseMove?: (event: React.MouseEvent) => void;
   onPaneMouseUp?: () => void;
@@ -88,12 +91,15 @@ export function FlowCanvas({
   }), []);
 
   return (
-    <div
-      className={`relative w-full h-full bg-background ${drawingMode ? "cursor-crosshair" : ""}`}
-      onMouseDown={onPaneMouseDown}
-      onMouseMove={onPaneMouseMove}
-      onMouseUp={onPaneMouseUp}
-    >
+    <div className={`relative w-full h-full bg-background ${drawingMode ? "cursor-crosshair" : ""}`}>
+      {drawingMode && (
+        <div 
+          className="absolute inset-0 z-40 cursor-crosshair"
+          onMouseDown={onPaneMouseDown}
+          onMouseMove={onPaneMouseMove}
+          onMouseUp={onPaneMouseUp}
+        />
+      )}
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 text-muted-foreground">
@@ -108,11 +114,11 @@ export function FlowCanvas({
         <div
           className="absolute z-50 border-2 border-primary bg-primary/10 pointer-events-none rounded-lg"
           style={{
-            left: Math.min(drawBox.startX, drawBox.currentX),
-            top: Math.min(drawBox.startY, drawBox.currentY),
-            width: Math.abs(drawBox.currentX - drawBox.startX),
-            height: Math.abs(drawBox.currentY - drawBox.startY),
-            transform: 'none', // Ensure it stays in flow space if wrapped, but here we need to handle coordinate mapping carefully if it's absolute to the viewport
+            left: Math.min(drawBox.screenStartX, drawBox.screenCurrentX),
+            top: Math.min(drawBox.screenStartY, drawBox.screenCurrentY),
+            width: Math.abs(drawBox.screenCurrentX - drawBox.screenStartX),
+            height: Math.abs(drawBox.screenCurrentY - drawBox.screenStartY),
+            transform: 'none',
           }}
         />
       )}
@@ -139,7 +145,7 @@ export function FlowCanvas({
         colorMode="dark"
         minZoom={0.2}
         maxZoom={2}
-        panOnDrag={true}
+        panOnDrag={!drawingMode}
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />

@@ -8,7 +8,7 @@ import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useInventoryContext } from "./InventoryLayout";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
-  const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl } = useInventoryContext();
+  const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl, onOpenCreateDc } = useInventoryContext();
   const [filterId, setFilterId] = useState<string | undefined>(undefined);
 
   // Edit State
@@ -69,6 +69,7 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
               selectedColumns={selectedColumns}
               toggleColumn={toggleColumn}
               toolbarEl={toolbarEl}
+              onOpenCreateDc={onOpenCreateDc}
             />
           : <AppTable
               onEditClick={handleEditClick}

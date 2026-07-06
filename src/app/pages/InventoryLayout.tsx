@@ -9,6 +9,7 @@ import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exp
 import apiClient from "../../shared/api/client";
 
 import { RegisterModal } from "../components/RegisterModal";
+import { CreateDatacenterModal } from "../components/CreateDatacenterModal";
 
 // Context type shared with child routes
 type InventoryOutletContext = {
@@ -20,6 +21,7 @@ type InventoryOutletContext = {
   selectedColumns: string[];
   toggleColumn: (key: string) => void;
   toolbarEl: HTMLDivElement | null;
+  onOpenCreateDc: () => void;
 };
 
 export function useInventoryContext() {
@@ -65,6 +67,7 @@ export function InventoryLayout() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isCreateDcOpen, setIsCreateDcOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("excel");
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -338,7 +341,8 @@ export function InventoryLayout() {
             isSelectionMode,
             selectedColumns,
             toggleColumn,
-            toolbarEl
+            toolbarEl,
+            onOpenCreateDc: () => setIsCreateDcOpen(true)
           }} />
         </div>
       </div>
@@ -356,6 +360,15 @@ export function InventoryLayout() {
           onClose={() => setIsRegisterModalOpen(false)}
           onSuccess={onRefresh}
           defaultMode={currentTab.type === "servers" ? "infra" : "app"}
+        />
+      )}
+      {isCreateDcOpen && (
+        <CreateDatacenterModal
+          onClose={() => setIsCreateDcOpen(false)}
+          onSuccess={() => {
+            setIsCreateDcOpen(false);
+            onRefresh();
+          }}
         />
       )}
     </div>

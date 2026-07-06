@@ -133,7 +133,10 @@ export function Dropdown({ label, value, options, onChange, onAdd, addLabel }: D
           {onAdd && addLabel && (
             <div className="border-t border-border mt-1">
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setIsOpen(false);
                   onAdd();
                 }}
