@@ -10,6 +10,8 @@ import {
   type InternalNode,
   type Edge,
   type Connection,
+  applyNodeChanges,
+  type NodeChange
 } from "@xyflow/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
@@ -23,7 +25,11 @@ const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
 
 export function useDependencyLogic() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const onNodesChange = useCallback(
+    (changes: NodeChange<Node>[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes]
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const { availableApps, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
@@ -162,11 +168,12 @@ export function useDependencyLogic() {
                 position: { x: relativeX, y: relativeY },
               };
             } else {
+              const internalDragNode = node as InternalNode;
               return {
                 ...n,
                 parentId: undefined,
                 extent: undefined,
-                position: (node as InternalNode).internals?.positionAbsolute || node.position,
+                position: internalDragNode.internals?.positionAbsolute || node.position,
               };
             }
           }
@@ -174,19 +181,7 @@ export function useDependencyLogic() {
         })
       );
 
-      try {
-        if (intersectingFrame) {
-          await apiClient.post(`/api/v1/frames/${intersectingFrame.id}/assign`, {
-            nodeId: node.id,
-          });
-        } else if (node.parentId) {
-          await apiClient.post("/api/v1/frames/unassign", {
-            nodeId: node.id,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to sync node boundary grouping", error);
-      }
+      // Eager saving removed - wait for user to click Save Network State
     },
     [nodes, setNodes]
   );
@@ -344,34 +339,19 @@ export function useDependencyLogic() {
         };
         setNodes((nds) => nds.concat(newNode));
       } else if (drawingMode === 'boundaryFrame') {
-        try {
-          const response = await apiClient.post("/api/v1/frames", {
-            name: "New Group",
-            xPosition: x,
-            yPosition: y,
-            width,
-            height
-          });
-          const newFrame = response.data;
-          const finalX = (typeof newFrame.x === 'number' && !isNaN(newFrame.x)) ? newFrame.x : x;
-          const finalY = (typeof newFrame.y === 'number' && !isNaN(newFrame.y)) ? newFrame.y : y;
-          
-          const newNode: Node = {
-            id: newFrame.id,
-            type: "boundaryFrame",
-            position: { x: finalX, y: finalY },
-            style: { width: newFrame.width || width, height: newFrame.height || height },
-            data: { name: newFrame.name || "New Group" },
-            zIndex: -1,
-            draggable: true,
-            dragHandle: '.custom-drag-handle',
-            selected: true,
-          };
-          setNodes((nds) => [...nds, newNode]);
-        } catch (error) {
-          console.error("Failed to spawn boundary frame", error);
-          toast.error("Failed to spawn boundary frame");
-        }
+        const id = `frame-${Date.now()}`;
+        const newNode: Node = {
+          id,
+          type: "boundaryFrame",
+          position: { x, y },
+          style: { width, height },
+          data: { name: "New Group" },
+          zIndex: -1,
+          draggable: true,
+          dragHandle: '.custom-drag-handle',
+          selected: true,
+        };
+        setNodes((nds) => [...nds, newNode]);
       }
     }
 
@@ -511,8 +491,9 @@ export function useDependencyLogic() {
       const cached = sessionStorage.getItem('dependencyGraphState');
       const hasDeepLink = new URLSearchParams(window.location.search).has("entityId");
       
-      // Safely determine if we should overwrite the local state with API data
-      if (!isFirstMount || isExplicitFetchRef.current || hasDeepLink || !cached) {
+      // Prevent background refetches from wiping local layout changes
+      const shouldOverwrite = isExplicitFetchRef.current || (isFirstMount && !cached) || (isFirstMount && hasDeepLink);
+      if (shouldOverwrite) {
         setNodes(result.nodes);
         setEdges(result.edges);
       }
@@ -694,7 +675,33 @@ export function useDependencyLogic() {
       isExplicitFetchRef.current = false;
     }, 500);
   }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter]);
+  const handleSaveNetworkState = useCallback(async () => {
+    try {
+      const frames = nodes
+        .filter(n => n.type === 'boundaryFrame')
+        .map(n => ({
+          id: n.id,
+          name: n.data.name,
+          x: n.position.x,
+          y: n.position.y,
+          width: n.style?.width,
+          height: n.style?.height
+        }));
 
+      const assignments = nodes
+        .filter(n => n.type !== 'boundaryFrame')
+        .map(n => ({
+          nodeId: n.id,
+          parentFrameId: n.parentId || null
+        }));
+
+      await apiClient.post("/api/v1/topology/sync", { frames, assignments });
+      toast.success("Network state saved successfully!");
+    } catch (error) {
+      console.error("Failed to save network state", error);
+      toast.error("Failed to save network state.");
+    }
+  }, [nodes]);
 
   return {
     nodes,
@@ -726,6 +733,7 @@ export function useDependencyLogic() {
     onPaneMouseDown,
     onPaneMouseMove,
     onPaneMouseUp,
+    handleSaveNetworkState,
     onReconnect,
     handleSync,
     isSyncing,

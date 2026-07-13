@@ -39,8 +39,17 @@ export function EditEntityDrawer({
   const { register, handleSubmit, reset, setValue, watch } = useForm();
 
   const handleAddLabel = () => {
-    if (!labelInput.key.trim() || !labelInput.value.trim()) return;
-    setLabels(prev => [...prev, { key: labelInput.key.trim(), value: labelInput.value.trim() }]);
+    const k = labelInput.key.trim();
+    const v = labelInput.value.trim();
+    if (!k || !v) return;
+    
+    // Check for duplicates
+    if (labels.some(l => l.key.toLowerCase() === k.toLowerCase() && l.value.toLowerCase() === v.toLowerCase())) {
+      toast.error("Label này đã tồn tại!");
+      return;
+    }
+
+    setLabels(prev => [...prev, { key: k, value: v }]);
     setLabelInput({ key: "", value: "" });
   };
 
@@ -211,6 +220,21 @@ export function EditEntityDrawer({
         ? `/api/v1/servers/${entityId}` 
         : `/api/v1/applications/${entityId}`;
       
+      // Combine already added labels with any pending typed label
+      const finalLabels = [...labels];
+      const pendingKey = labelInput.key.trim();
+      const pendingValue = labelInput.value.trim();
+      
+      if (pendingKey && pendingValue) {
+        // Prevent duplicate if user clicks save without clicking Add
+        const isDuplicate = finalLabels.some(
+          l => l.key.toLowerCase() === pendingKey.toLowerCase() && l.value.toLowerCase() === pendingValue.toLowerCase()
+        );
+        if (!isDuplicate) {
+          finalLabels.push({ key: pendingKey, value: pendingValue });
+        }
+      }
+
       // Aligned with Backend DTO properties
       const payload = entityType === "APP" 
         ? {
@@ -219,7 +243,7 @@ export function EditEntityDrawer({
             appName: formData.appName,
             ownerTeam: formData.ownerTeam,
             risk: formData.risk,
-            labels,
+            labels: finalLabels,
             
             // Network Mapping Payload - EXACT PROPERTY NAMES FOR BACKEND
             portMappingId: selectedMappingId, 
@@ -230,9 +254,10 @@ export function EditEntityDrawer({
             ...formData,
             // Ensure values not explicitly registered but set via setValue are included
             datacenterId: watch("datacenterId"),
-            labels,
+            labels: finalLabels,
           };
 
+      console.log('[DEBUG FE PAYLOAD]', payload);
       await apiClient.put(endpoint, payload);
       
       toast.success(`${entityType === "SERVER" ? "Server" : "Application"} updated successfully`);
@@ -240,6 +265,11 @@ export function EditEntityDrawer({
       // Full state invalidation across domain boundaries
       onApplicationsUpdated();
       onServersUpdated();
+      
+      // Auto-reload to immediately reflect custom labels on the filter dropdowns
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
       
       // Keep drawer open for continuous updates/corrections per UX mandate
       // onClose();
@@ -469,20 +499,20 @@ export function EditEntityDrawer({
               )}
 
               {/* Labels / Tags Section */}
-              <div className="flex flex-col gap-2 pt-4 border-t border-border mt-4">
-                <label className="text-xs font-bold text-foreground uppercase tracking-widest font-mono">Labels / Tags</label>
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 pt-5 border-t border-border mt-2">
+                <label className="block text-xs font-bold text-foreground uppercase mb-0 font-label">Labels / Tags</label>
+                <div className="flex items-center gap-3">
                   <input
                     type="text"
                     placeholder="Key (e.g. Env)"
-                    className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+                    className="flex-1 w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
                     value={labelInput.key}
                     onChange={(e) => setLabelInput({ ...labelInput, key: e.target.value })}
                   />
                   <input
                     type="text"
                     placeholder="Value (e.g. Prod)"
-                    className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+                    className="flex-1 w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
                     value={labelInput.value}
                     onChange={(e) => setLabelInput({ ...labelInput, value: e.target.value })}
                     onKeyDown={(e) => {
@@ -495,22 +525,22 @@ export function EditEntityDrawer({
                   <button
                     type="button"
                     onClick={handleAddLabel}
-                    className="bg-panel border border-border hover:bg-surface-hover text-foreground text-xs font-bold uppercase px-4 py-2.5 rounded-md transition-colors"
+                    className="bg-background border border-border hover:bg-surface-hover text-foreground text-sm font-medium px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
                   >
                     Add
                   </button>
                 </div>
                 {labels.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {labels.map((lbl, idx) => (
-                      <div key={idx} className="flex items-center bg-surface border border-border rounded-md px-2.5 py-1.5 gap-2">
-                        <span className="font-mono text-xs text-foreground uppercase">
+                      <div key={idx} className="flex items-center bg-background border border-border rounded-lg px-3 py-1.5 gap-2">
+                        <span className="font-label text-xs text-foreground uppercase tracking-wide">
                           <span className="text-muted-foreground">{lbl.key}:</span> {lbl.value}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleRemoveLabel(idx)}
-                          className="text-muted-foreground hover:text-foreground outline-none"
+                          className="text-muted-foreground hover:text-foreground outline-none transition-colors"
                         >
                           <X size={14} />
                         </button>
