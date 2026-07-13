@@ -112,20 +112,20 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   };
 
   const renderLabelsSection = (mode: "infra" | "app", currentLabels: { key: string; value: string }[]) => (
-    <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
-      <label className="text-xs font-bold text-foreground uppercase tracking-widest font-mono">Labels / Tags</label>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-3 pt-5 border-t border-border mt-1">
+      <label className={labelCls}>Labels / Tags</label>
+      <div className="flex items-center gap-3">
         <input
           type="text"
           placeholder="Key (e.g. Env)"
-          className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+          className={`flex-1 ${inputCls}`}
           value={labelInput.key}
           onChange={(e) => setLabelInput({ ...labelInput, key: e.target.value })}
         />
         <input
           type="text"
           placeholder="Value (e.g. Prod)"
-          className="flex-1 bg-surface border border-border text-foreground text-xs font-mono rounded-md p-2.5 outline-none focus:border-primary"
+          className={`flex-1 ${inputCls}`}
           value={labelInput.value}
           onChange={(e) => setLabelInput({ ...labelInput, value: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddLabel(mode))}
@@ -133,22 +133,22 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
         <button
           type="button"
           onClick={() => handleAddLabel(mode)}
-          className="bg-panel border border-border hover:bg-surface-hover text-foreground text-xs font-bold uppercase px-4 py-2.5 rounded-md transition-colors"
+          className="bg-background border border-border hover:bg-surface-hover text-foreground text-sm font-medium px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
         >
           Add
         </button>
       </div>
       {currentLabels.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="flex flex-wrap gap-2 mt-1">
           {currentLabels.map((lbl, idx) => (
-            <div key={idx} className="flex items-center bg-surface border border-border rounded-md px-2.5 py-1.5 gap-2">
-              <span className="font-mono text-xs text-foreground uppercase">
+            <div key={idx} className="flex items-center bg-background border border-border rounded-lg px-3 py-1.5 gap-2">
+              <span className="font-label text-xs text-foreground uppercase tracking-wide">
                 <span className="text-muted-foreground">{lbl.key}:</span> {lbl.value}
               </span>
               <button
                 type="button"
                 onClick={() => handleRemoveLabel(mode, idx)}
-                className="text-muted-foreground hover:text-foreground outline-none"
+                className="text-muted-foreground hover:text-foreground outline-none transition-colors"
               >
                 <X size={14} />
               </button>

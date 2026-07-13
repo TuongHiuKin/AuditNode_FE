@@ -31,6 +31,7 @@ function DependencyManagerContent() {
     canDrawServer,
     onReconnect,
     handleSync,
+    handleSaveNetworkState,
     isSyncing,
     exportGroupAuditMatrix,
     addGroupBox,
@@ -163,7 +164,7 @@ function DependencyManagerContent() {
           />
           <SubToolbar
             onAutoMap={handleAutoMap}
-            onSync={handleSync}
+            onSync={handleSaveNetworkState}
             isSyncing={isSyncing}
             onTogglePalette={() => setIsPaletteOpen(!isPaletteOpen)}
             isPaletteOpen={isPaletteOpen}
