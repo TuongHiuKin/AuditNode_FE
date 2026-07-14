@@ -37,6 +37,7 @@ export function useDependencyLogic() {
 
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -100,13 +101,13 @@ export function useDependencyLogic() {
     toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
   }, [nodes, edges]);
 
-  const checkEmptyFrame = useCallback((type: 'groupNode' | 'boundaryFrame') => {
+  const checkEmptyFrame = useCallback((type: 'groupNode') => {
     const hasEmpty = nodes.some(n => {
       if (n.type !== type) return false;
       return !nodes.some(child => child.parentId === n.id);
     });
     if (hasEmpty) {
-      toast.error(`Vui lòng sử dụng ${type === 'groupNode' ? 'Group Box' : 'Boundary Frame'} rỗng hiện tại trước khi tạo mới!`);
+      toast.error(`Vui lòng sử dụng Group Box rỗng hiện tại trước khi tạo mới!`);
       return true;
     }
     return false;
@@ -116,12 +117,6 @@ export function useDependencyLogic() {
     if (checkEmptyFrame('groupNode')) return;
     setDrawingMode('groupBox');
     toast.info("Vẽ một khung trên màn hình để tạo Group");
-  }, [checkEmptyFrame]);
-
-  const addBoundaryFrame = useCallback(async () => {
-    if (checkEmptyFrame('boundaryFrame')) return;
-    setDrawingMode('boundaryFrame');
-    toast.info("Vẽ một khung trên màn hình để tạo Boundary Frame");
   }, [checkEmptyFrame]);
 
   const onNodeDragStop = useCallback(
@@ -725,6 +720,8 @@ export function useDependencyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    selectedLabels,
+    setSelectedLabels,
     handleAutoMap,
     drawingMode,
     setDrawingMode,

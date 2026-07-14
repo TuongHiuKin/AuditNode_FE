@@ -17,7 +17,6 @@ import ZoneNode from "./ZoneNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
-import { BoundaryFrameNode } from "./BoundaryFrameNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -44,9 +43,8 @@ interface FlowCanvasProps {
   isLoading: boolean;
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
-  onAddBoundaryFrame?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
-  drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
+  drawingMode?: 'server' | 'groupBox' | null;
   drawBox?: { 
     screenStartX: number; screenStartY: number; screenCurrentX: number; screenCurrentY: number;
     flowStartX: number; flowStartY: number; flowCurrentX: number; flowCurrentY: number;
@@ -69,7 +67,6 @@ export function FlowCanvas({
   isLoading,
   onQuickAdd,
   onAddGroup,
-  onAddBoundaryFrame,
   onNodeDragStop,
   drawingMode,
   drawBox,
@@ -82,7 +79,6 @@ export function FlowCanvas({
     serverNode: ServerGroupNode,
     groupNode: GroupNode as ComponentType<any>,
     zoneNode: ZoneNode as ComponentType<any>,
-    boundaryFrame: BoundaryFrameNode,
   }), []);
 
   const edgeTypes = useMemo(() => ({
@@ -149,7 +145,7 @@ export function FlowCanvas({
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} onAddBoundaryFrame={onAddBoundaryFrame} />
+        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "var(--color-surface)" : "var(--color-primary)")}
           maskColor="var(--color-background)"

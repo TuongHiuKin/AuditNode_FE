@@ -15,6 +15,7 @@ function TopologyContent() {
     onSelectionChange, onNodeDoubleClick, refetch, isLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
+    selectedLabels, setSelectedLabels,
     appSearchQuery, setAppSearchQuery,
   } = useTopologyLogic();
 
@@ -70,6 +71,8 @@ function TopologyContent() {
             setSelectedEnv={setSelectedEnv}
             selectedDatacenter={selectedDatacenter}
             setSelectedDatacenter={setSelectedDatacenter}
+            selectedLabels={selectedLabels}
+            setSelectedLabels={setSelectedLabels}
             query={appSearchQuery}
             onQueryChange={setAppSearchQuery}
             onSelectResult={handleSelectResult}

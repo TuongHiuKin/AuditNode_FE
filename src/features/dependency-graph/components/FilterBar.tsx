@@ -8,6 +8,8 @@ interface FilterBarProps {
   setSelectedEnv: (env: string) => void;
   selectedDatacenter: string;
   setSelectedDatacenter: (dc: string) => void;
+  selectedLabels: string[];
+  setSelectedLabels: (labels: string[]) => void;
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
@@ -24,6 +26,8 @@ export function FilterBar({
   setSelectedEnv,
   selectedDatacenter,
   setSelectedDatacenter,
+  selectedLabels = [],
+  setSelectedLabels,
   query = "",
   onQueryChange,
   onSelectResult,
@@ -61,6 +65,18 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
+        <div className="flex flex-col ml-2">
+          <input
+            type="text"
+            placeholder="Labels (comma separated)"
+            className="h-[34px] bg-background border border-border rounded-md px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            value={selectedLabels.join(', ')}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedLabels(val ? val.split(',').map(s => s.trim()).filter(Boolean) : []);
+            }}
+          />
+        </div>
       </div>
 
       <div className="h-5 w-px bg-border mx-1" />

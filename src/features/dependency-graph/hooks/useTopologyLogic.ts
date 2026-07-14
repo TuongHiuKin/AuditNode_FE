@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLayoutedElements } from "../utils/layout";
 import {
   useNodesState,
   useEdgesState,
@@ -18,6 +19,7 @@ export function useTopologyLogic() {
 
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [appSearchQuery, setAppSearchQuery] = useState("");
 
   const reactFlowInstance = useReactFlow();
@@ -137,82 +139,117 @@ export function useTopologyLogic() {
     return () => window.removeEventListener("topology-app-dblclick", handleAppDblClick);
   }, []);
 
-  // ── Auto-Layout Logic ──────────────────────────────────────────────────
-  const performLayout = useCallback((currentNodes: Node[]) => {
-    const servers = currentNodes.filter(n => n.type === "topologyServerNode");
+  // ── Fetch External Ghost Nodes ─────────────────────────────────────────
+  useEffect(() => {
+    const handleLoadExternal = async (e: Event) => {
+      const { serverId } = (e as CustomEvent).detail;
+      try {
+        const response = await apiClient.get<Schemas["ServerNodeDto"][]>(
+          `/api/v1/topology/nodes/${serverId}/external-dependencies`, {
+            params: { labels: selectedLabels.length > 0 ? selectedLabels : undefined }
+          }
+        );
+        const externalServers = response.data;
+        
+        const currentNodes = reactFlowInstance.getNodes();
+        const newNodes = [...currentNodes];
+        
+        externalServers.forEach((srv: any, idx: number) => {
+          const ghostId = `ghost-${srv.id}`;
+          if (!newNodes.some(n => n.id === ghostId)) {
+            const apps = (srv.applications || []).map((app: any, appIdx: number) => ({
+              id: app.id || `app-${srv.id}-${appIdx}`,
+              appName: app.name,
+              portNumber: app.port,
+              protocol: app.protocol
+            }));
 
-    const GRID_GAP = 60;
-    const COLUMNS = 3;
-    let currentRowHeight = 0;
-    let currentX = 0;
-    let currentY = 0;
-
-    const layoutedServers = servers.map((srv, index) => {
-      const data = srv.data as any;
-      const width = data.isExpanded ? (data.width || 400) : 280;
-      const height = data.isExpanded ? (data.height || 200) : 80;
-
-      if (index > 0 && index % COLUMNS === 0) {
-        currentX = 0;
-        currentY += currentRowHeight + GRID_GAP;
-        currentRowHeight = 0;
+            newNodes.push({
+              id: ghostId,
+              type: "topologyServerNode",
+              position: { x: 0, y: 0 },
+              data: {
+                server: {
+                  hostname: srv.hostname,
+                  ipAddress: srv.ipAddress,
+                  environment: srv.environment || "PROD"
+                },
+                apps,
+                appCount: apps.length,
+                isExpanded: false,
+                width: 280,
+                height: 80,
+                isGhost: true
+              }
+            });
+          }
+        });
+        
+        const { nodes: layouted } = await performLayout(newNodes, edges);
+        setNodes(layouted);
+        
+      } catch (err) {
+        console.error("Failed to load external dependencies", err);
       }
+    };
 
-      const position = { x: currentX, y: currentY };
+    window.addEventListener("topology-load-external", handleLoadExternal);
+    return () => window.removeEventListener("topology-load-external", handleLoadExternal);
+  }, [selectedLabels, edges, setNodes]);
 
-      currentX += width + GRID_GAP;
-      currentRowHeight = Math.max(currentRowHeight, height);
-
-      return {
-        ...srv,
-        position,
-        data: { ...data, width, height }
-      };
-    });
-
-    return layoutedServers;
-  }, []);
+  // ── Auto-Layout Logic ──────────────────────────────────────────────────
+  const performLayout = async (currentNodes: Node[], currentEdges: Edge[]) => {
+    return await getLayoutedElements(currentNodes, currentEdges, 'TB');
+  };
 
   // Re-layout when nodes change (expansion toggle)
   useEffect(() => {
     if (nodes.length === 0) return;
-
-    const layouted = performLayout(nodes);
-    const needsUpdate = layouted.some((node, i) =>
-      node.position.x !== nodes[i]?.position.x ||
-      node.position.y !== nodes[i]?.position.y ||
-      node.hidden !== nodes[i]?.hidden
-    );
-
-    if (needsUpdate) {
-      setNodes(layouted);
-    }
-  }, [nodes, performLayout, setNodes]);
+    
+    // Only re-layout if a node's expanded state changed (this would need more logic to avoid infinite loops)
+    // For now, we skip auto re-layout on expand to keep it simple, or trigger it manually.
+  }, []);
 
   // ── Fetch graph data ──────────────────────────────────────────────────────
   const { isLoading: isGraphLoading, refetch } = useQuery({
-    queryKey: ["topology-inventory-map", selectedEnv, selectedDatacenter],
-    staleTime: 0, // Ensure data is considered stale immediately for fresh fetches
+    queryKey: ["topology-inventory-map", selectedEnv, selectedDatacenter, selectedLabels],
+    staleTime: 0,
     queryFn: async () => {
       try {
+        // Send labels[] param in query (using qs array format usually, but axios does this automatically with URLSearchParams)
         const response = await apiClient.get<Schemas["DependencyMapDto"]>(
           "/api/v1/topology/map",
           {
             params: {
               environment: selectedEnv === "All" ? undefined : selectedEnv,
               datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
+              labels: selectedLabels.length > 0 ? selectedLabels : undefined,
             },
           }
         );
         const data = response.data;
 
         const mappedNodes: Node[] = [];
-        const mappedEdges: Edge[] = []; // No edges for Topology view
+        const mappedEdges: Edge[] = [];
+
+        // 1. Create Group Nodes for selected labels
+        if (selectedLabels.length > 0) {
+          selectedLabels.forEach(label => {
+            mappedNodes.push({
+              id: `group-${label}`,
+              type: 'groupNode',
+              position: { x: 0, y: 0 },
+              data: { label: `Label: ${label}` },
+              style: {
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                border: '1px dashed rgba(59, 130, 246, 0.5)',
+                borderRadius: '8px'
+              }
+            });
+          });
+        }
 
         data.servers?.forEach((srv: any, srvIdx: number) => {
-          const serverNodeId = srv.id || `srv-${srvIdx}`;
-
-          // Map apps data to embed directly in server node
           const apps = (srv.applications || []).map((app: any, appIdx: number) => ({
             id: app.id || `app-${srvIdx}-${appIdx}`,
             appName: app.name,
@@ -225,31 +262,54 @@ export function useTopologyLogic() {
           const appCount = apps.length;
           const rows = Math.ceil(appCount / 2);
           const expandedHeight = Math.max(200, 100 + rows * 72 + 16);
+          const srvLabels = srv.labels || [];
 
-          mappedNodes.push({
-            id: serverNodeId,
-            type: "topologyServerNode",
-            position: { x: 0, y: 0 },
-            data: {
-              server: {
-                hostname: srv.hostname,
-                ipAddress: srv.ipAddress,
-                osType: srv.osType,
-                environment: srv.environment || "PROD"
-              },
-              apps,        // Embed apps data directly
-              appCount,
-              isExpanded: false,
-              width: 280,
-              height: 80
+          const baseNodeData = {
+            server: {
+              hostname: srv.hostname,
+              ipAddress: srv.ipAddress,
+              osType: srv.osType,
+              environment: srv.environment || "PROD"
             },
-          });
+            apps,
+            appCount,
+            isExpanded: false,
+            width: 280,
+            height: 80
+          };
+
+          if (selectedLabels.length > 0) {
+            // Find which selected labels this server has
+            const matchingLabels = selectedLabels.filter(sl => srvLabels.includes(sl));
+            
+            // Duplicate node for each matching label
+            matchingLabels.forEach(label => {
+              mappedNodes.push({
+                id: `${srv.id}-${label}`,
+                type: "topologyServerNode",
+                parentId: `group-${label}`,
+                position: { x: 0, y: 0 },
+                data: {
+                  ...baseNodeData,
+                  isDuplicated: matchingLabels.length > 1,
+                  originalId: srv.id
+                },
+              });
+            });
+          } else {
+            mappedNodes.push({
+              id: srv.id,
+              type: "topologyServerNode",
+              position: { x: 0, y: 0 },
+              data: baseNodeData,
+            });
+          }
         });
 
-        const layoutedNodes = performLayout(mappedNodes);
+        const { nodes: layoutedNodes, edges: layoutedEdges } = await performLayout(mappedNodes, mappedEdges);
         setNodes(layoutedNodes);
-        setEdges(mappedEdges);
-        return { nodes: layoutedNodes, edges: mappedEdges };
+        setEdges(layoutedEdges);
+        return { nodes: layoutedNodes, edges: layoutedEdges };
       } catch (err) {
         console.error("Failed to fetch topology inventory", err);
         throw err;
@@ -288,6 +348,8 @@ export function useTopologyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    selectedLabels,
+    setSelectedLabels,
     appSearchQuery,
     setAppSearchQuery,
   };
