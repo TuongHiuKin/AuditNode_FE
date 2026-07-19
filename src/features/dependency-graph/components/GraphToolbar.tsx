@@ -5,9 +5,10 @@ import { Button } from "../../../shared/ui/Button";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
+  onAddGroup?: () => void;
 }
 
-export function GraphToolbar({ onQuickAdd }: GraphToolbarProps) {
+export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -41,15 +42,23 @@ export function GraphToolbar({ onQuickAdd }: GraphToolbarProps) {
         >
           <Camera size={18} />
         </Button>
-        </Button>
         <Button
           onClick={onQuickAdd}
           title="Quick Add Infrastructure"
           variant="ghost"
           size="icon"
-          className="rounded-none"
+          className="border-b border-border rounded-none"
         >
           <Plus size={18} />
+        </Button>
+        <Button
+          onClick={onAddGroup}
+          title="Draw Infrastructure Group"
+          variant="ghost"
+          size="icon"
+          className="rounded-none"
+        >
+          <Briefcase size={18} />
         </Button>
       </div>
 

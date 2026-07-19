@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BulkImportModal } from "../app/components/BulkImportModal";
 import apiClient from "../shared/api/client";
+import { API_ENDPOINTS } from "../config/endpoints";
 import * as XLSX from "xlsx";
 import React from "react";
 
@@ -74,10 +75,7 @@ describe("BulkImportModal - Direct File Upload", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: {} } as never);
   });
 
   it("renders the initial upload state with correct headings", () => {
@@ -87,7 +85,7 @@ describe("BulkImportModal - Direct File Upload", () => {
     expect(screen.getByText("Select Excel File")).toBeDefined();
   });
 
-  it("displays review UI after file drop and calls fetch on Fast Import", async () => {
+  it("displays review UI after file drop and submits valid rows through the API client", async () => {
     render(<BulkImportModal onClose={mockOnClose} onSuccess={mockOnSuccess} />);
     
     const file = new File(["dummy"], "data.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -105,12 +103,9 @@ describe("BulkImportModal - Direct File Upload", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://localhost:7126/api/v1/inventory/bulk-import",
-        expect.objectContaining({
-          method: "POST",
-          body: expect.any(FormData)
-        })
+      expect(apiClient.post).toHaveBeenCalledWith(
+        API_ENDPOINTS.INVENTORY.BULK_IMPORT,
+        expect.any(FormData)
       );
       expect(mockOnSuccess).toHaveBeenCalled();
       expect(mockOnClose).toHaveBeenCalled();

@@ -1,17 +1,18 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { paths } from "./v1-contract";
+import { RUNTIME_CONFIG } from "../../config/runtime";
 
 /**
- * Base URL for the API.
- * Defaults to localhost:7126 as per requirement.
+ * Base URL for the API. Configure through VITE_API_BASE_URL.
+ * An undefined value keeps Axios relative to the current origin.
  */
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
+export const API_BASE_URL = RUNTIME_CONFIG.apiBaseUrl;
 
 /**
  * Centralized Axios instance with type safety and interceptors.
  */
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

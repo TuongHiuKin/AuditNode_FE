@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Trash2, X, Loader2, Info, ShieldAlert, Box } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 interface DeleteConfirmationModalProps {
   entityId: string | null;
@@ -54,7 +55,7 @@ export function DeleteConfirmationModal({
     if (!entityId) return;
     setLoadingImpact(true);
     try {
-      const response = await apiClient.get<any>(`/api/v1/infrastructure/apps/${entityId}/dependencies-count`);
+      const response = await apiClient.get<any>(API_ENDPOINTS.APPLICATIONS.DEPENDENCIES_COUNT(entityId));
       const rawData = response.data ?? response;
       
       let parsedCount = 0;
@@ -79,7 +80,7 @@ export function DeleteConfirmationModal({
     if (!entityId) return;
     setLoadingImpact(true);
     try {
-      const response = await apiClient.get<DeployedApp[]>(`/api/v1/infrastructure/servers/${entityId}/deployed-apps`);
+      const response = await apiClient.get<DeployedApp[]>(API_ENDPOINTS.SERVERS.DEPLOYED_APPS(entityId));
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setDeployedApps(data);
@@ -96,9 +97,9 @@ export function DeleteConfirmationModal({
     
     setPurging(true);
     try {
-      const endpoint = entityType === "APP" 
-        ? `/api/v1/infrastructure/apps/${entityId}/purge`
-        : `/api/v1/infrastructure/servers/${entityId}/purge`;
+      const endpoint = entityType === "APP"
+        ? API_ENDPOINTS.APPLICATIONS.PURGE(entityId)
+        : API_ENDPOINTS.SERVERS.PURGE(entityId);
         
       await apiClient.delete(endpoint);
       toast.success(`${entityType === "APP" ? "Application" : "Server"} purged successfully`);

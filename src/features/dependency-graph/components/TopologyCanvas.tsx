@@ -10,6 +10,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { TopologyServerNode } from "./TopologyServerNode";
+import { TopologyLabelGroupNode } from "./TopologyLabelGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
@@ -39,6 +40,7 @@ export function TopologyCanvas({
 }: TopologyCanvasProps) {
   const nodeTypes: NodeTypes = useMemo(() => ({
     topologyServerNode: TopologyServerNode,
+    topologyLabelGroupNode: TopologyLabelGroupNode,
   }), []);
 
   return (
@@ -72,7 +74,11 @@ export function TopologyCanvas({
         <GraphToolbar />
         <MiniMap
           position="bottom-right"
-          nodeColor={(n) => (n.type === "topologyServerNode" ? "var(--color-surface)" : "var(--color-primary)")}
+          nodeColor={(n) =>
+            n.type === "topologyServerNode"
+              ? "var(--color-surface)"
+              : "var(--color-secondary)"
+          }
           maskColor="var(--color-background)"
           className="bg-surface border border-border rounded-lg overflow-hidden"
         />

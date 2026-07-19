@@ -47,12 +47,12 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
     window.dispatchEvent(event);
   };
 
-  const isProd = data.server.environment?.toUpperCase() === "PROD";
+  const normalizedEnvironment = data.server.environment?.toUpperCase();
+  const isProd = normalizedEnvironment === "PROD" || normalizedEnvironment === "PRODUCTION";
   
   const isGhost = (data as any).isGhost;
   const isDuplicated = (data as any).isDuplicated;
-  const originalId = (data as any).originalId;
-  const hasExternal = (data as any).hasExternal; // just a mock trigger for now
+  const entityId = data.entityId;
   
   const ghostOpacity = isGhost ? (isHoveredGhost ? "opacity-100" : "opacity-50") : "";
   const ghostStyle = isGhost ? "border-dashed border-2" : "";
@@ -67,19 +67,19 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
     if (!isDuplicated) return;
     const handleHover = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail.originalId === originalId && detail.nodeId !== id) {
+      if (detail.entityId === entityId && detail.nodeId !== id) {
         setIsHighlighted(detail.isEntering);
       }
     };
     window.addEventListener("topology-duplicate-hover", handleHover);
     return () => window.removeEventListener("topology-duplicate-hover", handleHover);
-  }, [isDuplicated, originalId, id]);
+  }, [isDuplicated, entityId, id]);
 
   const onMouseEnter = () => {
     if (isGhost) setIsHoveredGhost(true);
     if (isDuplicated) {
       window.dispatchEvent(new CustomEvent("topology-duplicate-hover", {
-        detail: { originalId, nodeId: id, isEntering: true }
+        detail: { entityId, nodeId: id, isEntering: true }
       }));
     }
   };
@@ -88,7 +88,7 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
     if (isGhost) setIsHoveredGhost(false);
     if (isDuplicated) {
       window.dispatchEvent(new CustomEvent("topology-duplicate-hover", {
-        detail: { originalId, nodeId: id, isEntering: false }
+        detail: { entityId, nodeId: id, isEntering: false }
       }));
     }
   };
@@ -96,7 +96,7 @@ export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeDat
   const handleExternalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.dispatchEvent(new CustomEvent("topology-load-external", {
-      detail: { serverId: originalId || id }
+      detail: { serverId: entityId }
     }));
   };
 

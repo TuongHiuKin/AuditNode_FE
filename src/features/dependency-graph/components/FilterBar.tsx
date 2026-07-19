@@ -1,15 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
+import { API_ENDPOINTS } from "../../../config/endpoints";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
+import { TopologyLabelPicker } from "./TopologyLabelPicker";
+import type { TopologyLabelData } from "../topology-types";
 
 interface FilterBarProps {
   selectedEnv: string;
   setSelectedEnv: (env: string) => void;
   selectedDatacenter: string;
   setSelectedDatacenter: (dc: string) => void;
-  selectedLabels: string[];
-  setSelectedLabels: (labels: string[]) => void;
+  selectedLabels?: TopologyLabelData[];
+  setSelectedLabels?: (labels: TopologyLabelData[]) => void;
+  showLabelPicker?: boolean;
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
@@ -27,7 +31,8 @@ export function FilterBar({
   selectedDatacenter,
   setSelectedDatacenter,
   selectedLabels = [],
-  setSelectedLabels,
+  setSelectedLabels = () => {},
+  showLabelPicker = true,
   query = "",
   onQueryChange,
   onSelectResult,
@@ -36,7 +41,7 @@ export function FilterBar({
   const { data: datacenterData = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>(API_ENDPOINTS.DATACENTERS.BASE);
       const rawResponse = response as any;
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },
@@ -65,18 +70,14 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
-        <div className="flex flex-col ml-2">
-          <input
-            type="text"
-            placeholder="Labels (comma separated)"
-            className="h-[34px] bg-background border border-border rounded-md px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            value={selectedLabels.join(', ')}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSelectedLabels(val ? val.split(',').map(s => s.trim()).filter(Boolean) : []);
-            }}
-          />
-        </div>
+        {showLabelPicker && (
+          <div className="ml-2">
+            <TopologyLabelPicker
+              selectedLabels={selectedLabels}
+              onChange={setSelectedLabels}
+            />
+          </div>
+        )}
       </div>
 
       <div className="h-5 w-px bg-border mx-1" />

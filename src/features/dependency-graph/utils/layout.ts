@@ -28,8 +28,12 @@ export const getLayoutedElements = async (nodes: Node[], edges: Edge[], dir = 'T
   };
 
   // Extract groups and nest children for ELK
-  const groups = graph.children.filter((n: any) => n.type === 'groupNode');
-  const nonGroups = graph.children.filter((n: any) => n.type !== 'groupNode');
+  const isGroupNode = (node: any) =>
+    node.type === 'groupNode' ||
+    node.type === 'topologyLabelGroupNode' ||
+    node.type === 'dependencyLabelGroupNode';
+  const groups = graph.children.filter(isGroupNode);
+  const nonGroups = graph.children.filter((node: any) => !isGroupNode(node));
   
   if (groups.length > 0) {
     groups.forEach((g: any) => {

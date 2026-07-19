@@ -53,6 +53,7 @@ describe("useDependencyLogic", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     queryClient = createTestQueryClient();
   });
 
@@ -87,7 +88,7 @@ describe("useDependencyLogic", () => {
       connections: [
         {
           sourceAppId: "app-1",
-          targetAppId: "app-2",
+          targetAppId: "app-1",
         },
       ],
     };
@@ -168,7 +169,127 @@ describe("useDependencyLogic", () => {
 
     expect(result.current.selectedEnv).toBe("Production");
     expect(invalidateSpy).toHaveBeenCalledWith({ 
-      queryKey: ["dependency-map", "Production", "All"] 
+      queryKey: ["dependency-map", "Production", "All", []]
+    });
+  });
+
+  it("renders a derived frame and preserves its manually moved position", async () => {
+    const platformLabel = {
+      id: "label-platform",
+      key: "team",
+      value: "platform",
+      colorHex: "#ff4d7e",
+    };
+    const mockDependencyMap = {
+      servers: [
+        {
+          id: "srv-1",
+          hostname: "server-01",
+          ipAddress: "10.0.0.1",
+          labels: [platformLabel],
+          applications: [
+            {
+              id: "app-1",
+              name: "App 1",
+              port: 80,
+              protocol: "HTTP",
+              labels: [],
+            },
+          ],
+        },
+      ],
+      connections: [],
+    };
+
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") {
+        return Promise.resolve({ data: mockDependencyMap });
+      }
+      if (url === "/api/v1/topology/status") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/v1/frames") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.nodes.some((node) => node.id === "srv-1")).toBe(true);
+    });
+
+    act(() => {
+      result.current.setSelectedLabels([platformLabel]);
+    });
+
+    await waitFor(() => {
+      expect(
+        result.current.nodes.some(
+          (node) => node.type === "dependencyLabelGroupNode",
+        ),
+      ).toBe(true);
+    });
+
+    const mapCalls = vi.mocked(apiClient.get).mock.calls.filter(
+      ([url]) => url === "/api/v1/topology/map",
+    );
+    expect(mapCalls.at(-1)?.[1]).toMatchObject({
+      params: { labelIds: ["label-platform"] },
+      paramsSerializer: { indexes: null },
+    });
+
+    const group = result.current.nodes.find(
+      (node) => node.type === "dependencyLabelGroupNode",
+    )!;
+    const movedPosition = { x: 420, y: 260 };
+
+    act(() => {
+      result.current.onNodesChange([
+        {
+          id: group.id,
+          type: "position",
+          position: movedPosition,
+          dragging: false,
+        },
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(
+        result.current.nodes.find((node) => node.id === group.id)?.position,
+      ).toEqual(movedPosition);
+    });
+
+    await act(async () => {
+      await result.current.onNodeDragStop(
+        {} as React.MouseEvent,
+        {
+          ...group,
+          position: movedPosition,
+        },
+      );
+    });
+
+    act(() => {
+      result.current.setSelectedLabels([]);
+    });
+    await waitFor(() => {
+      expect(
+        result.current.nodes.some(
+          (node) => node.type === "dependencyLabelGroupNode",
+        ),
+      ).toBe(false);
+    });
+
+    act(() => {
+      result.current.setSelectedLabels([platformLabel]);
+    });
+    await waitFor(() => {
+      expect(
+        result.current.nodes.find((node) => node.id === group.id)?.position,
+      ).toEqual(movedPosition);
     });
   });
 

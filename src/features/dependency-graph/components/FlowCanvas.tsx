@@ -14,6 +14,8 @@ import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
 import GroupNode from "./GroupNode";
 import ZoneNode from "./ZoneNode";
+import { BoundaryFrameNode } from "./BoundaryFrameNode";
+import { DependencyLabelGroupNode } from "./DependencyLabelGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
@@ -44,7 +46,7 @@ interface FlowCanvasProps {
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
-  drawingMode?: 'server' | 'groupBox' | null;
+  drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
   drawBox?: { 
     screenStartX: number; screenStartY: number; screenCurrentX: number; screenCurrentY: number;
     flowStartX: number; flowStartY: number; flowCurrentX: number; flowCurrentY: number;
@@ -79,6 +81,8 @@ export function FlowCanvas({
     serverNode: ServerGroupNode,
     groupNode: GroupNode as ComponentType<any>,
     zoneNode: ZoneNode as ComponentType<any>,
+    boundaryFrame: BoundaryFrameNode as ComponentType<any>,
+    dependencyLabelGroupNode: DependencyLabelGroupNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({

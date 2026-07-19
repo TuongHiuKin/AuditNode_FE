@@ -7,6 +7,7 @@ import { useHeader } from "../hooks/useHeader";
 import { BulkImportModal } from "../components/BulkImportModal";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 import { RegisterModal } from "../components/RegisterModal";
 import { CreateDatacenterModal } from "../components/CreateDatacenterModal";
@@ -158,8 +159,10 @@ export function InventoryLayout() {
     setIsExporting(true);
     try {
       // Step 3: API Fetch (Bulk fetch with specific IDs and /export endpoint)
-      const baseEndpoint = currentTab.type === "servers" ? "/api/v1/servers" : "/api/v1/applications";
-      const response = await apiClient.get(`${baseEndpoint}/export`, {
+      const endpoint = currentTab.type === "servers"
+        ? API_ENDPOINTS.SERVERS.EXPORT
+        : API_ENDPOINTS.APPLICATIONS.EXPORT;
+      const response = await apiClient.get(endpoint, {
         params: { ids: selectedIds.join(',') }
       });
       

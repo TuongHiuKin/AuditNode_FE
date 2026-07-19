@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function CreateDatacenterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -22,7 +23,7 @@ export function CreateDatacenterModal({ onClose, onSuccess }: { onClose: () => v
     setError(null);
 
     try {
-      await apiClient.post("/api/v1/datacenters", { name: name.trim(), location: location.trim() });
+      await apiClient.post(API_ENDPOINTS.DATACENTERS.BASE, { name: name.trim(), location: location.trim() });
       toast.success("Datacenter created successfully");
       queryClient.invalidateQueries({ queryKey: ["datacenters"] });
       onSuccess();

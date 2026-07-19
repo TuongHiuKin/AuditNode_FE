@@ -5,6 +5,7 @@ import { Server, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucid
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { LabelBadge, LabelData } from "./LabelBadge";
@@ -66,7 +67,7 @@ export function AppTable({
   const { data: apps = [], isLoading } = useQuery({
     queryKey: ["applications"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/v1/applications");
+      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>(API_ENDPOINTS.APPLICATIONS.BASE);
       const rawResponse = response as any;
       // Safely destructure: handle both direct array and wrapped response { data: [...] }
       const rawData = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
@@ -101,8 +102,7 @@ export function AppTable({
       const matchesSearch = !searchQuery ||
         app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (app as any).ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.risk?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesLabels = selectedLabelKeys.length === 0 || 
@@ -307,7 +307,7 @@ function AppRowItem({
           <div>{app.appName}</div>
           {app.description && <div className="text-[10px] text-muted-foreground/60 font-normal mt-0.5">{app.description}</div>}
         </td>
-        <td className="px-6 py-4 text-sm text-muted-foreground/80">{(app as any).ownerTeam || app.ownerId}</td>
+        <td className="px-6 py-4 text-sm text-muted-foreground/80">{app.ownerTeam || "—"}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>

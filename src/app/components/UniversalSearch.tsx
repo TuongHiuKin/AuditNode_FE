@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import apiClient from '../../shared/api/client';
+import { API_ENDPOINTS } from '../../config/endpoints';
 import { Badge } from './ui/badge';
 import { cn } from './ui/utils';
 
@@ -60,7 +61,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await apiClient.get<SearchResult[]>(`/api/v1/search`, {
+      const response = await apiClient.get<SearchResult[]>(API_ENDPOINTS.SEARCH.BASE, {
         params: { keyword: searchKeyword },
       });
       setResults(response.data);

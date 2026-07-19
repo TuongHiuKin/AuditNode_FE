@@ -6,6 +6,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
 
+const reactFlowMocks = vi.hoisted(() => ({
+  fitView: vi.fn(),
+  getNodes: vi.fn(() => []),
+}));
+
 vi.mock("../shared/api/client", () => ({
   default: { get: vi.fn() },
 }));
@@ -15,10 +20,10 @@ vi.mock("@xyflow/react", async () => {
   return {
     ...actual,
     useReactFlow: () => ({
-      fitView: vi.fn(),
+      fitView: reactFlowMocks.fitView,
       screenToFlowPosition: vi.fn(({ x, y }) => ({ x, y })),
       setCenter: vi.fn(),
-      getNodes: vi.fn(() => []),
+      getNodes: reactFlowMocks.getNodes,
     }),
   };
 });
@@ -41,7 +46,7 @@ describe("useTopologyLogic (Isolated)", () => {
     </QueryClientProvider>
   );
 
-  it("calculates symmetric grid positions for servers", async () => {
+  it("assigns finite, distinct positions to servers", async () => {
     const mockData = {
       servers: [
         { id: "s1", hostname: "h1", ipAddress: "i1", applications: [] },
@@ -61,8 +66,11 @@ describe("useTopologyLogic (Isolated)", () => {
     const srv1 = result.current.nodes.find(n => n.id === "s1");
     const srv2 = result.current.nodes.find(n => n.id === "s2");
 
-    expect(srv1?.position.x).toBe(0);
-    expect(srv2?.position.x).toBe(280 + 60); // width + gap
+    expect(srv1?.position.x).toEqual(expect.any(Number));
+    expect(srv1?.position.y).toEqual(expect.any(Number));
+    expect(srv2?.position.x).toEqual(expect.any(Number));
+    expect(srv2?.position.y).toEqual(expect.any(Number));
+    expect(srv1?.position).not.toEqual(srv2?.position);
   });
 
   it("opens panel strictly on double click (mocked via logic test)", async () => {
@@ -136,5 +144,66 @@ describe("useTopologyLogic (Isolated)", () => {
     await waitFor(() => {
       expect(result.current.nodes.every(n => n.style?.opacity === 1)).toBe(true);
     });
+  });
+
+  it("groups by label ID while preserving the real server identity", async () => {
+    const platformLabel = {
+      id: "label-platform",
+      key: "team",
+      value: "platform",
+      colorHex: "#ff4d7e",
+    };
+    const mockData = {
+      servers: [
+        {
+          id: "server-1",
+          hostname: "api-01",
+          ipAddress: "10.0.0.10",
+          labels: [platformLabel],
+          applications: [],
+        },
+      ],
+      connections: [],
+    };
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockData });
+
+    const { result } = renderHook(() => useTopologyLogic(), { wrapper });
+    await waitFor(() => expect(result.current.nodes).toHaveLength(1));
+    reactFlowMocks.fitView.mockClear();
+
+    act(() => {
+      result.current.setSelectedLabels([platformLabel]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.nodes).toHaveLength(2);
+      expect(
+        result.current.nodes.some((node) => node.type === "topologyLabelGroupNode"),
+      ).toBe(true);
+    });
+    await waitFor(() => expect(reactFlowMocks.fitView).toHaveBeenCalled());
+
+    const serverNode = result.current.nodes.find(
+      (node) => node.type === "topologyServerNode",
+    );
+    expect(serverNode?.id).toBe("server-1::label-platform");
+    expect(serverNode?.parentId).toBe("label-group::label-platform");
+    expect(serverNode?.position.x).toEqual(expect.any(Number));
+    expect(serverNode?.position.y).toEqual(expect.any(Number));
+
+    act(() => {
+      result.current.onNodeDoubleClick({} as React.MouseEvent, serverNode!);
+    });
+    expect(result.current.selectedItem.id).toBe("server-1");
+
+    expect(apiClient.get).toHaveBeenLastCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        params: expect.objectContaining({
+          labelIds: ["label-platform"],
+        }),
+        paramsSerializer: { indexes: null },
+      }),
+    );
   });
 });

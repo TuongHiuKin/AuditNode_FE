@@ -8,6 +8,10 @@ import { FilterBar } from "../../features/dependency-graph/components/FilterBar"
 import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
 import { useHeader } from "../hooks/useHeader";
 import { SearchResultType } from "../components/UniversalSearch";
+import {
+  countUniqueTopologyServers,
+} from "../../features/dependency-graph/utils/topologyGrouping";
+import type { TopologyServerNodeData } from "../../features/dependency-graph/topology-types";
 
 function TopologyContent() {
   const {
@@ -22,7 +26,13 @@ function TopologyContent() {
   const { setCenter, getNodes } = useReactFlow();
 
   const handleSelectResult = (id: string, _type: SearchResultType) => {
-    const targetNode = getNodes().find(n => n.id === id);
+    const targetNode = getNodes().find((node) =>
+      node.id === id ||
+      (
+        node.type === "topologyServerNode" &&
+        (node.data as TopologyServerNodeData).entityId === id
+      ),
+    );
     if (targetNode) {
       // Calculate center based on position and dimensions
       const width = targetNode.measured?.width ?? (targetNode.data as any).width ?? 280;
@@ -35,7 +45,8 @@ function TopologyContent() {
       setCenter(centerX, centerY, { zoom: 1.2, duration: 800 });
 
       // Highlight the node by selecting it
-      setSelectedItem({ type: 'server', id: targetNode.id });
+      const entityId = (targetNode.data as TopologyServerNodeData).entityId;
+      setSelectedItem({ type: 'server', id: entityId });
       setRightPanelData({ server: (targetNode.data as any).server });
 
       // Update search input to match selected node name
@@ -73,6 +84,7 @@ function TopologyContent() {
             setSelectedDatacenter={setSelectedDatacenter}
             selectedLabels={selectedLabels}
             setSelectedLabels={setSelectedLabels}
+            showLabelPicker={false}
             query={appSearchQuery}
             onQueryChange={setAppSearchQuery}
             onSelectResult={handleSelectResult}
@@ -80,7 +92,7 @@ function TopologyContent() {
           
           <div className="text-[10px] font-bold text-muted-foreground bg-surface/50 px-3 h-[34px] rounded-lg border border-border uppercase tracking-widest flex items-center gap-2 font-label">
             <Network size={14} className="text-primary" />
-            Total Assets: {nodes.filter(n => n.type === "topologyServerNode").length}
+            Total Assets: {countUniqueTopologyServers(nodes)}
           </div>
         </div>
 

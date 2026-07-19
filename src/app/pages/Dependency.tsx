@@ -126,8 +126,10 @@ function DependencyManagerContent() {
     useEffect(() => {
       if (hasInitialized.current && (nodes.length > 0 || edges.length > 0)) {
         sessionStorage.setItem('dependencyGraphState', JSON.stringify({
-          nodes,
-          edges,
+          // Label groups are derived from current API data and must not become
+          // a stale, persisted copy of the dependency graph.
+          nodes: selectedLabels.length === 0 ? nodes : [],
+          edges: selectedLabels.length === 0 ? edges : [],
           selectedItem,
           rightPanelData,
           selectedEnv,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -60,7 +61,7 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      await apiClient.post("/api/v1/auth/register", { username, email, password });
+      await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, { username, email, password });
       setSuccess("Account created successfully! Redirecting to login…");
       setTimeout(() => {
         navigate("/login");

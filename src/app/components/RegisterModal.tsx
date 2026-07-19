@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 const inputCls = "w-full bg-background border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all";
 const labelCls = "text-sm font-medium text-muted-foreground";
@@ -23,7 +24,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   const { data: datacenters = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>(API_ENDPOINTS.DATACENTERS.BASE);
       return Array.isArray(response.data) ? response.data : [];
     },
   });
@@ -34,7 +35,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   useEffect(() => {
     const fetchServers = async () => {
       try {
-        const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
+        const response = await apiClient.get<Schemas["ServerResponseDto"][]>(API_ENDPOINTS.SERVERS.BASE);
         if (Array.isArray(response.data)) {
           setAvailableServers(response.data);
         }
@@ -167,17 +168,17 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
         if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname || !infraData.osType) {
           throw new Error("Datacenter, IP Address, Hostname, and OS Type are required");
         }
-        await apiClient.post("/api/v1/servers", infraData);
+        await apiClient.post(API_ENDPOINTS.SERVERS.BASE, infraData);
       } else if (formMode === "app") {
         if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerTeam) {
           throw new Error("Server, App Code, App Name, and Owner Team are required");
         }
-        await apiClient.post("/api/v1/applications", appData);
+        await apiClient.post(API_ENDPOINTS.APPLICATIONS.BASE, appData);
       } else if (formMode === "datacenter") {
         if (!dcData.name || !dcData.location) {
           throw new Error("Datacenter Name and Location are required");
         }
-        await apiClient.post("/api/v1/datacenters", dcData);
+        await apiClient.post(API_ENDPOINTS.DATACENTERS.BASE, dcData);
       }
       onSuccess?.();
       onClose();

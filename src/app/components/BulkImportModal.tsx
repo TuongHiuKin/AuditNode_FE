@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -238,25 +239,11 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
 
-      // 4. Submit via native fetch & FormData
+      // 4. Submit through the shared API client. Its interceptor supplies the
+      // access token and removes the JSON content type for FormData requests.
       const formData = new FormData();
       formData.append("file", newFileBlob, "partial_import.xlsx");
-      
-      const token = localStorage.getItem("accessToken");
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
-
-      const response = await fetch(`${baseUrl}/api/v1/inventory/bulk-import`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Bulk import failed on server.");
-      }
+      await apiClient.post(API_ENDPOINTS.INVENTORY.BULK_IMPORT, formData);
       
       toast.success(`Successfully imported ${validRows.length} rows`);
       
@@ -282,7 +269,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await apiClient.get("/api/v1/inventory/import-template", {
+      const response = await apiClient.get(API_ENDPOINTS.INVENTORY.IMPORT_TEMPLATE, {
         responseType: "blob",
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
