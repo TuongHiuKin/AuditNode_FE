@@ -14,10 +14,11 @@ import { AppNode } from "./AppNode";
 import { ServerGroupNode } from "./ServerGroupNode";
 import GroupNode from "./GroupNode";
 import ZoneNode from "./ZoneNode";
+import { BoundaryFrameNode } from "./BoundaryFrameNode";
+import { DependencyLabelGroupNode } from "./DependencyLabelGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
-import { BoundaryFrameNode } from "./BoundaryFrameNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -44,7 +45,6 @@ interface FlowCanvasProps {
   isLoading: boolean;
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
-  onAddBoundaryFrame?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
   drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
   drawBox?: { 
@@ -69,7 +69,6 @@ export function FlowCanvas({
   isLoading,
   onQuickAdd,
   onAddGroup,
-  onAddBoundaryFrame,
   onNodeDragStop,
   drawingMode,
   drawBox,
@@ -82,7 +81,8 @@ export function FlowCanvas({
     serverNode: ServerGroupNode,
     groupNode: GroupNode as ComponentType<any>,
     zoneNode: ZoneNode as ComponentType<any>,
-    boundaryFrame: BoundaryFrameNode,
+    boundaryFrame: BoundaryFrameNode as ComponentType<any>,
+    dependencyLabelGroupNode: DependencyLabelGroupNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({
@@ -149,7 +149,7 @@ export function FlowCanvas({
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} onAddBoundaryFrame={onAddBoundaryFrame} />
+        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "var(--color-surface)" : "var(--color-primary)")}
           maskColor="var(--color-background)"

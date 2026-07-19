@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Filter, Check, ChevronDown, Search } from "lucide-react";
 import { LabelData } from "./LabelBadge";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 interface LabelFilterDropdownProps {
   availableLabels?: LabelData[];
@@ -18,7 +19,7 @@ export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropd
   useEffect(() => {
     async function fetchLabels() {
       try {
-        const response = await apiClient.get("/api/v1/inventory/labels");
+        const response = await apiClient.get(API_ENDPOINTS.INVENTORY.LABELS);
         setAvailableLabels(response.data || []);
       } catch (error) {
         console.error("Failed to fetch labels", error);

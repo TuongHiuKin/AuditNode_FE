@@ -1,5 +1,9 @@
 # API Documentation
 
+> **Source of truth:** `src/shared/api/v1-contract.ts`, generated from the backend OpenAPI document. Do not edit that generated file manually or duplicate endpoint strings in components; use `src/config/endpoints.ts`.
+
+To refresh it after a backend contract change, set `OPENAPI_URL` and run `npm run sync-api`.
+
 The Audit System API provides endpoints for managing infrastructure and analyzing application dependencies. All endpoints are protected and require valid authentication.
 
 ## 🔐 Authentication & Authorization
@@ -10,7 +14,7 @@ The API integrates with **Keycloak IAM** for identity management.
 - **Development**: Ensure the local Keycloak server is running at `http://localhost:8080` with the `AuditNode-Realm`.
 
 ## 📍 Base URL
-`http://localhost:5000/api/v1` (Default development)
+Configured through `VITE_API_BASE_URL` (see `.env.example`).
 
 ## 📊 Analytics Endpoints
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   useNodesState,
   useEdgesState,
@@ -15,14 +15,36 @@ import {
 } from "@xyflow/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
-import { PaletteApp, SelectedItem } from "../types";
+import { API_ENDPOINTS } from "../../../config/endpoints";
+import { PaletteApp, SelectedItem, type GraphLabelData } from "../types";
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
+import { buildDependencyGraph } from "../utils/dependencyGrouping";
 import * as XLSX from "xlsx";
 
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
+const LABEL_GROUP_POSITIONS_KEY = "dependencyLabelGroupPositions";
+
+type LabelGroupPositions = Record<string, { x: number; y: number }>;
+
+function readLabelGroupPositions(): LabelGroupPositions {
+  try {
+    const cached = sessionStorage.getItem(LABEL_GROUP_POSITIONS_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached) as LabelGroupPositions;
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([, position]) =>
+          Number.isFinite(position?.x) && Number.isFinite(position?.y),
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
 
 export function useDependencyLogic() {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -37,6 +59,11 @@ export function useDependencyLogic() {
 
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
+  const [selectedLabels, setSelectedLabels] = useState<GraphLabelData[]>([]);
+  const selectedLabelIds = useMemo(
+    () => selectedLabels.map((label) => label.id),
+    [selectedLabels],
+  );
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -45,6 +72,24 @@ export function useDependencyLogic() {
 
   const isExplicitFetchRef = useRef(false);
   const hasMountedRef = useRef(false);
+  const lastFilterSignatureRef = useRef("");
+  const labelGroupPositionsRef = useRef<LabelGroupPositions>(
+    readLabelGroupPositions(),
+  );
+
+  const rememberLabelGroupPosition = useCallback((node: Node) => {
+    if (node.type !== "dependencyLabelGroupNode") return;
+
+    const nextPositions = {
+      ...labelGroupPositionsRef.current,
+      [node.id]: node.position,
+    };
+    labelGroupPositionsRef.current = nextPositions;
+    sessionStorage.setItem(
+      LABEL_GROUP_POSITIONS_KEY,
+      JSON.stringify(nextPositions),
+    );
+  }, []);
 
   // ── Scoped Export Algorithm ─────────────────────────────────────────────
 
@@ -100,13 +145,13 @@ export function useDependencyLogic() {
     toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
   }, [nodes, edges]);
 
-  const checkEmptyFrame = useCallback((type: 'groupNode' | 'boundaryFrame') => {
+  const checkEmptyFrame = useCallback((type: 'groupNode') => {
     const hasEmpty = nodes.some(n => {
       if (n.type !== type) return false;
       return !nodes.some(child => child.parentId === n.id);
     });
     if (hasEmpty) {
-      toast.error(`Vui lòng sử dụng ${type === 'groupNode' ? 'Group Box' : 'Boundary Frame'} rỗng hiện tại trước khi tạo mới!`);
+      toast.error(`Vui lòng sử dụng Group Box rỗng hiện tại trước khi tạo mới!`);
       return true;
     }
     return false;
@@ -118,14 +163,13 @@ export function useDependencyLogic() {
     toast.info("Vẽ một khung trên màn hình để tạo Group");
   }, [checkEmptyFrame]);
 
-  const addBoundaryFrame = useCallback(async () => {
-    if (checkEmptyFrame('boundaryFrame')) return;
-    setDrawingMode('boundaryFrame');
-    toast.info("Vẽ một khung trên màn hình để tạo Boundary Frame");
-  }, [checkEmptyFrame]);
-
   const onNodeDragStop = useCallback(
     async (_: React.MouseEvent, node: Node) => {
+      if (node.type === "dependencyLabelGroupNode") {
+        rememberLabelGroupPosition(node);
+        return;
+      }
+
       if (node.type === "boundaryFrame") return;
 
       const frames = nodes.filter((n) => n.type === "boundaryFrame");
@@ -183,7 +227,7 @@ export function useDependencyLogic() {
 
       // Eager saving removed - wait for user to click Save Network State
     },
-    [nodes, setNodes]
+    [nodes, setNodes, rememberLabelGroupPosition]
   );
 
 
@@ -196,6 +240,13 @@ export function useDependencyLogic() {
       const dependencies = currentEdges.map((edge) => {
         // Extract real Application ID from composite (e.g., app-123-srv-456)
         const extractAppId = (nodeId: string) => {
+          const node = reactFlowInstance.getNode(nodeId);
+          const canonicalAppId = (node?.data as { app?: { id?: string } })
+            ?.app?.id;
+          if (canonicalAppId) {
+            return canonicalAppId;
+          }
+
           // Robust regex to extract the ID between 'app-' and '-srv-'
           // This handles UUIDs with dashes correctly
           const compositeMatch = nodeId.match(/^app-(.+)-srv-.+$/);
@@ -204,7 +255,6 @@ export function useDependencyLogic() {
           }
           
           // Fallback: If it's a new node (e.g., n-timestamp), get the real ID from node data
-          const node = reactFlowInstance.getNode(nodeId);
           if (node?.type === "appNode") {
             return (node.data as any).app?.id || nodeId;
           }
@@ -219,7 +269,7 @@ export function useDependencyLogic() {
         };
       });
 
-      await apiClient.put("/api/v1/dependencies/sync", { dependencies });
+      await apiClient.put(API_ENDPOINTS.DEPENDENCIES.SYNC, { dependencies });
       
       toast.success("Network state synchronized successfully");
       
@@ -237,7 +287,7 @@ export function useDependencyLogic() {
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
     queryKey: ["all-servers"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>(API_ENDPOINTS.SERVERS.BASE);
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       return data as Schemas["ServerResponseDto"][];
@@ -245,7 +295,15 @@ export function useDependencyLogic() {
   });
 
   const unmappedServers = allServers.filter(
-    (srv: Schemas["ServerResponseDto"]) => !nodes.some((n) => n.id === srv.id && n.type === "serverNode")
+    (srv: Schemas["ServerResponseDto"]) =>
+      !nodes.some(
+        (node) =>
+          node.type === "serverNode" &&
+          (
+            node.id === srv.id ||
+            (node.data as { entityId?: string }).entityId === srv.id
+          ),
+      ),
   );
 
   const canDrawServer = unmappedServers.length > 0;
@@ -360,15 +418,23 @@ export function useDependencyLogic() {
   }, [drawBox, unmappedServers, setNodes, drawingMode, exportGroupAuditMatrix]);
 
   // ── Fetch and Map Graph Logic (Internal) ────────────────────────────────
-  const fetchAndMapGraph = useCallback(async (env: string, dc: string) => {
+  const fetchAndMapGraph = useCallback(async (
+    env: string,
+    dc: string,
+    labels: GraphLabelData[],
+  ) => {
     try {
       const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-        "/api/v1/topology/map",
+        API_ENDPOINTS.TOPOLOGY.MAP,
         {
           params: {
             environment: env === "All" ? undefined : env,
             datacenterId: dc === "All" ? undefined : dc,
+            labelIds: labels.length > 0
+              ? labels.map((label) => label.id)
+              : undefined,
           },
+          paramsSerializer: { indexes: null },
         }
       );
       const data = response.data;
@@ -376,99 +442,46 @@ export function useDependencyLogic() {
       const mappedNodes: Node[] = [];
       const mappedEdges: Edge[] = [];
 
-      try {
-        const framesResponse = await apiClient.get("/api/v1/frames");
-        framesResponse.data.forEach((frame: any) => {
-          const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
-          const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
-          
-          mappedNodes.push({
-            id: frame.id,
-            type: "boundaryFrame",
-            position: { x: safeX, y: safeY },
-            style: { width: frame.width || 400, height: frame.height || 300 },
-            data: { name: frame.name || "Unknown Group" },
-            zIndex: -1,
-            draggable: true,
-            dragHandle: '.custom-drag-handle',
+      if (labels.length === 0) {
+        try {
+          const framesResponse = await apiClient.get(API_ENDPOINTS.FRAMES.BASE);
+          framesResponse.data.forEach((frame: any) => {
+            const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
+            const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
+
+            mappedNodes.push({
+              id: frame.id,
+              type: "boundaryFrame",
+              position: { x: safeX, y: safeY },
+              style: { width: frame.width || 400, height: frame.height || 300 },
+              data: { name: frame.name || "Unknown Group" },
+              zIndex: -1,
+              draggable: true,
+              dragHandle: '.custom-drag-handle',
+            });
           });
-        });
-      } catch (e) {
-        console.error("Failed to fetch frames", e);
+        } catch (e) {
+          console.error("Failed to fetch frames", e);
+        }
       }
 
       // Handle ReactFlow-compatible structure directly if provided
-      const rawData = data as any;
-      if (rawData.nodes && Array.isArray(rawData.nodes)) {
+      const rawData = data as unknown as { nodes?: Node[]; edges?: Edge[] };
+      if (
+        labels.length === 0 &&
+        rawData.nodes &&
+        Array.isArray(rawData.nodes)
+      ) {
         rawData.nodes.forEach((n: any) => mappedNodes.push(n));
         rawData.edges?.forEach((e: any) => mappedEdges.push(e));
       } else {
-        // Fallback: Map servers and their nested applications to flat ReactFlow nodes
-        const MAX_COLUMNS = 3;
-        const X_SPACING = 450;
-        const Y_SPACING = 350;
-        const START_X = 100;
-        const START_Y = 100;
-
-        data.servers?.forEach((srv: any, srvIdx: number) => {
-          const col = srvIdx % MAX_COLUMNS;
-          const row = Math.floor(srvIdx / MAX_COLUMNS);
-          const serverNodeId = srv.id || `srv-${srvIdx}`;
-
-          mappedNodes.push({
-            id: serverNodeId,
-            type: "serverNode",
-            position: { 
-              x: START_X + (col * X_SPACING), 
-              y: START_Y + (row * Y_SPACING) 
-            },
-            style: { width: 300, height: 200 },
-            data: {
-              server: {
-                hostname: srv.hostname,
-                ipAddress: srv.ipAddress,
-                osType: srv.osType
-              },
-              width: 300,
-              height: 200
-            },
-            zIndex: -1,
-          });
-
-          srv.applications?.forEach((app: any, appIdx: number) => {
-            mappedNodes.push({
-              id: app.id || `app-${appIdx}`,
-              type: "appNode",
-              position: { x: 40, y: 60 + appIdx * 60 },
-              parentId: serverNodeId,
-              extent: "parent",
-              data: {
-                app: {
-                  id: app.id,
-                  appName: app.name,
-                  portNumber: app.port,
-                  protocol: app.protocol,
-                  risk: app.riskLevel,
-                  portMappingId: app.portMappingId
-                }
-              },
-            });
-          });
-        });
-
-        // Map connections to ReactFlow edges
-        data.connections?.forEach((conn: any, connIdx: number) => {
-          mappedEdges.push({
-            id: `e-${connIdx}`,
-            source: conn.sourceAppId || "",
-            target: conn.targetAppId || "",
-            type: "floatingSmooth",
-            animated: true,
-            markerEnd: edgeMarker,
-            style: edgeStyle,
-            data: { protocol: "TCP" },
-          });
-        });
+        const graph = buildDependencyGraph(
+          data.servers ?? [],
+          data.connections ?? [],
+          labels,
+        );
+        mappedNodes.push(...graph.nodes);
+        mappedEdges.push(...graph.edges);
       }
 
       return { nodes: mappedNodes, edges: mappedEdges };
@@ -480,21 +493,62 @@ export function useDependencyLogic() {
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
-    queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
+    queryKey: [
+      "dependency-map",
+      selectedEnv,
+      selectedDatacenter,
+      selectedLabelIds,
+    ],
     queryFn: async ({ queryKey }) => {
-      const [_key, env, dc] = queryKey as [string, string, string];
-      const result = await fetchAndMapGraph(env, dc);
+      const [_key, env, dc, labelIds] = queryKey as [
+        string,
+        string,
+        string,
+        string[],
+      ];
+      const labelsForRequest = selectedLabels.filter((label) =>
+        labelIds.includes(label.id)
+      );
+      const result = await fetchAndMapGraph(env, dc, labelsForRequest);
 
       const isFirstMount = !hasMountedRef.current;
       hasMountedRef.current = true;
+      const filterSignature = JSON.stringify([env, dc, labelIds]);
+      const filterChanged =
+        lastFilterSignatureRef.current !== filterSignature;
+      lastFilterSignatureRef.current = filterSignature;
 
       const cached = sessionStorage.getItem('dependencyGraphState');
       const hasDeepLink = new URLSearchParams(window.location.search).has("entityId");
       
       // Prevent background refetches from wiping local layout changes
-      const shouldOverwrite = isExplicitFetchRef.current || (isFirstMount && !cached) || (isFirstMount && hasDeepLink);
+      const shouldOverwrite =
+        filterChanged ||
+        isExplicitFetchRef.current ||
+        (isFirstMount && !cached) ||
+        (isFirstMount && hasDeepLink);
       if (shouldOverwrite) {
-        setNodes(result.nodes);
+        setNodes((currentNodes) => {
+          const currentGroupPositions = Object.fromEntries(
+            currentNodes
+              .filter((node) => node.type === "dependencyLabelGroupNode")
+              .map((node) => [node.id, node.position]),
+          );
+          const rememberedPositions = {
+            ...labelGroupPositionsRef.current,
+            ...currentGroupPositions,
+          };
+          labelGroupPositionsRef.current = rememberedPositions;
+
+          return result.nodes.map((node) => {
+            if (node.type !== "dependencyLabelGroupNode") return node;
+
+            const rememberedPosition = rememberedPositions[node.id];
+            return rememberedPosition
+              ? { ...node, position: rememberedPosition }
+              : node;
+          });
+        });
         setEdges(result.edges);
       }
 
@@ -637,9 +691,12 @@ export function useDependencyLogic() {
             server: serverNode?.data?.server,
             deps: getDependencies(node.id, nodes, edges),
           });
-        } else {
+        } else if (node.type === "serverNode") {
           setSelectedItem({ type: "server", id: node.id });
           setRightPanelData({ server: (node.data as any).server });
+        } else {
+          setSelectedItem({ type: null, id: null });
+          setRightPanelData(null);
         }
         return;
       }
@@ -667,15 +724,33 @@ export function useDependencyLogic() {
     // We explicitly invalidate the query with the specific key we want to fetch
     // This ensures React Query starts the fetch for the correct environment immediately
     await queryClient.invalidateQueries({ 
-      queryKey: ["dependency-map", targetEnv, selectedDatacenter] 
+      queryKey: [
+        "dependency-map",
+        targetEnv,
+        selectedDatacenter,
+        selectedLabelIds,
+      ],
     });
 
     setTimeout(() => {
       reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
       isExplicitFetchRef.current = false;
     }, 500);
-  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter]);
+  }, [
+    queryClient,
+    reactFlowInstance,
+    selectedEnv,
+    selectedDatacenter,
+    selectedLabelIds,
+  ]);
   const handleSaveNetworkState = useCallback(async () => {
+    if (selectedLabels.length > 0) {
+      toast.info(
+        "Label frames are a derived view. Clear the label filter before saving the network layout.",
+      );
+      return;
+    }
+
     try {
       const frames = nodes
         .filter(n => n.type === 'boundaryFrame')
@@ -695,13 +770,13 @@ export function useDependencyLogic() {
           parentFrameId: n.parentId || null
         }));
 
-      await apiClient.post("/api/v1/topology/sync", { frames, assignments });
+      await apiClient.post(API_ENDPOINTS.TOPOLOGY.SYNC, { frames, assignments });
       toast.success("Network state saved successfully!");
     } catch (error) {
       console.error("Failed to save network state", error);
       toast.error("Failed to save network state.");
     }
-  }, [nodes]);
+  }, [nodes, selectedLabels.length]);
 
   return {
     nodes,
@@ -725,6 +800,8 @@ export function useDependencyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    selectedLabels,
+    setSelectedLabels,
     handleAutoMap,
     drawingMode,
     setDrawingMode,
@@ -739,7 +816,6 @@ export function useDependencyLogic() {
     isSyncing,
     exportGroupAuditMatrix,
     addGroupBox,
-    addBoundaryFrame,
     onNodeDragStop,
   };
 }

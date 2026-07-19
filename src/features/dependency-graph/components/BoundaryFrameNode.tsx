@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { NodeProps, NodeToolbar, NodeResizer, Position, useReactFlow } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
 import apiClient from "../../../shared/api/client";
+import { API_ENDPOINTS } from "../../../config/endpoints";
 import { toast } from "sonner";
 
 export const BoundaryFrameNode = memo(({ id, data, selected }: NodeProps) => {
@@ -11,7 +12,7 @@ export const BoundaryFrameNode = memo(({ id, data, selected }: NodeProps) => {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await apiClient.delete(`/api/v1/frames/${id}`);
+      await apiClient.delete(API_ENDPOINTS.FRAMES.BY_ID(id));
       toast.success("Đã xoá Boundary Frame");
       
       setNodes((nds) => {

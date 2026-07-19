@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -15,7 +16,7 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post("/api/v1/auth/login", { username, password });
+      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { username, password });
       const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
 
       if (accessToken) {
@@ -25,7 +26,11 @@ export function LoginPage() {
         setError("Authentication failed. No access token received.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid credentials or server error. Please try again.");
+      setError(
+        err.response?.data?.error
+        || err.response?.data?.message
+        || "Invalid credentials or server error. Please try again.",
+      );
     } finally {
       setLoading(false);
     }

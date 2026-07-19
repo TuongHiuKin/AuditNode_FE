@@ -1,13 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
+import { API_ENDPOINTS } from "../../../config/endpoints";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
+import { TopologyLabelPicker } from "./TopologyLabelPicker";
+import type { TopologyLabelData } from "../topology-types";
 
 interface FilterBarProps {
   selectedEnv: string;
   setSelectedEnv: (env: string) => void;
   selectedDatacenter: string;
   setSelectedDatacenter: (dc: string) => void;
+  selectedLabels?: TopologyLabelData[];
+  setSelectedLabels?: (labels: TopologyLabelData[]) => void;
+  showLabelPicker?: boolean;
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
@@ -24,6 +30,9 @@ export function FilterBar({
   setSelectedEnv,
   selectedDatacenter,
   setSelectedDatacenter,
+  selectedLabels = [],
+  setSelectedLabels = () => {},
+  showLabelPicker = true,
   query = "",
   onQueryChange,
   onSelectResult,
@@ -32,7 +41,7 @@ export function FilterBar({
   const { data: datacenterData = [] } = useQuery({
     queryKey: ["datacenters"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>(API_ENDPOINTS.DATACENTERS.BASE);
       const rawResponse = response as any;
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },
@@ -61,6 +70,14 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
+        {showLabelPicker && (
+          <div className="ml-2">
+            <TopologyLabelPicker
+              selectedLabels={selectedLabels}
+              onChange={setSelectedLabels}
+            />
+          </div>
+        )}
       </div>
 
       <div className="h-5 w-px bg-border mx-1" />

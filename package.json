@@ -8,7 +8,11 @@
     "dev": "vite",
     "test": "vitest",
     "test:ci": "vitest run",
-    "sync-api": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-typescript https://localhost:7126/openapi/v1.json --output src/shared/api/v1-contract.ts"
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed --project=chromium",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "sync-api": "node scripts/sync-api.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -49,6 +53,7 @@
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "3.6.0",
+    "elkjs": "^0.9.1",
     "embla-carousel-react": "8.6.0",
     "html-to-image": "^1.11.13",
     "input-otp": "1.4.2",
@@ -75,6 +80,7 @@
     "xlsx": "0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "4.1.12",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

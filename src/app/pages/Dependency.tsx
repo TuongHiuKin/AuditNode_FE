@@ -25,6 +25,7 @@ function DependencyManagerContent() {
     onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
+    selectedLabels, setSelectedLabels,
     handleAutoMap,
     drawingMode, setDrawingMode, drawBox,
     onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
@@ -35,7 +36,6 @@ function DependencyManagerContent() {
     isSyncing,
     exportGroupAuditMatrix,
     addGroupBox,
-    addBoundaryFrame,
     onNodeDragStop,
     } = useDependencyLogic();
 
@@ -93,6 +93,7 @@ function DependencyManagerContent() {
             if (parsed.rightPanelData) setRightPanelData(parsed.rightPanelData);
             if (parsed.selectedEnv) setSelectedEnv(parsed.selectedEnv);
             if (parsed.selectedDatacenter) setSelectedDatacenter(parsed.selectedDatacenter);
+            if (parsed.selectedLabels) setSelectedLabels(parsed.selectedLabels);
             
             if (parsed.nodes && parsed.nodes.length > 0) {
               const safeNodes = parsed.nodes.map((n: any) => ({
@@ -119,21 +120,24 @@ function DependencyManagerContent() {
           }
         }
       }
-    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter]);
+    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter, setSelectedLabels]);
 
     // Hook 2: Save state to Session Storage continuously
     useEffect(() => {
       if (hasInitialized.current && (nodes.length > 0 || edges.length > 0)) {
         sessionStorage.setItem('dependencyGraphState', JSON.stringify({
-          nodes,
-          edges,
+          // Label groups are derived from current API data and must not become
+          // a stale, persisted copy of the dependency graph.
+          nodes: selectedLabels.length === 0 ? nodes : [],
+          edges: selectedLabels.length === 0 ? edges : [],
           selectedItem,
           rightPanelData,
           selectedEnv,
-          selectedDatacenter
+          selectedDatacenter,
+          selectedLabels
         }));
       }
-    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter]);
+    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter, selectedLabels]);
 
     return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
@@ -161,6 +165,8 @@ function DependencyManagerContent() {
             setSelectedEnv={setSelectedEnv}
             selectedDatacenter={selectedDatacenter}
             setSelectedDatacenter={setSelectedDatacenter}
+            selectedLabels={selectedLabels}
+            setSelectedLabels={setSelectedLabels}
           />
           <SubToolbar
             onAutoMap={handleAutoMap}
@@ -188,7 +194,6 @@ function DependencyManagerContent() {
               onPaneMouseMove={onPaneMouseMove}
               onPaneMouseUp={onPaneMouseUp}
               onAddGroup={addGroupBox}
-              onAddBoundaryFrame={addBoundaryFrame}
               onNodeDragStop={onNodeDragStop}
             />
           </div>

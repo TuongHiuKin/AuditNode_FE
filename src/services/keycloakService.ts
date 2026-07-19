@@ -1,9 +1,10 @@
 import Keycloak from "keycloak-js";
+import { RUNTIME_CONFIG } from "../config/runtime";
 
 const keycloakConfig = {
-  url: import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:8080",
-  realm: import.meta.env.VITE_KEYCLOAK_REALM || "AuditNode-Realm",
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || "audit-frontend",
+  url: RUNTIME_CONFIG.keycloak.url,
+  realm: RUNTIME_CONFIG.keycloak.realm,
+  clientId: RUNTIME_CONFIG.keycloak.clientId,
 };
 
 const keycloak = new Keycloak(keycloakConfig);

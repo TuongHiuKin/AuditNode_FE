@@ -1,0 +1,35 @@
+{
+  "name": "auditnode-db-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only aggregate PostgreSQL MCP server for AuditNode",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "setup:role": "node scripts/apply-reader-role.mjs",
+    "dev": "tsx src/server.ts",
+    "test": "vitest run --config vitest.config.ts",
+    "test:connection": "npm run build && node scripts/check-configured-connection.mjs",
+    "test:db": "npm run build && node scripts/validate-local-db.mjs",
+    "test:role": "node scripts/check-reader-role.mjs",
+    "test:watch": "vitest --config vitest.config.ts",
+    "check": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
+  }
+}

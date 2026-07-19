@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { X, Loader2, Save, ChevronDown, MoveHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 interface MigrationDrawerProps {
   applicationId: string | null;
@@ -47,7 +48,7 @@ export function MigrationDrawer({
   const fetchServers = async () => {
     setLoadingServers(true);
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>(API_ENDPOINTS.SERVERS.BASE);
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setServers(data);
@@ -61,7 +62,7 @@ export function MigrationDrawer({
   const fetchAppDetails = async () => {
     if (!applicationId) return;
     try {
-      const response = await apiClient.get(`/api/v1/applications/${applicationId}`);
+      const response = await apiClient.get(API_ENDPOINTS.APPLICATIONS.BY_ID(applicationId));
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
       
@@ -82,7 +83,7 @@ export function MigrationDrawer({
         portNumber: Number(formData.portNumber),
       };
 
-      await apiClient.put("/api/v1/infrastructure/apps/migrate", payload);
+      await apiClient.put(API_ENDPOINTS.APPLICATIONS.MIGRATE, payload);
       
       toast.success("Deployment updated successfully");
       

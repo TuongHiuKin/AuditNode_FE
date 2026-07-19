@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { X, Loader2, Save, ChevronDown, MoveHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
 
 interface EditEntityDrawerProps {
   entityId: string | null;
@@ -127,7 +128,7 @@ export function EditEntityDrawer({
 
   const fetchAvailableServers = async () => {
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
+      const response = await apiClient.get<Schemas["ServerResponseDto"][]>(API_ENDPOINTS.SERVERS.BASE);
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       setAvailableServers(data);
@@ -137,11 +138,13 @@ export function EditEntityDrawer({
   };
 
   const fetchData = async () => {
+    if (!entityId || !entityType) return;
+
     setLoading(true);
     try {
-      const endpoint = entityType === "SERVER" 
-        ? `/api/v1/servers/${entityId}` 
-        : `/api/v1/applications/${entityId}`;
+      const endpoint = entityType === "SERVER"
+        ? API_ENDPOINTS.SERVERS.BY_ID(entityId)
+        : API_ENDPOINTS.APPLICATIONS.BY_ID(entityId);
       const response = await apiClient.get(endpoint);
       const rawResponse = response as any;
       const data = rawResponse.data?.data ?? rawResponse.data;
@@ -203,6 +206,8 @@ export function EditEntityDrawer({
   };
 
   const onSubmit = async (formData: any) => {
+    if (!entityId || !entityType) return;
+
     if (entityType === "APP") {
       if (!selectedMappingId && portMappings.length > 0) {
         toast.error("Please select a deployment to update");
@@ -216,9 +221,9 @@ export function EditEntityDrawer({
 
     setSubmitting(true);
     try {
-      const endpoint = entityType === "SERVER" 
-        ? `/api/v1/servers/${entityId}` 
-        : `/api/v1/applications/${entityId}`;
+      const endpoint = entityType === "SERVER"
+        ? API_ENDPOINTS.SERVERS.BY_ID(entityId)
+        : API_ENDPOINTS.APPLICATIONS.BY_ID(entityId);
       
       // Combine already added labels with any pending typed label
       const finalLabels = [...labels];
