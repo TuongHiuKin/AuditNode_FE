@@ -78,18 +78,6 @@ export function AppTable({
     },
   });
 
-  const availableLabels = useMemo(() => {
-    const labelsMap = new Map<string, LabelData>();
-    apps.forEach((app: any) => {
-      app.labels?.forEach((l: any) => {
-        if (!labelsMap.has(l.value)) {
-          labelsMap.set(l.value, l);
-        }
-      });
-    });
-    return Array.from(labelsMap.values());
-  }, [apps]);
-
   const filteredApps = useMemo(() => {
     if (filterId) {
       return apps.filter((app: AppRow) => app.id === filterId);
@@ -154,7 +142,6 @@ export function AppTable({
             <div className="h-5 w-px bg-border mx-1" />
             
             <LabelFilterDropdown
-              availableLabels={availableLabels}
               selectedKeys={selectedLabelKeys}
               onChange={setSelectedLabelKeys}
             />

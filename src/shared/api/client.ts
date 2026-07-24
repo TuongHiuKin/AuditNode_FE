@@ -22,11 +22,23 @@ const apiClient: AxiosInstance = axios.create({
  */
 export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem("accessToken");
-  if (token && config.headers) {
-    if (typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers.Authorization = `Bearer ${token}`;
+  const workspaceId = localStorage.getItem("workspaceId") || "00000000-0000-0000-0000-000000000000";
+
+  if (config.headers) {
+    if (token) {
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    if (workspaceId) {
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('X-Workspace-Id', workspaceId);
+      } else {
+        config.headers['X-Workspace-Id'] = workspaceId;
+      }
     }
   }
 

@@ -4,7 +4,6 @@ import { LabelData } from "./LabelBadge";
 import apiClient from "../../shared/api/client";
 
 interface LabelFilterDropdownProps {
-  availableLabels?: LabelData[];
   selectedKeys: string[];
   onChange: (selectedKeys: string[]) => void;
 }

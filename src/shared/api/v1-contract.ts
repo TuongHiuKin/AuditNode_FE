@@ -392,6 +392,10 @@ export interface components {
             portNumber?: number | string;
             protocol?: string;
         };
+        LabelDto: {
+            key?: string;
+            value?: string;
+        };
         ApplicationResponseDto: {
             /** Format: uuid */
             id?: string;
@@ -509,6 +513,7 @@ export interface components {
             datacenter?: string;
             status?: string;
             applications?: components["schemas"]["ApplicationOnServerDto"][];
+            labels?: components["schemas"]["LabelDto"][];
         };
         TopologyTreeDto: {
             /** Format: uuid */
