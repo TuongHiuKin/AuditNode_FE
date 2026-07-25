@@ -15,6 +15,7 @@ export interface TopologyServerNodeData extends Record<string, unknown> {
     ipAddress: string;
     osType?: string;
     environment?: string;
+    labels?: { key: string; value: string }[];
   };
   apps: TopologyAppData[];
   isExpanded?: boolean;

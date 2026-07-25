@@ -168,7 +168,7 @@ describe("useDependencyLogic", () => {
 
     expect(result.current.selectedEnv).toBe("Production");
     expect(invalidateSpy).toHaveBeenCalledWith({ 
-      queryKey: ["dependency-map", "Production", "All"] 
+      queryKey: ["dependency-map", "Production", "All", []] 
     });
   });
 
@@ -202,6 +202,100 @@ describe("useDependencyLogic", () => {
 
     // Check if edges were updated (reconnectEdge is a utility from @xyflow/react)
     // We expect the hook to call setEdges which eventually updates edges state
+  });
+
+  it("clusters servers into boundaryFrames when selectedLabels is provided and preserves 3-tier nesting", async () => {
+    const mockDependencyMapWithLabels = {
+      servers: [
+        {
+          id: "srv-1",
+          hostname: "server-01",
+          ipAddress: "10.0.0.1",
+          labels: [{ key: "tier", value: "database" }],
+          applications: [
+            {
+              id: "app-1",
+              name: "App 1",
+              port: 5432,
+              protocol: "TCP",
+              riskLevel: "Low",
+            },
+          ],
+        },
+        {
+          id: "srv-2",
+          hostname: "server-02",
+          ipAddress: "10.0.0.2",
+          labels: [{ key: "tier", value: "database" }],
+          applications: [],
+        },
+      ],
+      connections: [],
+    };
+
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") {
+        return Promise.resolve({ data: mockDependencyMapWithLabels });
+      }
+      if (url === "/api/v1/topology/status") {
+        return Promise.resolve({ data: [] });
+      }
+      if (url === "/api/v1/frames") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error("Unknown URL: " + url));
+    });
+
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.nodes.length).toBeGreaterThan(0);
+    });
+
+    act(() => {
+      result.current.setSelectedLabels(["database"]);
+    });
+
+    await waitFor(() => {
+      const boundaryFrames = result.current.nodes.filter(n => n.type === "boundaryFrame");
+      expect(boundaryFrames.length).toBe(1);
+    });
+
+    const boundaryFrame = result.current.nodes.find(n => n.type === "boundaryFrame");
+    expect(boundaryFrame).toBeDefined();
+    expect(boundaryFrame?.zIndex).toBe(-2);
+    expect(boundaryFrame?.data.name).toBe("Label: tier=database");
+
+    const serverNodes = result.current.nodes.filter(n => n.type === "serverNode");
+    expect(serverNodes.length).toBe(2);
+    serverNodes.forEach(srv => {
+      expect(srv.parentId).toBe(boundaryFrame?.id);
+      expect(srv.extent).toBe("parent");
+      expect(srv.zIndex).toBe(-1);
+    });
+
+    const appNode = result.current.nodes.find(n => n.type === "appNode");
+    expect(appNode).toBeDefined();
+    expect(appNode?.parentId).toBe("srv-1");
+    expect(appNode?.extent).toBe("parent");
+    expect(appNode?.zIndex).toBe(0);
+  });
+
+  it("protects 3-tier nesting invariant by ignoring appNode in onNodeDragStop", async () => {
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.nodes.length).toBeGreaterThan(0);
+    });
+
+    const appNodeBefore = result.current.nodes.find(n => n.type === "appNode");
+    if (appNodeBefore) {
+      const initialParentId = appNodeBefore.parentId;
+      act(() => {
+        result.current.onNodeDragStop({} as any, appNodeBefore);
+      });
+      const appNodeAfter = result.current.nodes.find(n => n.id === appNodeBefore.id);
+      expect(appNodeAfter?.parentId).toBe(initialParentId);
+    }
   });
 });
 

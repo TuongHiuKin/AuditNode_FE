@@ -22,6 +22,7 @@ export interface ServerNodeData extends Record<string, unknown> {
     hostname: string;
     ipAddress: string;
     osType?: string;
+    labels?: { key: string; value: string }[];
   };
   width: number;
   height: number;

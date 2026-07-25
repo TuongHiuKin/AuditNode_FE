@@ -37,6 +37,7 @@ export function useDependencyLogic() {
 
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -45,6 +46,7 @@ export function useDependencyLogic() {
 
   const isExplicitFetchRef = useRef(false);
   const hasMountedRef = useRef(false);
+  const prevQueryKeyRef = useRef<string>("");
 
   // ── Scoped Export Algorithm ─────────────────────────────────────────────
 
@@ -126,7 +128,7 @@ export function useDependencyLogic() {
 
   const onNodeDragStop = useCallback(
     async (_: React.MouseEvent, node: Node) => {
-      if (node.type === "boundaryFrame") return;
+      if (node.type === "boundaryFrame" || node.type === "appNode") return;
 
       const frames = nodes.filter((n) => n.type === "boundaryFrame");
 
@@ -360,7 +362,7 @@ export function useDependencyLogic() {
   }, [drawBox, unmappedServers, setNodes, drawingMode, exportGroupAuditMatrix]);
 
   // ── Fetch and Map Graph Logic (Internal) ────────────────────────────────
-  const fetchAndMapGraph = useCallback(async (env: string, dc: string) => {
+  const fetchAndMapGraph = useCallback(async (env: string, dc: string, labels: string[] = []) => {
     try {
       const response = await apiClient.get<Schemas["DependencyMapDto"]>(
         "/api/v1/topology/map",
@@ -368,6 +370,7 @@ export function useDependencyLogic() {
           params: {
             environment: env === "All" ? undefined : env,
             datacenterId: dc === "All" ? undefined : dc,
+            labels: labels.length > 0 ? labels : undefined,
           },
         }
       );
@@ -376,34 +379,148 @@ export function useDependencyLogic() {
       const mappedNodes: Node[] = [];
       const mappedEdges: Edge[] = [];
 
-      try {
-        const framesResponse = await apiClient.get("/api/v1/frames");
-        framesResponse.data.forEach((frame: any) => {
-          const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
-          const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
-          
-          mappedNodes.push({
-            id: frame.id,
-            type: "boundaryFrame",
-            position: { x: safeX, y: safeY },
-            style: { width: frame.width || 400, height: frame.height || 300 },
-            data: { name: frame.name || "Unknown Group" },
-            zIndex: -1,
-            draggable: true,
-            dragHandle: '.custom-drag-handle',
+      // Chỉ tải user frames từ /api/v1/frames khi KHÔNG bật filter theo Label
+      if (!labels || labels.length === 0) {
+        try {
+          const framesResponse = await apiClient.get("/api/v1/frames");
+          framesResponse.data.forEach((frame: any) => {
+            const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
+            const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
+            
+            mappedNodes.push({
+              id: frame.id,
+              type: "boundaryFrame",
+              position: { x: safeX, y: safeY },
+              style: { width: frame.width || 400, height: frame.height || 300 },
+              data: { name: frame.name || "Unknown Group" },
+              zIndex: -2,
+              draggable: true,
+              dragHandle: '.custom-drag-handle',
+            });
           });
-        });
-      } catch (e) {
-        console.error("Failed to fetch frames", e);
+        } catch (e) {
+          console.error("Failed to fetch frames", e);
+        }
       }
 
-      // Handle ReactFlow-compatible structure directly if provided
       const rawData = data as any;
-      if (rawData.nodes && Array.isArray(rawData.nodes)) {
+      if ((!labels || labels.length === 0) && rawData.nodes && Array.isArray(rawData.nodes)) {
         rawData.nodes.forEach((n: any) => mappedNodes.push(n));
         rawData.edges?.forEach((e: any) => mappedEdges.push(e));
+      } else if (labels && labels.length > 0) {
+        // ── 3-Tier Nesting Algorithm (Khi có filter theo Label) ──
+        const labelGroups = new Map<string, { labelName: string; frameId: string; servers: any[] }>();
+
+        data.servers?.forEach((srv: any) => {
+          const matchLabel = (srv.labels || []).find((l: any) =>
+            labels.includes(l.key) ||
+            labels.includes(l.value) ||
+            labels.includes(`${l.key}:${l.value}`) ||
+            labels.includes(`${l.key}=${l.value}`)
+          );
+          if (matchLabel) {
+            const groupKey = `${matchLabel.key}=${matchLabel.value}`;
+            const cleanId = `${matchLabel.key}-${matchLabel.value}`.toLowerCase().replace(/[^a-z0-9]/g, "-");
+            const frameId = `frame-lbl-${cleanId}`;
+            if (!labelGroups.has(groupKey)) {
+              labelGroups.set(groupKey, {
+                labelName: `Label: ${groupKey}`,
+                frameId,
+                servers: [],
+              });
+            }
+            labelGroups.get(groupKey)!.servers.push(srv);
+          }
+        });
+
+        let currentFrameY = 100;
+        const START_FRAME_X = 100;
+
+        labelGroups.forEach((group) => {
+          const cols = Math.min(3, Math.max(1, group.servers.length));
+          const rows = Math.ceil(group.servers.length / cols);
+          const frameWidth = 400 + (cols - 1) * 340;
+          const frameHeight = 320 + (rows - 1) * 220;
+
+          // Tier 1: Boundary Frame Node
+          mappedNodes.push({
+            id: group.frameId,
+            type: "boundaryFrame",
+            position: { x: START_FRAME_X, y: currentFrameY },
+            style: { width: frameWidth, height: frameHeight },
+            data: { name: group.labelName },
+            zIndex: -2,
+            draggable: true,
+            dragHandle: ".custom-drag-handle",
+          });
+
+          // Tier 2: Server Node (tọa độ tương đối bên trong Frame)
+          group.servers.forEach((srv: any, srvIdx: number) => {
+            const col = srvIdx % cols;
+            const row = Math.floor(srvIdx / cols);
+            const serverNodeId = srv.id || `srv-${srvIdx}`;
+
+            mappedNodes.push({
+              id: serverNodeId,
+              type: "serverNode",
+              position: { x: 50 + col * 340, y: 80 + row * 220 },
+              parentId: group.frameId,
+              extent: "parent",
+              style: { width: 300, height: 200 },
+              data: {
+                server: {
+                  hostname: srv.hostname,
+                  ipAddress: srv.ipAddress,
+                  osType: srv.osType,
+                  labels: srv.labels,
+                },
+                width: 300,
+                height: 200,
+              },
+              zIndex: -1,
+            });
+
+            // Tier 3: App Node (tọa độ tương đối bên trong Server)
+            srv.applications?.forEach((app: any, appIdx: number) => {
+              mappedNodes.push({
+                id: app.id || `app-${appIdx}`,
+                type: "appNode",
+                position: { x: 40, y: 60 + appIdx * 60 },
+                parentId: serverNodeId,
+                extent: "parent",
+                data: {
+                  app: {
+                    id: app.id,
+                    appName: app.name,
+                    portNumber: app.port,
+                    protocol: app.protocol,
+                    risk: app.riskLevel,
+                    portMappingId: app.portMappingId,
+                  },
+                },
+                zIndex: 0,
+              });
+            });
+          });
+
+          currentFrameY += frameHeight + 100;
+        });
+
+        // Map connections to ReactFlow edges
+        data.connections?.forEach((conn: any, connIdx: number) => {
+          mappedEdges.push({
+            id: `e-${connIdx}`,
+            source: conn.sourceAppId || "",
+            target: conn.targetAppId || "",
+            type: "floatingSmooth",
+            animated: true,
+            markerEnd: edgeMarker,
+            style: edgeStyle,
+            data: { protocol: "TCP" },
+          });
+        });
       } else {
-        // Fallback: Map servers and their nested applications to flat ReactFlow nodes
+        // Fallback 2-Tier bình thường khi không filter theo Label
         const MAX_COLUMNS = 3;
         const X_SPACING = 450;
         const Y_SPACING = 350;
@@ -427,7 +544,8 @@ export function useDependencyLogic() {
               server: {
                 hostname: srv.hostname,
                 ipAddress: srv.ipAddress,
-                osType: srv.osType
+                osType: srv.osType,
+                labels: srv.labels,
               },
               width: 300,
               height: 200
@@ -452,6 +570,7 @@ export function useDependencyLogic() {
                   portMappingId: app.portMappingId
                 }
               },
+              zIndex: 0,
             });
           });
         });
@@ -480,19 +599,23 @@ export function useDependencyLogic() {
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
-    queryKey: ["dependency-map", selectedEnv, selectedDatacenter],
+    queryKey: ["dependency-map", selectedEnv, selectedDatacenter, selectedLabels],
     queryFn: async ({ queryKey }) => {
-      const [_key, env, dc] = queryKey as [string, string, string];
-      const result = await fetchAndMapGraph(env, dc);
+      const [_key, env, dc, labels] = queryKey as [string, string, string, string[]];
+      const result = await fetchAndMapGraph(env, dc, labels);
 
       const isFirstMount = !hasMountedRef.current;
       hasMountedRef.current = true;
 
+      const currentKeyString = JSON.stringify([env, dc, labels]);
+      const filterChanged = prevQueryKeyRef.current !== currentKeyString && prevQueryKeyRef.current !== "";
+      prevQueryKeyRef.current = currentKeyString;
+
       const cached = sessionStorage.getItem('dependencyGraphState');
       const hasDeepLink = new URLSearchParams(window.location.search).has("entityId");
       
-      // Prevent background refetches from wiping local layout changes
-      const shouldOverwrite = isExplicitFetchRef.current || (isFirstMount && !cached) || (isFirstMount && hasDeepLink);
+      // Prevent background refetches from wiping local layout changes unless filters changed
+      const shouldOverwrite = isExplicitFetchRef.current || (isFirstMount && !cached) || (isFirstMount && hasDeepLink) || filterChanged;
       if (shouldOverwrite) {
         setNodes(result.nodes);
         setEdges(result.edges);
@@ -667,14 +790,14 @@ export function useDependencyLogic() {
     // We explicitly invalidate the query with the specific key we want to fetch
     // This ensures React Query starts the fetch for the correct environment immediately
     await queryClient.invalidateQueries({ 
-      queryKey: ["dependency-map", targetEnv, selectedDatacenter] 
+      queryKey: ["dependency-map", targetEnv, selectedDatacenter, selectedLabels] 
     });
 
     setTimeout(() => {
       reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
       isExplicitFetchRef.current = false;
     }, 500);
-  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter]);
+  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter, selectedLabels]);
   const handleSaveNetworkState = useCallback(async () => {
     try {
       const frames = nodes
@@ -725,6 +848,8 @@ export function useDependencyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
+    selectedLabels,
+    setSelectedLabels,
     handleAutoMap,
     drawingMode,
     setDrawingMode,

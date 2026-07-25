@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../../shared/api/client";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
+import { LabelFilterDropdown } from "../../../app/components/LabelFilterDropdown";
 
 interface FilterBarProps {
   selectedEnv: string;
   setSelectedEnv: (env: string) => void;
   selectedDatacenter: string;
   setSelectedDatacenter: (dc: string) => void;
+  selectedLabels?: string[];
+  setSelectedLabels?: (labels: string[]) => void;
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
@@ -24,6 +27,8 @@ export function FilterBar({
   setSelectedEnv,
   selectedDatacenter,
   setSelectedDatacenter,
+  selectedLabels = [],
+  setSelectedLabels,
   query = "",
   onQueryChange,
   onSelectResult,
@@ -61,6 +66,12 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
+        {setSelectedLabels && (
+          <LabelFilterDropdown
+            selectedKeys={selectedLabels || []}
+            onChange={setSelectedLabels}
+          />
+        )}
       </div>
 
       <div className="h-5 w-px bg-border mx-1" />

@@ -25,6 +25,7 @@ function DependencyManagerContent() {
     onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
+    selectedLabels, setSelectedLabels,
     handleAutoMap,
     drawingMode, setDrawingMode, drawBox,
     onPaneMouseDown, onPaneMouseMove, onPaneMouseUp,
@@ -93,6 +94,7 @@ function DependencyManagerContent() {
             if (parsed.rightPanelData) setRightPanelData(parsed.rightPanelData);
             if (parsed.selectedEnv) setSelectedEnv(parsed.selectedEnv);
             if (parsed.selectedDatacenter) setSelectedDatacenter(parsed.selectedDatacenter);
+            if (Array.isArray(parsed.selectedLabels)) setSelectedLabels(parsed.selectedLabels);
             
             if (parsed.nodes && parsed.nodes.length > 0) {
               const safeNodes = parsed.nodes.map((n: any) => ({
@@ -119,7 +121,7 @@ function DependencyManagerContent() {
           }
         }
       }
-    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter]);
+    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter, setSelectedLabels]);
 
     // Hook 2: Save state to Session Storage continuously
     useEffect(() => {
@@ -130,10 +132,11 @@ function DependencyManagerContent() {
           selectedItem,
           rightPanelData,
           selectedEnv,
-          selectedDatacenter
+          selectedDatacenter,
+          selectedLabels
         }));
       }
-    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter]);
+    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter, selectedLabels]);
 
     return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">
@@ -161,6 +164,8 @@ function DependencyManagerContent() {
             setSelectedEnv={setSelectedEnv}
             selectedDatacenter={selectedDatacenter}
             setSelectedDatacenter={setSelectedDatacenter}
+            selectedLabels={selectedLabels}
+            setSelectedLabels={setSelectedLabels}
           />
           <SubToolbar
             onAutoMap={handleAutoMap}
