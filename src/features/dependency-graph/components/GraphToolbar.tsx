@@ -2,6 +2,7 @@ import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
+import { useRBAC } from "../../../shared/auth/useRBAC";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
@@ -10,6 +11,7 @@ interface GraphToolbarProps {
 }
 
 export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
+  const { canEditInventory } = useRBAC();
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -45,7 +47,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddGroup}
-          title="Add Group Box"
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Group Box"}
           variant="ghost"
           size="icon"
           className="border-b border-border rounded-none"
@@ -54,7 +57,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddBoundaryFrame}
-          title="Add Boundary Frame"
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Boundary Frame"}
           variant="ghost"
           size="icon"
           className="border-b border-border font-bold uppercase rounded-none"
@@ -63,7 +67,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onQuickAdd}
-          title="Quick Add Infrastructure"
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Quick Add Infrastructure"}
           variant="ghost"
           size="icon"
           className="rounded-none"

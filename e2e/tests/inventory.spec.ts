@@ -2,8 +2,23 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Inventory Page - Servers', () => {
   test('should load the inventory page and display servers', async ({ page }) => {
-    // Navigate to the inventory page
+    // Navigate to the inventory page (will redirect to Keycloak if not logged in)
     await page.goto('/inventory');
+
+    // Wait for redirect to finish
+    await page.waitForLoadState('networkidle');
+
+    // If redirected to Keycloak login page
+    if (page.url().includes('localhost:8080') || page.url().includes('login') || page.url().includes('realms')) {
+      await page.locator('input[name="username"], #username').fill('Ankinnnnn');
+      await page.locator('input[name="password"], #password').fill('12345');
+      await page.locator('input[type="submit"], button[type="submit"], #kc-login').click();
+      
+      // Wait for login to complete and redirect back to our app
+      await page.waitForLoadState('networkidle');
+    }
+
+    // Now we should be on the inventory page
 
     // Verify the page title/header is present
     await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible({ timeout: 10000 });

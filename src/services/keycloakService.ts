@@ -40,4 +40,33 @@ export const updateToken = (minValidity: number = 30) => {
 
 export const getUsername = () => keycloak.tokenParsed?.preferred_username || "User";
 
+/**
+ * Retrieves the user's roles from Keycloak token (checking both realm_access and resource_access).
+ * Safe when token is null, undefined, or user is not logged in.
+ */
+export const getUserRoles = (): string[] => {
+  if (!keycloak || !keycloak.tokenParsed) {
+    return [];
+  }
+  const realmRoles: string[] = keycloak.tokenParsed?.realm_access?.roles || [];
+  const clientRoles: string[] = Object.values(keycloak.tokenParsed?.resource_access || {})
+    .flatMap((resource: any) => resource?.roles || []);
+  return Array.from(new Set([...realmRoles, ...clientRoles]));
+};
+
+/**
+ * Checks if the user has a specific role.
+ */
+export const hasRole = (role: string): boolean => {
+  return getUserRoles().includes(role);
+};
+
+/**
+ * Checks if the user has any role in the provided list of roles.
+ */
+export const hasAnyRole = (roles: string[]): boolean => {
+  const userRoles = getUserRoles();
+  return roles.some((role) => userRoles.includes(role));
+};
+
 export default keycloak;

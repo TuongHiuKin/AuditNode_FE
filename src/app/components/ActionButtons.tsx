@@ -1,4 +1,5 @@
 import { Edit2, Network, Trash2 } from "lucide-react";
+import { useRBAC } from "../../shared/auth/useRBAC";
 
 interface ActionButtonsProps {
   onDepClick?: () => void;
@@ -7,15 +8,22 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: ActionButtonsProps) {
+  const { canEditInventory } = useRBAC();
+
   return (
     <div className="flex items-center justify-end gap-1">
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onEditClick?.();
+          if (canEditInventory) onEditClick?.();
         }}
-        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-hover rounded-md transition-colors"
-        title="Edit"
+        disabled={!canEditInventory}
+        className={`p-1.5 rounded-md transition-colors ${
+          canEditInventory
+            ? "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+            : "text-muted-foreground/40 cursor-not-allowed"
+        }`}
+        title={!canEditInventory ? "Bạn không có quyền thao tác" : "Edit"}
       >
         <Edit2 size={16} />
       </button>
@@ -32,10 +40,15 @@ export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: Action
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onDeleteClick?.();
+          if (canEditInventory) onDeleteClick?.();
         }}
-        className="p-1.5 text-muted-foreground hover:text-danger hover:bg-danger/10 rounded-md transition-colors"
-        title="Delete"
+        disabled={!canEditInventory}
+        className={`p-1.5 rounded-md transition-colors ${
+          canEditInventory
+            ? "text-muted-foreground hover:text-danger hover:bg-danger/10"
+            : "text-muted-foreground/40 cursor-not-allowed"
+        }`}
+        title={!canEditInventory ? "Bạn không có quyền thao tác" : "Delete"}
       >
         <Trash2 size={16} />
       </button>

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useHeader } from "../hooks/useHeader";
 import { BulkImportModal } from "../components/BulkImportModal";
+import { useRBAC } from "../../shared/auth/useRBAC";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
 
@@ -61,6 +62,7 @@ const APP_COLUMNS: ColumnOption[] = [
 
 export function InventoryLayout() {
   const { setHeader } = useHeader();
+  const { canEditInventory } = useRBAC();
 
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -269,8 +271,16 @@ export function InventoryLayout() {
             <>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsBulkImportOpen(true)}
-                  className="bg-surface hover:bg-surface-hover border border-border px-3.5 h-9 rounded-lg text-sm font-semibold flex items-center gap-2 text-foreground transition-all shadow-sm ring-1 ring-transparent hover:ring-border"
+                  onClick={() => {
+                    if (canEditInventory) setIsBulkImportOpen(true);
+                  }}
+                  disabled={!canEditInventory}
+                  title={!canEditInventory ? "Bạn không có quyền thao tác" : "Import"}
+                  className={`border px-3.5 h-9 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm ${
+                    canEditInventory
+                      ? "bg-surface hover:bg-surface-hover border-border text-foreground ring-1 ring-transparent hover:ring-border"
+                      : "bg-surface/50 border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                  }`}
                 >
                   <Upload size={15} className="text-muted-foreground" />
                   Import
@@ -312,8 +322,16 @@ export function InventoryLayout() {
               <div className="h-5 w-px bg-border mx-1" />
 
               <button
-                onClick={() => setIsRegisterModalOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 h-9 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-[0_0_24px_oklch(0.62_0.22_25/0.35)] hover:shadow-[0_0_32px_oklch(0.62_0.22_25/0.5)]"
+                onClick={() => {
+                  if (canEditInventory) setIsRegisterModalOpen(true);
+                }}
+                disabled={!canEditInventory}
+                title={!canEditInventory ? "Bạn không có quyền thao tác" : "Register Entity"}
+                className={`px-4 h-9 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
+                  canEditInventory
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_24px_oklch(0.62_0.22_25/0.35)] hover:shadow-[0_0_32px_oklch(0.62_0.22_25/0.5)]"
+                    : "bg-primary/40 text-primary-foreground/60 cursor-not-allowed shadow-none"
+                }`}
               >
                 <Plus size={16} />
                 Register Entity

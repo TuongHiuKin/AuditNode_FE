@@ -8,6 +8,7 @@ import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { useDatacenters } from "../../hooks/queries/useDatacenters";
+import { useRBAC } from "../../shared/auth/useRBAC";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -74,6 +75,7 @@ export function ServerTable({
   const [datacenterFilter, setDatacenterFilter] = useState("ALL");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { canManageSystem } = useRBAC();
 
   const { data: servers = [], isLoading } = useServers();
   const { data: datacenters = [] } = useDatacenters();
@@ -164,7 +166,7 @@ export function ServerTable({
             value={datacenterFilter}
             options={datacenterOptions}
             onChange={handleDatacenterChange}
-            onAdd={onOpenCreateDc}
+            onAdd={canManageSystem ? onOpenCreateDc : undefined}
             addLabel="Add Datacenter"
           />
 

@@ -25,9 +25,12 @@ vi.mock("../services/keycloakService", () => ({
   getToken: vi.fn(() => "mock-token"),
   updateToken: vi.fn(() => Promise.resolve(true)),
   getUsername: vi.fn(() => "Test User"),
+  getUserRoles: vi.fn(() => ["Admin"]),
+  hasRole: vi.fn((role) => role === "Admin"),
+  hasAnyRole: vi.fn((roles) => roles.includes("Admin")),
   default: {
     token: "mock-token",
-    tokenParsed: { preferred_username: "Test User" },
+    tokenParsed: { preferred_username: "Test User", realm_access: { roles: ["Admin"] } },
     logout: vi.fn(),
     init: vi.fn().mockResolvedValue(true),
     updateToken: vi.fn().mockResolvedValue(true),

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import { toast } from "sonner";
 import { paths } from "./v1-contract";
 
 /**
@@ -71,6 +72,11 @@ export const responseInterceptorErrorHandler = (error: any) => {
   
   if (response?.data?.errors) {
     console.error("[Validation Errors]", response.data.errors);
+  }
+
+  // Handle 403 Forbidden globally
+  if (status === 403) {
+    toast.error("Bạn không có quyền thực hiện thao tác này.");
   }
 
   // Handle 401 Unauthorized globally
