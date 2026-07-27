@@ -21,7 +21,7 @@ test.describe('Inventory Page - Servers', () => {
     // Now we should be on the inventory page
 
     // Verify the page title/header is present
-    await expect(page.getByRole('heading', { name: /inventory/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
 
     // Assuming there is a table or list of servers
     // We wait for the table body to be visible

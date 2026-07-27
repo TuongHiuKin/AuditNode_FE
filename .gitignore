@@ -161,3 +161,7 @@ secrets.json
 # OS and Editor Leftovers
 Thumbs.db
 *.user
+
+# Playwright Test Output
+playwright-report/
+test-results/

@@ -42,14 +42,36 @@ export const getUsername = () => keycloak.tokenParsed?.preferred_username || "Us
 
 /**
  * Retrieves the user's roles from Keycloak token (checking both realm_access and resource_access).
+ * Falls back to decoding localStorage accessToken for backend login gateway flow.
  * Safe when token is null, undefined, or user is not logged in.
  */
 export const getUserRoles = (): string[] => {
-  if (!keycloak || !keycloak.tokenParsed) {
+  let tokenParsed = keycloak?.tokenParsed;
+
+  if (!tokenParsed && typeof window !== "undefined") {
+    const localToken = localStorage.getItem("accessToken");
+    if (localToken) {
+      try {
+        const base64Url = localToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        tokenParsed = JSON.parse(jsonPayload);
+      } catch (e) {
+        // ignore invalid token in localStorage
+      }
+    }
+  }
+
+  if (!tokenParsed) {
     return [];
   }
-  const realmRoles: string[] = keycloak.tokenParsed?.realm_access?.roles || [];
-  const clientRoles: string[] = Object.values(keycloak.tokenParsed?.resource_access || {})
+  const realmRoles: string[] = tokenParsed?.realm_access?.roles || [];
+  const clientRoles: string[] = Object.values(tokenParsed?.resource_access || {})
     .flatMap((resource: any) => resource?.roles || []);
   return Array.from(new Set([...realmRoles, ...clientRoles]));
 };
