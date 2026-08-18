@@ -2,6 +2,9 @@ import { type Node, type Edge } from "@xyflow/react";
 
 export interface TopologyAppData {
   id: string;
+  appId: string;
+  serverId: string;
+  portMappingId: string;
   appName: string;
   portNumber: number;
   protocol: string;
@@ -11,6 +14,7 @@ export interface TopologyAppData {
 
 export interface TopologyServerNodeData extends Record<string, unknown> {
   server: {
+    serverId?: string;
     hostname: string;
     ipAddress: string;
     osType?: string;

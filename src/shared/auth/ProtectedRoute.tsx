@@ -1,9 +1,8 @@
 import React, { ReactNode } from "react";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router";
-import { useRBAC } from "./useRBAC";
-import { hasAnyRole } from "../../services/keycloakService";
+import { Navigate, Outlet, useNavigate } from "react-router";
 import { Button } from "../ui/Button";
+import { useAuth } from "./AuthContext";
 
 export interface ProtectedRouteProps {
   allowedRoles?: string[];
@@ -21,10 +20,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallback,
 }) => {
   const navigate = useNavigate();
-  const { roles } = useRBAC();
+  const { status, roles } = useAuth();
+
+  if (status === "initializing") {
+    return <div role="status" className="min-h-[40vh] grid place-items-center text-muted-foreground">Restoring session…</div>;
+  }
+
+  if (status === "anonymous") {
+    return <Navigate to="/login" replace />;
+  }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const isAllowed = hasAnyRole(allowedRoles);
+    const isAllowed = allowedRoles.some((role) => roles.includes(role));
 
     if (!isAllowed) {
       if (fallback) {
@@ -70,7 +77,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export default ProtectedRoute;

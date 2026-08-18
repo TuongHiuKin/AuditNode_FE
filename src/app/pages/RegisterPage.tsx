@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import apiClient from "../../shared/api/client";
+import axios from "axios";
+import { useAuth } from "../../shared/auth/AuthContext";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -47,9 +48,11 @@ export function RegisterPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setSuccess(null);
 
@@ -60,13 +63,18 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      await apiClient.post("/api/v1/auth/register", { username, email, password });
+      await register(username, email, password);
       setSuccess("Account created successfully! Redirecting to login…");
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to register. Username or email may already exist.");
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      setError(status === 409
+        ? "Username or email already exists."
+        : status === 503
+          ? "Registration service is temporarily unavailable."
+          : "Unable to create the account. Please try again.");
     } finally {
       setLoading(false);
     }

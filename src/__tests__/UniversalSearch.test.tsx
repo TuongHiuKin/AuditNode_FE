@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UniversalSearch from '../app/components/UniversalSearch';
 import apiClient from '../shared/api/client';
+import { setSelectedWorkspaceId } from '../shared/workspace/workspaceStore';
 
 // Mock the apiClient
 vi.mock('../shared/api/client', () => ({
@@ -25,10 +26,13 @@ const UniversalSearchWrapper = ({ onSelectResult }: any) => {
 };
 
 describe('UniversalSearch Component', () => {
+  const workspaceA = '11111111-1111-4111-8111-111111111111';
+  const workspaceB = '22222222-2222-4222-8222-222222222222';
   const mockOnSelectResult = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(apiClient.get).mockReset();
+    setSelectedWorkspaceId(workspaceA, { persist: false });
   });
 
   it('renders the search input', () => {
@@ -54,6 +58,7 @@ describe('UniversalSearch Component', () => {
     await waitFor(() => {
       expect(apiClient.get).toHaveBeenCalledWith('/api/v1/search', {
         params: { keyword: 'alpha' },
+        signal: expect.any(AbortSignal),
       });
     }, { timeout: 1000 });
 
@@ -109,5 +114,45 @@ describe('UniversalSearch Component', () => {
     await waitFor(() => {
       expect(screen.queryByText('Result')).toBeNull();
     });
+  });
+
+  it('clears search and ignores a late result from the previous workspace', async () => {
+    let resolveA!: (value: { data: SearchResultFixture[] }) => void;
+    let resolveB!: (value: { data: SearchResultFixture[] }) => void;
+    type SearchResultFixture = {
+      id: string;
+      type: 'SERVER';
+      title: string;
+      subtitle: string;
+      matchReason: string;
+    };
+    const requestA = new Promise<{ data: SearchResultFixture[] }>((resolve) => { resolveA = resolve; });
+    const requestB = new Promise<{ data: SearchResultFixture[] }>((resolve) => { resolveB = resolve; });
+    vi.mocked(apiClient.get).mockImplementation((_url, config) => {
+      const keyword = config?.params?.keyword;
+      if (keyword === 'alpha') return requestA;
+      if (keyword === 'beta') return requestB;
+      return Promise.resolve({ data: [] });
+    });
+    render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
+    const input = screen.getByPlaceholderText(/search servers & apps/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'alpha' } });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(1), { timeout: 1000 });
+
+    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    await waitFor(() => expect(input.value).toBe(''));
+    fireEvent.change(input, { target: { value: 'beta' } });
+    await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.some(([, config]) => config?.params?.keyword === 'beta')).toBe(true), { timeout: 1000 });
+    await act(async () => {
+      resolveB({ data: [{ id: 'b', type: 'SERVER', title: 'Workspace B', subtitle: '', matchReason: '' }] });
+    });
+    await waitFor(() => expect(screen.getByText('Workspace B')).toBeDefined());
+    await act(async () => {
+      resolveA({ data: [{ id: 'a', type: 'SERVER', title: 'Workspace A', subtitle: '', matchReason: '' }] });
+    });
+
+    expect(screen.queryByText('Workspace A')).toBeNull();
+    expect(screen.getByText('Workspace B')).toBeDefined();
+    expect(vi.mocked(apiClient.get).mock.calls.every(([, config]) => config?.signal instanceof AbortSignal)).toBe(true);
   });
 });

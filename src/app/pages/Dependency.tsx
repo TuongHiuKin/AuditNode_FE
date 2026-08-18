@@ -11,6 +11,8 @@ import { FilterBar } from "../../features/dependency-graph/components/FilterBar"
 import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
 import { RegisterModal } from "../components/RegisterModal";
 import { useHeader } from "../hooks/useHeader";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 
 function DependencyManagerContent() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,7 +23,7 @@ function DependencyManagerContent() {
   const reactFlowInstance = useReactFlow();
 
   const {
-    nodes, setNodes, edges, setEdges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
+    nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
     onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
@@ -44,11 +46,12 @@ function DependencyManagerContent() {
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const { setHeader } = useHeader();
     const queryClient = useQueryClient();
+    const { selectedWorkspaceId } = useWorkspace();
 
     const refreshData = () => {
-      queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
-      queryClient.invalidateQueries({ queryKey: ["all-servers"] });
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey("all-servers", selectedWorkspaceId) });
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
     };
 
     useEffect(() => {
@@ -67,8 +70,6 @@ function DependencyManagerContent() {
 
       if (entityId) {
         // PRIORITY 1: Deep Linking
-        sessionStorage.removeItem('dependencyGraphState'); // Clear old session
-        
         handleAutoMap(envParam || undefined).then(() => {
           // Clear URL parameters to prevent re-triggering on refresh
           setSearchParams({});
@@ -82,61 +83,8 @@ function DependencyManagerContent() {
             }
           }, 500);
         });
-      } else {
-        // PRIORITY 2: State Persistence (Restore)
-        const cached = sessionStorage.getItem('dependencyGraphState');
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            
-            // Restore exact state variables
-            if (parsed.selectedItem) setSelectedItem(parsed.selectedItem);
-            if (parsed.rightPanelData) setRightPanelData(parsed.rightPanelData);
-            if (parsed.selectedEnv) setSelectedEnv(parsed.selectedEnv);
-            if (parsed.selectedDatacenter) setSelectedDatacenter(parsed.selectedDatacenter);
-            if (Array.isArray(parsed.selectedLabels)) setSelectedLabels(parsed.selectedLabels);
-            
-            if (parsed.nodes && parsed.nodes.length > 0) {
-              const safeNodes = parsed.nodes.map((n: any) => ({
-                ...n,
-                position: {
-                  x: typeof n.position?.x === 'number' && !isNaN(n.position.x) ? n.position.x : 0,
-                  y: typeof n.position?.y === 'number' && !isNaN(n.position.y) ? n.position.y : 0
-                }
-              }));
-              setNodes(safeNodes);
-            }
-            if (parsed.edges && parsed.edges.length > 0) {
-              setEdges(parsed.edges);
-            }
-            
-            // Restore camera position if a node was selected
-            if (parsed.selectedItem?.id) {
-              setTimeout(() => {
-                reactFlowInstance.fitView({ nodes: [{ id: parsed.selectedItem.id }], duration: 800, padding: 0.5 });
-              }, 100);
-            }
-          } catch (e) {
-            console.error("Failed to parse cached dependency graph state", e);
-          }
-        }
       }
-    }, [entityId, handleAutoMap, setSearchParams, setNodes, setEdges, reactFlowInstance, onSelectionChange, setSelectedItem, setRightPanelData, setSelectedEnv, setSelectedDatacenter, setSelectedLabels]);
-
-    // Hook 2: Save state to Session Storage continuously
-    useEffect(() => {
-      if (hasInitialized.current && (nodes.length > 0 || edges.length > 0)) {
-        sessionStorage.setItem('dependencyGraphState', JSON.stringify({
-          nodes,
-          edges,
-          selectedItem,
-          rightPanelData,
-          selectedEnv,
-          selectedDatacenter,
-          selectedLabels
-        }));
-      }
-    }, [nodes, edges, selectedItem, rightPanelData, selectedEnv, selectedDatacenter, selectedLabels]);
+    }, [entityId, envParam, handleAutoMap, onSelectionChange, reactFlowInstance, setSearchParams]);
 
     return (
     <div className="flex h-full w-full bg-background overflow-hidden relative font-body">

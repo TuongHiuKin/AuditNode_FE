@@ -55,8 +55,10 @@ describe("DependencyManager Integration", () => {
       servers: [
         {
           id: "srv-1",
+          serverId: "srv-1",
           hostname: "api-srv-01",
           ipAddress: "192.168.1.10",
+          labels: [],
           applications: []
         }
       ],
@@ -67,9 +69,10 @@ describe("DependencyManager Integration", () => {
       if (url.includes("/api/v1/topology/map")) {
         return Promise.resolve({ data: mockMapData });
       }
-      if (url.includes("/api/v1/topology/status")) {
+      if (url.includes("/api/v1/applications")) {
         return Promise.resolve({ data: [] });
       }
+      if (url.includes("/api/v1/topology/state")) return Promise.resolve({ data: { nodes: [], edges: [] } });
       return Promise.resolve({ data: [] });
     });
 

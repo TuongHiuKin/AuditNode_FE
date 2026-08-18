@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   useNodesState,
   useEdgesState,
@@ -7,10 +7,14 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient, { Schemas } from "../../../shared/api/client";
+import apiClient from "../../../shared/api/client";
 import { SelectedItem } from "../types";
+import type { DependencyMapResponse } from "../graphContract";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
+import { getSelectedWorkspaceId, tenantQueryKey } from "../../../shared/workspace/workspaceStore";
 
 export function useTopologyLogic() {
+  const { selectedWorkspaceId } = useWorkspace();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
@@ -21,6 +25,16 @@ export function useTopologyLogic() {
   const [appSearchQuery, setAppSearchQuery] = useState("");
 
   const reactFlowInstance = useReactFlow();
+  const activeWorkspaceRef = useRef(selectedWorkspaceId);
+  activeWorkspaceRef.current = selectedWorkspaceId;
+
+  useEffect(() => {
+    setNodes([]);
+    setEdges([]);
+    setSelectedItem({ type: null, id: null });
+    setRightPanelData(null);
+    setAppSearchQuery("");
+  }, [selectedWorkspaceId, setEdges, setNodes]);
 
   // ── Highlighting Logic based on Search ───────────────────────────────
   useEffect(() => {
@@ -191,17 +205,20 @@ export function useTopologyLogic() {
 
   // ── Fetch graph data ──────────────────────────────────────────────────────
   const { isLoading: isGraphLoading, refetch } = useQuery({
-    queryKey: ["topology-inventory-map", selectedEnv, selectedDatacenter],
+    queryKey: tenantQueryKey("topology-inventory-map", selectedWorkspaceId, selectedEnv, selectedDatacenter),
     staleTime: 0, // Ensure data is considered stale immediately for fresh fetches
-    queryFn: async () => {
+    enabled: !!selectedWorkspaceId,
+    queryFn: async ({ queryKey, signal }) => {
+      const [_scope, workspaceId, environment, datacenterId] = queryKey as [string, string, string, string];
       try {
-        const response = await apiClient.get<Schemas["DependencyMapDto"]>(
+        const response = await apiClient.get<DependencyMapResponse>(
           "/api/v1/topology/map",
           {
             params: {
-              environment: selectedEnv === "All" ? undefined : selectedEnv,
-              datacenterId: selectedDatacenter === "All" ? undefined : selectedDatacenter,
+              environment: environment === "All" ? undefined : environment,
+              datacenterId: datacenterId === "All" ? undefined : datacenterId,
             },
+            signal,
           }
         );
         const data = response.data;
@@ -209,12 +226,15 @@ export function useTopologyLogic() {
         const mappedNodes: Node[] = [];
         const mappedEdges: Edge[] = []; // No edges for Topology view
 
-        data.servers?.forEach((srv: any, srvIdx: number) => {
-          const serverNodeId = srv.id || `srv-${srvIdx}`;
+        data.servers?.forEach((srv) => {
+          const serverNodeId = srv.serverId;
 
           // Map apps data to embed directly in server node
-          const apps = (srv.applications || []).map((app: any, appIdx: number) => ({
-            id: app.id || `app-${srvIdx}-${appIdx}`,
+          const apps = (srv.applications || []).map((app) => ({
+            id: app.portMappingId,
+            appId: app.appId,
+            serverId: app.serverId,
+            portMappingId: app.portMappingId,
             appName: app.name,
             portNumber: app.port,
             protocol: app.protocol,
@@ -232,6 +252,7 @@ export function useTopologyLogic() {
             position: { x: 0, y: 0 },
             data: {
               server: {
+                serverId: srv.serverId,
                 hostname: srv.hostname,
                 ipAddress: srv.ipAddress,
                 osType: srv.osType,
@@ -247,6 +268,9 @@ export function useTopologyLogic() {
         });
 
         const layoutedNodes = performLayout(mappedNodes);
+        if (signal.aborted || activeWorkspaceRef.current !== workspaceId || getSelectedWorkspaceId() !== workspaceId) {
+          return { nodes: layoutedNodes, edges: mappedEdges };
+        }
         setNodes(layoutedNodes);
         setEdges(mappedEdges);
         return { nodes: layoutedNodes, edges: mappedEdges };

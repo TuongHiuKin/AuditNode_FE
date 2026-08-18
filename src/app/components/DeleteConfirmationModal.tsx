@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Trash2, X, Loader2, Info, ShieldAlert, Box } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../shared/api/client";
+import { API_ENDPOINTS } from "../../config/endpoints";
+import { ServerService } from "../../services/serverService";
 
 interface DeleteConfirmationModalProps {
   entityId: string | null;
@@ -96,16 +98,16 @@ export function DeleteConfirmationModal({
     
     setPurging(true);
     try {
-      const endpoint = entityType === "APP" 
-        ? `/api/v1/infrastructure/apps/${entityId}/purge`
-        : `/api/v1/infrastructure/servers/${entityId}/purge`;
-        
-      await apiClient.delete(endpoint);
-      toast.success(`${entityType === "APP" ? "Application" : "Server"} purged successfully`);
+      if (entityType === "APP") {
+        await apiClient.delete(API_ENDPOINTS.APPLICATIONS.PURGE(entityId));
+      } else {
+        await ServerService.deleteServer(entityId);
+      }
+      toast.success(entityType === "APP" ? "Application purged successfully" : "Server deleted successfully");
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || `Failed to purge ${entityType.toLowerCase()}`);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, `Failed to delete ${entityType.toLowerCase()}`));
     } finally {
       setPurging(false);
     }
@@ -276,4 +278,13 @@ export function DeleteConfirmationModal({
     </div>,
     document.body
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (!isRecord(error) || !isRecord(error.response) || !isRecord(error.response.data)) return fallback;
+  return typeof error.response.data.message === "string" ? error.response.data.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

@@ -5,6 +5,7 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
+import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 
 vi.mock("../shared/api/client", () => ({
   default: { get: vi.fn() },
@@ -28,10 +29,13 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe("useTopologyLogic (Isolated)", () => {
+  const workspaceA = "11111111-1111-4111-8111-111111111111";
+  const workspaceB = "22222222-2222-4222-8222-222222222222";
   let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setSelectedWorkspaceId(workspaceA, { persist: false });
     queryClient = createTestQueryClient();
   });
 
@@ -44,8 +48,8 @@ describe("useTopologyLogic (Isolated)", () => {
   it("calculates symmetric grid positions for servers", async () => {
     const mockData = {
       servers: [
-        { id: "s1", hostname: "h1", ipAddress: "i1", applications: [] },
-        { id: "s2", hostname: "h2", ipAddress: "i2", applications: [] },
+        { id: "s1", serverId: "s1", hostname: "h1", ipAddress: "i1", labels: [], applications: [] },
+        { id: "s2", serverId: "s2", hostname: "h2", ipAddress: "i2", labels: [], applications: [] },
       ],
       connections: [],
     };
@@ -67,7 +71,7 @@ describe("useTopologyLogic (Isolated)", () => {
 
   it("opens panel strictly on double click (mocked via logic test)", async () => {
     const mockData = {
-      servers: [{ id: "s1", hostname: "h1", ipAddress: "i1", applications: [] }],
+      servers: [{ id: "s1", serverId: "s1", hostname: "h1", ipAddress: "i1", labels: [], applications: [] }],
       connections: [],
     };
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockData });
@@ -92,8 +96,8 @@ describe("useTopologyLogic (Isolated)", () => {
   it("highlights nodes based on appSearchQuery", async () => {
     const mockData = {
       servers: [
-        { id: "s1", hostname: "h1", ipAddress: "i1", applications: [{ id: "a1", name: "Auth Service", port: 8080 }] },
-        { id: "s2", hostname: "h2", ipAddress: "i2", applications: [{ id: "a2", name: "Payment Service", port: 9090 }] },
+        { id: "s1", serverId: "s1", hostname: "h1", ipAddress: "i1", labels: [], applications: [{ id: "m1", appId: "a1", serverId: "s1", portMappingId: "m1", name: "Auth Service", port: 8080, protocol: "HTTP" }] },
+        { id: "s2", serverId: "s2", hostname: "h2", ipAddress: "i2", labels: [], applications: [{ id: "m2", appId: "a2", serverId: "s2", portMappingId: "m2", name: "Payment Service", port: 9090, protocol: "HTTP" }] },
       ],
       connections: [],
     };
@@ -136,5 +140,31 @@ describe("useTopologyLogic (Isolated)", () => {
     await waitFor(() => {
       expect(result.current.nodes.every(n => n.style?.opacity === 1)).toBe(true);
     });
+  });
+
+  it("clears immediately and ignores a late topology response from the previous workspace", async () => {
+    let resolveA!: (value: { data: any }) => void;
+    let resolveB!: (value: { data: any }) => void;
+    const requestA = new Promise<{ data: any }>((resolve) => { resolveA = resolve; });
+    const requestB = new Promise<{ data: any }>((resolve) => { resolveB = resolve; });
+    let calls = 0;
+    vi.mocked(apiClient.get).mockImplementation(() => ++calls === 1 ? requestA : requestB);
+    const graph = (serverId: string) => ({
+      servers: [{ serverId, hostname: serverId, ipAddress: "10.0.0.1", applications: [] }],
+      connections: [],
+    });
+    const { result } = renderHook(() => useTopologyLogic(), { wrapper });
+    await waitFor(() => expect(calls).toBe(1));
+
+    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    expect(result.current.nodes).toEqual([]);
+    await waitFor(() => expect(calls).toBe(2));
+    await act(async () => { resolveB({ data: graph("server-b") }); });
+    await waitFor(() => expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true));
+    await act(async () => { resolveA({ data: graph("server-a") }); });
+
+    expect(result.current.nodes.some((node) => node.id === "server-a")).toBe(false);
+    expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true);
+    expect(vi.mocked(apiClient.get).mock.calls.every(([, config]) => config?.signal instanceof AbortSignal)).toBe(true);
   });
 });

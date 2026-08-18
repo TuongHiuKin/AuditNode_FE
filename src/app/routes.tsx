@@ -1,12 +1,30 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { Layout } from "./components/Layout";
-import { InventoryLayout } from "./pages/InventoryLayout";
-import { Inventory } from "./pages/Inventory";
-import { Topology } from "./pages/Topology";
-import { DependencyManager } from "./pages/Dependency";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+
+const InventoryLayout = lazy(() => import("./pages/InventoryLayout")
+  .then((module) => ({ default: module.InventoryLayout })));
+const Inventory = lazy(() => import("./pages/Inventory")
+  .then((module) => ({ default: module.Inventory })));
+const Topology = lazy(() => import("./pages/Topology")
+  .then((module) => ({ default: module.Topology })));
+const DependencyManager = lazy(() => import("./pages/Dependency")
+  .then((module) => ({ default: module.DependencyManager })));
+
+function lazyRoute(element: ReactNode) {
+  return (
+    <Suspense fallback={(
+      <div className="flex h-full items-center justify-center bg-background text-sm text-muted-foreground" role="status">
+        Loading workspace view…
+      </div>
+    )}>
+      {element}
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
@@ -22,15 +40,15 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/inventory" replace /> },
       {
         path: "inventory",
-        Component: InventoryLayout,
+        element: lazyRoute(<InventoryLayout />),
         children: [
           { index: true, element: <Navigate to="servers" replace /> },
-          { path: "servers", element: <Inventory key="servers" type="servers" /> },
-          { path: "applications", element: <Inventory key="applications" type="applications" /> },
+          { path: "servers", element: lazyRoute(<Inventory key="servers" type="servers" />) },
+          { path: "applications", element: lazyRoute(<Inventory key="applications" type="applications" />) },
         ],
       },
-      { path: "topology", Component: Topology },
-      { path: "dependency-manager", Component: DependencyManager },
+      { path: "topology", element: lazyRoute(<Topology />) },
+      { path: "dependency-manager", element: lazyRoute(<DependencyManager />) },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

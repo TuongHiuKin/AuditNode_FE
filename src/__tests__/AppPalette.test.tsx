@@ -6,6 +6,9 @@ describe("AppPalette", () => {
   const mockAvailableApps = [
     {
       id: "app-1",
+      appId: "application-1",
+      serverId: "server-1",
+      portMappingId: "app-1",
       appName: "Payment Gateway",
       ownerId: "team-1",
       portNumber: 443,
@@ -16,6 +19,9 @@ describe("AppPalette", () => {
     },
     {
       id: "app-2",
+      appId: "application-2",
+      serverId: "server-2",
+      portMappingId: "app-2",
       appName: "Auth Service",
       ownerId: "team-2",
       portNumber: 8080,

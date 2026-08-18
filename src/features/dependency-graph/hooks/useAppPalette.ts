@@ -1,23 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
-import apiClient from "../../../shared/api/client";
-import { PaletteApp } from "../types";
+import { ApplicationService } from "../../../services/applicationService";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import type { PaletteApp } from "../types";
 
 export function useAppPalette() {
-  const { data: allApps = [], isLoading, refetch } = useQuery<PaletteApp[]>({
-    queryKey: ["topology-status"],
+  const { selectedWorkspaceId } = useWorkspace();
+  const { data: availableApps = [], isLoading, refetch } = useQuery<PaletteApp[]>({
+    queryKey: tenantQueryKey("dependency-palette", selectedWorkspaceId),
     queryFn: async () => {
-      const response = await apiClient.get<PaletteApp[]>("/api/v1/topology/status");
-      const rawResponse = response as any;
-      // Handle potential wrapped response from common client patterns
-      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      const applications = await ApplicationService.getApplications();
+      return applications.flatMap((application) => application.servers
+        .filter((deployment) => Boolean(deployment.portMappingId))
+        .map((deployment) => ({
+          id: deployment.portMappingId,
+          appId: application.id,
+          serverId: deployment.id,
+          portMappingId: deployment.portMappingId,
+          appName: application.appName,
+          ownerId: application.ownerTeam,
+          portNumber: deployment.portNumber,
+          protocol: deployment.protocol,
+          icon: application.icon,
+          techStack: application.techStack,
+          risk: application.risk,
+          isMapped: false,
+        })));
     },
+    enabled: Boolean(selectedWorkspaceId),
   });
 
-  const availableApps = allApps.filter(app => !app.isMapped);
-
-  return {
-    availableApps,
-    isLoading,
-    refetch,
-  };
+  return { availableApps, isLoading, refetch };
 }

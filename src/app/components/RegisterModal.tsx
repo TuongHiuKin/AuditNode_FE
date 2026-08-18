@@ -3,6 +3,12 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
+import { API_ENDPOINTS } from "../../config/endpoints";
+import { ServerService } from "../../services/serverService";
+import { ApplicationService } from "../../services/applicationService";
+import { isNonEmptyIdentifier, type CreateApplicationRequest } from "../../shared/api/applicationTypes";
 
 const inputCls = "w-full bg-background border border-border text-foreground text-sm rounded-lg p-2.5 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all";
 const labelCls = "text-sm font-medium text-muted-foreground";
@@ -15,35 +21,38 @@ export interface RegisterModalProps {
 }
 
 export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = "infra" }: RegisterModalProps) {
+  const { selectedWorkspaceId } = useWorkspace();
   const [formMode, setFormMode] = useState<"infra" | "app" | "datacenter">(defaultMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ── Fetch Datacenters ──────────────────────────────────────────────────────────────────
   const { data: datacenters = [] } = useQuery({
-    queryKey: ["datacenters"],
+    queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
     queryFn: async () => {
       const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
       return Array.isArray(response.data) ? response.data : [];
     },
+    enabled: !!selectedWorkspaceId,
   });
 
   // ── Fetch Servers (Dynamic Fetch) ────────────────────────────────────────────────────────
   const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
 
   useEffect(() => {
+    if (!selectedWorkspaceId) {
+      setAvailableServers([]);
+      return;
+    }
     const fetchServers = async () => {
       try {
-        const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
-        if (Array.isArray(response.data)) {
-          setAvailableServers(response.data);
-        }
+        setAvailableServers(await ServerService.getServers());
       } catch (err) {
         console.error("Failed to fetch servers:", err);
       }
     };
     fetchServers();
-  }, []);
+  }, [selectedWorkspaceId]);
 
   // Form State
   const [infraData, setInfraData] = useState<{
@@ -167,25 +176,41 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
         if (!infraData.datacenterId || !infraData.ipAddress || !infraData.hostname || !infraData.osType) {
           throw new Error("Datacenter, IP Address, Hostname, and OS Type are required");
         }
-        await apiClient.post("/api/v1/servers", infraData);
+        await ServerService.createServer(infraData);
       } else if (formMode === "app") {
-        if (!appData.serverId || !appData.appCode || !appData.appName || !appData.ownerTeam) {
-          throw new Error("Server, App Code, App Name, and Owner Team are required");
+        if (!appData.appCode || !appData.appName || !appData.ownerTeam) {
+          throw new Error("App Code, App Name, and Owner Team are required");
         }
-        await apiClient.post("/api/v1/applications", appData);
+        const payload: CreateApplicationRequest = {
+          appCode: appData.appCode,
+          appName: appData.appName,
+          ownerTeam: appData.ownerTeam,
+          labels: appData.labels,
+        };
+        if (appData.serverId) {
+          if (!isNonEmptyIdentifier(appData.serverId)) {
+            throw new Error("A non-empty deployment server identifier is required.");
+          }
+          payload.deployment = {
+            serverId: appData.serverId,
+            portNumber: Number(appData.portNumber),
+            protocol: appData.protocol,
+          };
+        }
+        await ApplicationService.createApplication(payload);
       } else if (formMode === "datacenter") {
         if (!dcData.name || !dcData.location) {
           throw new Error("Datacenter Name and Location are required");
         }
-        await apiClient.post("/api/v1/datacenters", dcData);
+        await apiClient.post(API_ENDPOINTS.DATACENTERS.BASE, dcData);
       }
       onSuccess?.();
       onClose();
-    } catch (err: any) {
-      if (err.response?.status === 403) {
+    } catch (err: unknown) {
+      if (getResponseStatus(err) === 403) {
         setError("Access Denied: Admin privileges required");
       } else {
-        setError(err.response?.data?.message || err.message || "Failed to register entity");
+        setError(getErrorMessage(err, "Failed to register entity"));
       }
     } finally {
       setLoading(false);
@@ -485,4 +510,19 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
       </div>,
     document.body
   );
+}
+
+function getResponseStatus(error: unknown): number | undefined {
+  if (!isRecord(error) || !isRecord(error.response)) return undefined;
+  return typeof error.response.status === "number" ? error.response.status : undefined;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (!isRecord(error) || !isRecord(error.response) || !isRecord(error.response.data)) return fallback;
+  return typeof error.response.data.message === "string" ? error.response.data.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

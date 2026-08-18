@@ -1,5 +1,6 @@
 
 import { useHeader } from "../hooks/useHeader";
+import { WorkspaceSelector } from "../../shared/workspace/WorkspaceSelector";
 
 export function Topbar() {
   const { breadcrumbs } = useHeader();
@@ -21,7 +22,7 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
-
+        <WorkspaceSelector />
       </div>
     </header>
   );

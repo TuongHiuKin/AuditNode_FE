@@ -4,13 +4,16 @@ import { useNavigate } from "react-router";
 import { Server, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
-import apiClient, { Schemas } from "../../shared/api/client";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
-import { LabelBadge, LabelData } from "./LabelBadge";
+import { LabelBadge } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
+import { ApplicationService } from "../../services/applicationService";
+import type { ApplicationResponse } from "../../shared/api/applicationTypes";
 
-type AppRow = Schemas["ApplicationResponseDto"] & {
+type AppRow = ApplicationResponse & {
   description?: string;
 };
 
@@ -62,20 +65,20 @@ export function AppTable({
   const [riskFilter, setRiskFilter] = useState("All");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { selectedWorkspaceId } = useWorkspace();
 
   const { data: apps = [], isLoading } = useQuery({
-    queryKey: ["applications"],
+    queryKey: tenantQueryKey("applications", selectedWorkspaceId, selectedLabelKeys),
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ApplicationResponseDto"][]>("/api/v1/applications");
-      const rawResponse = response as any;
-      // Safely destructure: handle both direct array and wrapped response { data: [...] }
-      const rawData = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
-      
-      return rawData.map((app: any) => ({
+      const rawData = await ApplicationService.getApplications(
+        selectedLabelKeys.length === 1 ? { labelValue: selectedLabelKeys[0] } : {},
+      );
+      return rawData.map((app) => ({
         ...app,
-        description: app.description || app.techStack
+        description: app.techStack,
       }));
     },
+    enabled: !!selectedWorkspaceId,
   });
 
   const filteredApps = useMemo(() => {
@@ -89,12 +92,11 @@ export function AppTable({
       const matchesSearch = !searchQuery ||
         app.appName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.appCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.ownerId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (app as any).ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        app.ownerTeam?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.risk?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesLabels = selectedLabelKeys.length === 0 || 
-        selectedLabelKeys.some(val => (app as any).labels?.some((l: any) => l.value === val));
+        selectedLabelKeys.some((value) => (app.labels ?? []).some((label) => label.value === value));
 
       return matchesRisk && matchesSearch && matchesLabels;
     });
@@ -294,20 +296,20 @@ function AppRowItem({
           <div>{app.appName}</div>
           {app.description && <div className="text-[10px] text-muted-foreground/60 font-normal mt-0.5">{app.description}</div>}
         </td>
-        <td className="px-6 py-4 text-sm text-muted-foreground/80">{(app as any).ownerTeam || app.ownerId}</td>
+        <td className="px-6 py-4 text-sm text-muted-foreground/80">{app.ownerTeam}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-label font-bold border uppercase tracking-tighter ${riskStyle}`}>{app.risk ?? "N/A"}</span>
         </td>
         <td className="px-6 py-4">
           <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-            {(app as any).labels?.map((label: LabelData) => (
+            {(app.labels ?? []).map((label) => (
               <LabelBadge key={label.key} label={label} />
             ))}
           </div>
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 
-            onDepClick={() => onDepClick(app.id!, (app as any).environment)} 
+            onDepClick={() => onDepClick(app.id)}
             onEditClick={() => onEditClick(app.id!, "APP")}
             onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}
           />

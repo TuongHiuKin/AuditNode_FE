@@ -7,7 +7,6 @@ export const API_ENDPOINTS = {
     BASE: "/api/v1/servers",
     BY_ID: (id: string) => `/api/v1/servers/${id}`,
     DEPLOYED_APPS: (id: string) => `/api/v1/infrastructure/servers/${id}/deployed-apps`,
-    PURGE: (id: string) => `/api/v1/infrastructure/servers/${id}/purge`,
     EXPORT: "/api/v1/servers/export",
   },
   APPLICATIONS: {
@@ -38,6 +37,5 @@ export const API_ENDPOINTS = {
   INVENTORY: {
     IMPORT_TEMPLATE: "/api/v1/inventory/import-template",
     IMPORT: "/api/v1/inventory/import",
-    BULK_IMPORT: "/api/v1/inventory/bulk-import",
   },
 };

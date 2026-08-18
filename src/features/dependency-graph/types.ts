@@ -2,6 +2,9 @@ import { type Node, type Edge, type Viewport } from "@xyflow/react";
 
 export interface PaletteApp {
   id: string;
+  appId: string;
+  serverId: string;
+  portMappingId: string;
   appName: string;
   ownerId: string;
   portNumber: number;
@@ -10,7 +13,6 @@ export interface PaletteApp {
   techStack: string;
   risk?: string;
   isMapped?: boolean;
-  portMappingId?: string;
 }
 
 export interface AppNodeData extends Record<string, unknown> {
@@ -19,6 +21,7 @@ export interface AppNodeData extends Record<string, unknown> {
 
 export interface ServerNodeData extends Record<string, unknown> {
   server: {
+    serverId?: string;
     hostname: string;
     ipAddress: string;
     osType?: string;

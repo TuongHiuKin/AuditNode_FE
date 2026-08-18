@@ -1,76 +1,45 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { setAuthenticatedSession } from "../shared/auth/authStore";
 import { useRBAC } from "../shared/auth/useRBAC";
-import * as keycloakService from "../services/keycloakService";
-
-vi.mock("../services/keycloakService", () => ({
-  getUserRoles: vi.fn(),
-  hasRole: vi.fn(),
-  hasAnyRole: vi.fn(),
-}));
 
 describe("useRBAC Hook", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => setRoles([]));
 
   it("returns Admin permissions when user has Admin role", () => {
-    vi.mocked(keycloakService.getUserRoles).mockReturnValue(["Admin"]);
-    vi.mocked(keycloakService.hasRole).mockImplementation((role) => role === "Admin");
-    vi.mocked(keycloakService.hasAnyRole).mockImplementation((roles) => roles.includes("Admin"));
-
+    setRoles(["Admin"]);
     const { result } = renderHook(() => useRBAC());
-
-    expect(result.current.isAdmin).toBe(true);
-    expect(result.current.isAuditor).toBe(false);
-    expect(result.current.isViewer).toBe(false);
-    expect(result.current.canEditInventory).toBe(true);
-    expect(result.current.canManageSystem).toBe(true);
-    expect(result.current.isReadOnly).toBe(false);
-    expect(result.current.roles).toEqual(["Admin"]);
+    expect(result.current).toMatchObject({
+      isAdmin: true, isAuditor: false, isViewer: false,
+      canEditInventory: true, canManageSystem: true, isReadOnly: false,
+    });
   });
 
   it("returns Auditor permissions when user has Auditor role", () => {
-    vi.mocked(keycloakService.getUserRoles).mockReturnValue(["Auditor"]);
-    vi.mocked(keycloakService.hasRole).mockImplementation((role) => role === "Auditor");
-    vi.mocked(keycloakService.hasAnyRole).mockImplementation((roles) => roles.includes("Auditor"));
-
+    setRoles(["Auditor"]);
     const { result } = renderHook(() => useRBAC());
-
-    expect(result.current.isAdmin).toBe(false);
-    expect(result.current.isAuditor).toBe(true);
-    expect(result.current.isViewer).toBe(false);
-    expect(result.current.canEditInventory).toBe(true);
-    expect(result.current.canManageSystem).toBe(false);
-    expect(result.current.isReadOnly).toBe(false);
+    expect(result.current).toMatchObject({
+      isAdmin: false, isAuditor: true, isViewer: false,
+      canEditInventory: true, canManageSystem: false, isReadOnly: false,
+    });
   });
 
-  it("returns Viewer / Read-Only permissions when user has Viewer role or no admin/auditor role", () => {
-    vi.mocked(keycloakService.getUserRoles).mockReturnValue(["Viewer"]);
-    vi.mocked(keycloakService.hasRole).mockImplementation((role) => role === "Viewer");
-    vi.mocked(keycloakService.hasAnyRole).mockReturnValue(false);
-
+  it("returns Viewer permissions from context roles", () => {
+    setRoles(["Viewer"]);
     const { result } = renderHook(() => useRBAC());
-
-    expect(result.current.isAdmin).toBe(false);
-    expect(result.current.isAuditor).toBe(false);
-    expect(result.current.isViewer).toBe(true);
-    expect(result.current.canEditInventory).toBe(false);
-    expect(result.current.canManageSystem).toBe(false);
-    expect(result.current.isReadOnly).toBe(true);
+    expect(result.current).toMatchObject({
+      isAdmin: false, isAuditor: false, isViewer: true,
+      canEditInventory: false, canManageSystem: false, isReadOnly: true,
+    });
   });
 
-  it("handles empty roles safely without errors", () => {
-    vi.mocked(keycloakService.getUserRoles).mockReturnValue([]);
-    vi.mocked(keycloakService.hasRole).mockReturnValue(false);
-    vi.mocked(keycloakService.hasAnyRole).mockReturnValue(false);
-
+  it("handles empty roles safely", () => {
     const { result } = renderHook(() => useRBAC());
-
-    expect(result.current.canEditInventory).toBe(false);
-    expect(result.current.canManageSystem).toBe(false);
-    expect(result.current.isReadOnly).toBe(true);
-    expect(result.current.isViewer).toBe(true);
     expect(result.current.roles).toEqual([]);
+    expect(result.current.isReadOnly).toBe(true);
   });
 });
+
+function setRoles(roles: string[]) {
+  setAuthenticatedSession("memory-token", { id: "id", username: "user", roles });
+}

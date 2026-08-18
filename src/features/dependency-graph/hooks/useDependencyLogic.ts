@@ -3,7 +3,6 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
-  reconnectEdge,
   useReactFlow,
   MarkerType,
   type Node,
@@ -14,17 +13,32 @@ import {
   type NodeChange
 } from "@xyflow/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import apiClient, { Schemas } from "../../../shared/api/client";
-import { PaletteApp, SelectedItem } from "../types";
+import apiClient, { type Schemas } from "../../../shared/api/client";
+import { type AppNodeData, PaletteApp, type ServerNodeData, SelectedItem } from "../types";
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
+import { getSelectedWorkspaceId, tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import { exportToExcel } from "../../../shared/utils/exportUtils";
+import { getErrorMessage } from "../../../shared/utils/errorUtils";
+import {
+  buildDependencySyncRequest,
+  hasDeploymentId,
+  mapDependencyGraph,
+  restoreTopologyState,
+  stableGraphUuid,
+  toTopologyState,
+  validateConnection,
+  type DependencyMapResponse,
+  type TopologyState,
+} from "../graphContract";
 
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };
 const edgeMarker = { type: MarkerType.ArrowClosed, color: "#3b82f6" };
 
 export function useDependencyLogic() {
+  const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
   const [nodes, setNodes] = useState<Node[]>([]);
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -35,7 +49,7 @@ export function useDependencyLogic() {
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
 
-  const [selectedEnv, setSelectedEnv] = useState("Development");
+  const [selectedEnv, setSelectedEnv] = useState("All");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
@@ -45,13 +59,33 @@ export function useDependencyLogic() {
   const queryClient = useQueryClient();
 
   const isExplicitFetchRef = useRef(false);
-  const hasMountedRef = useRef(false);
-  const prevQueryKeyRef = useRef<string>("");
+  const activeWorkspaceRef = useRef(selectedWorkspaceId);
+
+  useEffect(() => {
+    activeWorkspaceRef.current = selectedWorkspaceId;
+    setNodes([]);
+    setEdges([]);
+    setSelectedItem({ type: null, id: null });
+    setRightPanelData(null);
+    setSelectedEnv("All");
+    setSelectedDatacenter("All");
+    setSelectedLabels([]);
+  }, [selectedWorkspaceId, setEdges]);
+
+  const isNarrowedGraph = selectedEnv !== "All"
+    || selectedDatacenter !== "All"
+    || selectedLabels.length > 0;
+
+  const requireCompleteGraph = useCallback(() => {
+    if (!isNarrowedGraph) return true;
+    toast.error("Set Environment and Datacenter to All and clear Labels before saving or syncing the complete graph.");
+    return false;
+  }, [isNarrowedGraph]);
 
   // ── Scoped Export Algorithm ─────────────────────────────────────────────
 
 
-  const exportGroupAuditMatrix = useCallback((groupId: string, groupLabel: string) => {
+  const exportGroupAuditMatrix = useCallback(async (groupId: string, groupLabel: string) => {
     // 1. Identify all child nodes recursively (handling apps inside servers inside groups)
     const childNodes = nodes.filter(n => n.parentId === groupId);
     const serverIds = childNodes.filter(n => n.type === 'serverNode').map(n => n.id);
@@ -72,15 +106,20 @@ export function useDependencyLogic() {
     const auditData = scopedEdges.map(edge => {
       const sourceNode = nodes.find(n => n.id === edge.source);
       const targetNode = nodes.find(n => n.id === edge.target);
+      const sourceApp = sourceNode?.type === "appNode" ? (sourceNode.data as AppNodeData).app : undefined;
+      const targetApp = targetNode?.type === "appNode" ? (targetNode.data as AppNodeData).app : undefined;
+      const sourceServer = sourceNode?.type === "serverNode" ? (sourceNode.data as ServerNodeData).server : undefined;
+      const targetServer = targetNode?.type === "serverNode" ? (targetNode.data as ServerNodeData).server : undefined;
       
       return {
-        "Source Component": (sourceNode?.data as any)?.app?.appName || (sourceNode?.data as any)?.server?.hostname || "Unknown",
-        "Source IP": (sourceNode?.data as any)?.server?.ipAddress || "Internal",
-        "Target Component": (targetNode?.data as any)?.app?.appName || (targetNode?.data as any)?.server?.hostname || "Unknown",
-        "Target IP": (targetNode?.data as any)?.server?.ipAddress || "Internal",
-        "Port": (targetNode?.data as any)?.app?.portNumber || edge.data?.protocol || "Any",
+        "Source Component": sourceApp?.appName || sourceServer?.hostname || "Unknown",
+        "Source IP": sourceServer?.ipAddress || "Internal",
+        "Target Component": targetApp?.appName || targetServer?.hostname || "Unknown",
+        "Target IP": targetServer?.ipAddress || "Internal",
+        "Port": targetApp?.portNumber || edge.data?.protocol || "Any",
         "Protocol": edge.data?.protocol || "TCP",
-        "Workspace": "Global"
+        "Port Mapping ID": targetApp?.portMappingId || "N/A",
+        "Workspace": selectedWorkspace?.name || selectedWorkspaceId || "workspace",
       };
     });
 
@@ -89,18 +128,17 @@ export function useDependencyLogic() {
       return;
     }
 
-    // 4. Client-side XLSX Generation
-    const ws = XLSX.utils.json_to_sheet(auditData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Audit Matrix");
-
     const date = new Date().toISOString().split('T')[0];
     const cleanGroupLabel = groupLabel.replace(/\s+/g, '_');
-    const workspaceName = "Global";
-    
-    XLSX.writeFile(wb, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}.xlsx`);
-    toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
-  }, [nodes, edges]);
+    const workspaceName = (selectedWorkspace?.name || selectedWorkspaceId || "workspace")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_");
+    try {
+      await exportToExcel(auditData, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}`);
+      toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to export audit matrix."));
+    }
+  }, [edges, nodes, selectedWorkspace, selectedWorkspaceId]);
 
   const checkEmptyFrame = useCallback((type: 'groupNode' | 'boundaryFrame') => {
     const hasEmpty = nodes.some(n => {
@@ -191,59 +229,37 @@ export function useDependencyLogic() {
 
   // ── Sync to Database ─────────────────────────────────────────────────────
   const handleSync = useCallback(async () => {
+    if (!requireCompleteGraph()) return;
     setIsSyncing(true);
     try {
-      const currentEdges = reactFlowInstance.getEdges();
-      
-      const dependencies = currentEdges.map((edge) => {
-        // Extract real Application ID from composite (e.g., app-123-srv-456)
-        const extractAppId = (nodeId: string) => {
-          // Robust regex to extract the ID between 'app-' and '-srv-'
-          // This handles UUIDs with dashes correctly
-          const compositeMatch = nodeId.match(/^app-(.+)-srv-.+$/);
-          if (compositeMatch) {
-            return compositeMatch[1];
-          }
-          
-          // Fallback: If it's a new node (e.g., n-timestamp), get the real ID from node data
-          const node = reactFlowInstance.getNode(nodeId);
-          if (node?.type === "appNode") {
-            return (node.data as any).app?.id || nodeId;
-          }
-          
-          return nodeId;
-        };
-
-        return {
-          sourceAppId: extractAppId(edge.source),
-          destAppId: extractAppId(edge.target),
-          destPortId: (reactFlowInstance.getNode(edge.target)?.data as any)?.app?.portMappingId
-        };
-      });
-
-      await apiClient.put("/api/v1/dependencies/sync", { dependencies });
+      const request = buildDependencySyncRequest(
+        reactFlowInstance.getNodes(),
+        reactFlowInstance.getEdges(),
+      );
+      await apiClient.put("/api/v1/dependencies/sync", request);
       
       toast.success("Network state synchronized successfully");
       
       // Reset edge animations/colors to "saved" state by refetching
-      await queryClient.invalidateQueries({ queryKey: ["dependency-map"] });
-    } catch (error: any) {
+      await queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
+    } catch (error: unknown) {
       console.error("Sync failed:", error);
-      toast.error(error.response?.data?.message || "Failed to synchronize network state");
+      toast.error(getErrorMessage(error, "Failed to synchronize network state"));
     } finally {
       setIsSyncing(false);
     }
-  }, [reactFlowInstance, queryClient]);
+  }, [reactFlowInstance, queryClient, requireCompleteGraph, selectedWorkspaceId]);
 
   // ── Fetch all servers to determine mapping status ────────────────────────
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
-    queryKey: ["all-servers"],
+    queryKey: tenantQueryKey("all-servers", selectedWorkspaceId),
     queryFn: async () => {
       const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
       const rawResponse = response as any;
       const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
       return data as Schemas["ServerResponseDto"][];
     },
+    enabled: !!selectedWorkspaceId,
   });
 
   const unmappedServers = allServers.filter(
@@ -315,6 +331,7 @@ export function useDependencyLogic() {
           style: { width, height },
           data: {
             server: {
+              serverId: targetServer.id,
               hostname: targetServer.hostname,
               ipAddress: targetServer.ipAddress,
               osType: targetServer.osType
@@ -326,7 +343,7 @@ export function useDependencyLogic() {
         };
         setNodes((nds) => nds.concat(newNode));
       } else if (drawingMode === 'groupBox') {
-        const id = `group-${Date.now()}`;
+        const id = crypto.randomUUID();
         const newNode: Node = {
           id,
           type: 'groupNode',
@@ -341,7 +358,7 @@ export function useDependencyLogic() {
         };
         setNodes((nds) => nds.concat(newNode));
       } else if (drawingMode === 'boundaryFrame') {
-        const id = `frame-${Date.now()}`;
+        const id = crypto.randomUUID();
         const newNode: Node = {
           id,
           type: "boundaryFrame",
@@ -362,9 +379,14 @@ export function useDependencyLogic() {
   }, [drawBox, unmappedServers, setNodes, drawingMode, exportGroupAuditMatrix]);
 
   // ── Fetch and Map Graph Logic (Internal) ────────────────────────────────
-  const fetchAndMapGraph = useCallback(async (env: string, dc: string, labels: string[] = []) => {
+  const fetchAndMapGraph = useCallback(async (
+    env: string,
+    dc: string,
+    labels: string[] = [],
+    signal?: AbortSignal,
+  ) => {
     try {
-      const response = await apiClient.get<Schemas["DependencyMapDto"]>(
+      const response = await apiClient.get<DependencyMapResponse>(
         "/api/v1/topology/map",
         {
           params: {
@@ -372,18 +394,25 @@ export function useDependencyLogic() {
             datacenterId: dc === "All" ? undefined : dc,
             labels: labels.length > 0 ? labels : undefined,
           },
+          signal,
         }
       );
       const data = response.data;
 
       const mappedNodes: Node[] = [];
       const mappedEdges: Edge[] = [];
+      let savedTopologyState: TopologyState | null = null;
 
-      // Chỉ tải user frames từ /api/v1/frames khi KHÔNG bật filter theo Label
+      // Restore canonical state only when inventory labels are not filtering the graph.
       if (!labels || labels.length === 0) {
         try {
-          const framesResponse = await apiClient.get("/api/v1/frames");
-          framesResponse.data.forEach((frame: any) => {
+          const framesResponse = await apiClient.get<TopologyState>("/api/v1/topology/state", { signal });
+          const candidateState = framesResponse.data;
+          if (!Array.isArray(candidateState.nodes) || !Array.isArray(candidateState.edges)) {
+            throw new Error("Invalid topology state response.");
+          }
+          savedTopologyState = candidateState;
+          candidateState.nodes.filter((frame) => frame.nodeType === "frame").forEach((frame) => {
             const safeX = (typeof frame.x === 'number' && !isNaN(frame.x)) ? frame.x : 0;
             const safeY = (typeof frame.y === 'number' && !isNaN(frame.y)) ? frame.y : 0;
             
@@ -392,7 +421,7 @@ export function useDependencyLogic() {
               type: "boundaryFrame",
               position: { x: safeX, y: safeY },
               style: { width: frame.width || 400, height: frame.height || 300 },
-              data: { name: frame.name || "Unknown Group" },
+              data: { name: frame.label || "Unknown Group" },
               zIndex: -2,
               draggable: true,
               dragHandle: '.custom-drag-handle',
@@ -420,8 +449,7 @@ export function useDependencyLogic() {
           );
           if (matchLabel) {
             const groupKey = `${matchLabel.key}=${matchLabel.value}`;
-            const cleanId = `${matchLabel.key}-${matchLabel.value}`.toLowerCase().replace(/[^a-z0-9]/g, "-");
-            const frameId = `frame-lbl-${cleanId}`;
+            const frameId = stableGraphUuid(`label:${groupKey}`);
             if (!labelGroups.has(groupKey)) {
               labelGroups.set(groupKey, {
                 labelName: `Label: ${groupKey}`,
@@ -458,7 +486,7 @@ export function useDependencyLogic() {
           group.servers.forEach((srv: any, srvIdx: number) => {
             const col = srvIdx % cols;
             const row = Math.floor(srvIdx / cols);
-            const serverNodeId = srv.id || `srv-${srvIdx}`;
+            const serverNodeId = srv.serverId;
 
             mappedNodes.push({
               id: serverNodeId,
@@ -469,6 +497,7 @@ export function useDependencyLogic() {
               style: { width: 300, height: 200 },
               data: {
                 server: {
+                  serverId: srv.serverId,
                   hostname: srv.hostname,
                   ipAddress: srv.ipAddress,
                   osType: srv.osType,
@@ -482,15 +511,18 @@ export function useDependencyLogic() {
 
             // Tier 3: App Node (tọa độ tương đối bên trong Server)
             srv.applications?.forEach((app: any, appIdx: number) => {
+              if (!hasDeploymentId(app.portMappingId)) return;
               mappedNodes.push({
-                id: app.id || `app-${appIdx}`,
+                id: app.portMappingId,
                 type: "appNode",
                 position: { x: 40, y: 60 + appIdx * 60 },
                 parentId: serverNodeId,
                 extent: "parent",
                 data: {
                   app: {
-                    id: app.id,
+                    id: app.portMappingId,
+                    appId: app.appId,
+                    serverId: app.serverId,
                     appName: app.name,
                     portNumber: app.port,
                     protocol: app.protocol,
@@ -530,7 +562,7 @@ export function useDependencyLogic() {
         data.servers?.forEach((srv: any, srvIdx: number) => {
           const col = srvIdx % MAX_COLUMNS;
           const row = Math.floor(srvIdx / MAX_COLUMNS);
-          const serverNodeId = srv.id || `srv-${srvIdx}`;
+          const serverNodeId = srv.serverId;
 
           mappedNodes.push({
             id: serverNodeId,
@@ -542,6 +574,7 @@ export function useDependencyLogic() {
             style: { width: 300, height: 200 },
             data: {
               server: {
+                serverId: srv.serverId,
                 hostname: srv.hostname,
                 ipAddress: srv.ipAddress,
                 osType: srv.osType,
@@ -554,15 +587,18 @@ export function useDependencyLogic() {
           });
 
           srv.applications?.forEach((app: any, appIdx: number) => {
+            if (!hasDeploymentId(app.portMappingId)) return;
             mappedNodes.push({
-              id: app.id || `app-${appIdx}`,
+              id: app.portMappingId,
               type: "appNode",
               position: { x: 40, y: 60 + appIdx * 60 },
               parentId: serverNodeId,
               extent: "parent",
               data: {
                 app: {
-                  id: app.id,
+                  id: app.portMappingId,
+                  appId: app.appId,
+                  serverId: app.serverId,
                   appName: app.name,
                   portNumber: app.port,
                   protocol: app.protocol,
@@ -590,7 +626,13 @@ export function useDependencyLogic() {
         });
       }
 
-      return { nodes: mappedNodes, edges: mappedEdges };
+      const exactEdges = mapDependencyGraph(data).edges.map((edge) => ({
+        ...edge,
+        markerEnd: edgeMarker,
+        style: edgeStyle,
+      }));
+      const liveGraph = { nodes: mappedNodes, edges: exactEdges };
+      return savedTopologyState ? restoreTopologyState(savedTopologyState, liveGraph) : liveGraph;
     } catch (err) {
       console.error("Failed to fetch dependency map", err);
       throw err;
@@ -599,30 +641,20 @@ export function useDependencyLogic() {
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
-    queryKey: ["dependency-map", selectedEnv, selectedDatacenter, selectedLabels],
-    queryFn: async ({ queryKey }) => {
-      const [_key, env, dc, labels] = queryKey as [string, string, string, string[]];
-      const result = await fetchAndMapGraph(env, dc, labels);
+    queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, selectedEnv, selectedDatacenter, selectedLabels),
+    queryFn: async ({ queryKey, signal }) => {
+      const [_key, workspaceId, env, dc, labels] = queryKey as [string, string, string, string, string[]];
+      const result = await fetchAndMapGraph(env, dc, labels, signal);
 
-      const isFirstMount = !hasMountedRef.current;
-      hasMountedRef.current = true;
-
-      const currentKeyString = JSON.stringify([env, dc, labels]);
-      const filterChanged = prevQueryKeyRef.current !== currentKeyString && prevQueryKeyRef.current !== "";
-      prevQueryKeyRef.current = currentKeyString;
-
-      const cached = sessionStorage.getItem('dependencyGraphState');
-      const hasDeepLink = new URLSearchParams(window.location.search).has("entityId");
-      
-      // Prevent background refetches from wiping local layout changes unless filters changed
-      const shouldOverwrite = isExplicitFetchRef.current || (isFirstMount && !cached) || (isFirstMount && hasDeepLink) || filterChanged;
-      if (shouldOverwrite) {
-        setNodes(result.nodes);
-        setEdges(result.edges);
+      if (signal.aborted || activeWorkspaceRef.current !== workspaceId || getSelectedWorkspaceId() !== workspaceId) {
+        return result;
       }
+      setNodes(result.nodes);
+      setEdges(result.edges);
 
       return result;
     },
+    enabled: !!selectedWorkspaceId,
   });
 
   // Explicitly derived loading flag that clears once data is present or queries finish
@@ -633,24 +665,51 @@ export function useDependencyLogic() {
   // ── Connect two nodes ──────────────────────────────────────────────────────
   const onConnect = useCallback(
     (params: Connection) => {
+      const validationError = validateConnection(params, nodes, edges);
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
       const newEdge: Edge = {
         ...params,
-        id: `e-${Date.now()}`,
+        id: crypto.randomUUID(),
         markerEnd: edgeMarker,
         style: edgeStyle,
+        label: "TCP",
         data: { protocol: "TCP" },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
-    [setEdges],
+    [edges, nodes, setEdges],
   );
 
   // ── Reconnect an edge ──────────────────────────────────────────────────────
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
-      setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
+      const validationError = validateConnection(
+        newConnection,
+        nodes,
+        edges.filter((edge) => edge.id !== oldEdge.id),
+      );
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
+      setEdges((currentEdges) => currentEdges.map((edge) => edge.id === oldEdge.id
+        ? {
+            ...edge,
+            ...newConnection,
+            data: {
+              ...edge.data,
+              dependencyId: undefined,
+              referenceId: undefined,
+              destinationPortMappingId: undefined,
+              destinationServerId: undefined,
+            },
+          }
+        : edge));
     },
-    [setEdges]
+    [edges, nodes, setEdges]
   );
 
   // ── Drag-over canvas ───────────────────────────────────────────────────────
@@ -667,7 +726,7 @@ export function useDependencyLogic() {
       if (!appId) return;
 
       const app = availableApps.find((a) => a.id === appId);
-      if (!app) return;
+      if (!app || !hasDeploymentId(app.portMappingId) || nodes.some((node) => node.id === app.portMappingId)) return;
 
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX,
@@ -697,8 +756,8 @@ export function useDependencyLogic() {
         }
       }
 
-      const newNode: any = {
-        id: `n-${Date.now()}`,
+      const newNode: Node = {
+        id: app.portMappingId,
         type: "appNode",
         position: adjustedPosition,
         parentId,
@@ -790,41 +849,25 @@ export function useDependencyLogic() {
     // We explicitly invalidate the query with the specific key we want to fetch
     // This ensures React Query starts the fetch for the correct environment immediately
     await queryClient.invalidateQueries({ 
-      queryKey: ["dependency-map", targetEnv, selectedDatacenter, selectedLabels] 
+      queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, targetEnv, selectedDatacenter, selectedLabels)
     });
 
     setTimeout(() => {
       reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
       isExplicitFetchRef.current = false;
     }, 500);
-  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter, selectedLabels]);
+  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter, selectedLabels, selectedWorkspaceId]);
   const handleSaveNetworkState = useCallback(async () => {
+    if (!requireCompleteGraph()) return;
     try {
-      const frames = nodes
-        .filter(n => n.type === 'boundaryFrame')
-        .map(n => ({
-          id: n.id,
-          name: n.data.name,
-          x: n.position.x,
-          y: n.position.y,
-          width: n.style?.width,
-          height: n.style?.height
-        }));
-
-      const assignments = nodes
-        .filter(n => n.type !== 'boundaryFrame')
-        .map(n => ({
-          nodeId: n.id,
-          parentFrameId: n.parentId || null
-        }));
-
-      await apiClient.post("/api/v1/topology/sync", { frames, assignments });
+      await apiClient.put("/api/v1/topology/state", toTopologyState(nodes, edges));
+      await apiClient.put("/api/v1/dependencies/sync", buildDependencySyncRequest(nodes, edges));
       toast.success("Network state saved successfully!");
     } catch (error) {
       console.error("Failed to save network state", error);
       toast.error("Failed to save network state.");
     }
-  }, [nodes]);
+  }, [edges, nodes, requireCompleteGraph]);
 
   return {
     nodes,

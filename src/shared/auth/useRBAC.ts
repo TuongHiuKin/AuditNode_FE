@@ -1,4 +1,4 @@
-import { getUserRoles, hasRole, hasAnyRole } from "../../services/keycloakService";
+import { useAuth } from "./AuthContext";
 
 export interface RBACState {
   isAdmin: boolean;
@@ -11,13 +11,14 @@ export interface RBACState {
 }
 
 /**
- * Custom hook providing RBAC permission flags based on Keycloak token roles.
+ * Custom hook providing RBAC permission flags from the backend-gateway auth context.
  */
 export function useRBAC(): RBACState {
-  const roles = getUserRoles();
+  const { roles } = useAuth();
+  const hasRole = (role: string) => roles.includes(role);
   const isAdmin = hasRole("Admin");
   const isAuditor = hasRole("Auditor");
-  const canEditInventory = hasAnyRole(["Admin", "Auditor"]);
+  const canEditInventory = isAdmin || isAuditor;
   const canManageSystem = isAdmin;
   const isReadOnly = !canEditInventory;
   const isViewer = hasRole("Viewer") || (!isAdmin && !isAuditor);

@@ -1,45 +1,27 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { clearClientSession, setAuthenticatedSession } from "../shared/auth/authStore";
+import { getToken, getUserRoles, getUsername, hasAnyRole, hasRole } from "../services/keycloakService";
 
-vi.unmock("../services/keycloakService");
-import keycloak, { getUserRoles, hasRole, hasAnyRole } from "../services/keycloakService";
+describe("backend-gateway auth compatibility helpers", () => {
+  beforeEach(() => clearClientSession());
 
-describe("keycloakService RBAC utilities", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  it("reads username, roles, and access token only from the in-memory auth store", () => {
+    setAuthenticatedSession("memory-token", {
+      id: "id",
+      username: "auditor",
+      roles: ["Auditor", "Viewer"],
+    });
 
-  it("getUserRoles extracts roles from both realm_access and resource_access", () => {
-    keycloak.tokenParsed = {
-      realm_access: { roles: ["Admin", "user"] },
-      resource_access: {
-        "audit-frontend": { roles: ["Auditor"] },
-      },
-    } as any;
-
-    const roles = getUserRoles();
-    expect(roles).toContain("Admin");
-    expect(roles).toContain("user");
-    expect(roles).toContain("Auditor");
-  });
-
-  it("getUserRoles returns empty array when tokenParsed is undefined", () => {
-    keycloak.tokenParsed = undefined;
-    expect(getUserRoles()).toEqual([]);
-  });
-
-  it("hasRole returns true if role exists", () => {
-    keycloak.tokenParsed = {
-      realm_access: { roles: ["Auditor"] },
-    } as any;
+    expect(getToken()).toBe("memory-token");
+    expect(getUsername()).toBe("auditor");
+    expect(getUserRoles()).toEqual(["Auditor", "Viewer"]);
     expect(hasRole("Auditor")).toBe(true);
-    expect(hasRole("Admin")).toBe(false);
+    expect(hasAnyRole(["Admin", "Viewer"])).toBe(true);
   });
 
-  it("hasAnyRole returns true if any role matches", () => {
-    keycloak.tokenParsed = {
-      realm_access: { roles: ["Auditor"] },
-    } as any;
-    expect(hasAnyRole(["Admin", "Auditor"])).toBe(true);
-    expect(hasAnyRole(["Admin", "Viewer"])).toBe(false);
+  it("returns anonymous defaults without a session", () => {
+    expect(getToken()).toBeUndefined();
+    expect(getUsername()).toBe("User");
+    expect(getUserRoles()).toEqual([]);
   });
 });

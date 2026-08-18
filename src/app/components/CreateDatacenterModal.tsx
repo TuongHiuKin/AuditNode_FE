@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from "../../shared/api/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 
 export function CreateDatacenterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [name, setName] = useState("");
@@ -11,6 +13,7 @@ export function CreateDatacenterModal({ onClose, onSuccess }: { onClose: () => v
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { selectedWorkspaceId } = useWorkspace();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +27,7 @@ export function CreateDatacenterModal({ onClose, onSuccess }: { onClose: () => v
     try {
       await apiClient.post("/api/v1/datacenters", { name: name.trim(), location: location.trim() });
       toast.success("Datacenter created successfully");
-      queryClient.invalidateQueries({ queryKey: ["datacenters"] });
+      queryClient.invalidateQueries({ queryKey: tenantQueryKey("datacenters", selectedWorkspaceId) });
       onSuccess();
     } catch (err: any) {
       if (err.response?.status === 403) {

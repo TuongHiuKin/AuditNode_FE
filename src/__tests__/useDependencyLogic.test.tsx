@@ -5,6 +5,8 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
+import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
+import { toTopologyState } from "../features/dependency-graph/graphContract";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -23,19 +25,13 @@ vi.mock("@xyflow/react", async () => {
       fitView: vi.fn(),
       screenToFlowPosition: vi.fn(({ x, y }) => ({ x, y })),
       getEdges: vi.fn(() => [
-        { id: "e-1", source: "app-123-srv-456", target: "app-789-srv-012" }
+        { id: "e-1", source: "mapping-123", target: "mapping-789" }
       ]),
-      getNode: vi.fn((id) => ({ 
-        id, 
-        type: "appNode", 
-        data: { 
-          app: { 
-            id: id.split("-")[1],
-            portMappingId: `pm-${id.split("-")[1]}` 
-          } 
-        } 
-      })),
-      getNodes: vi.fn(() => []),
+      getNode: vi.fn(),
+      getNodes: vi.fn(() => [
+        { id: "mapping-123", type: "appNode", position: { x: 0, y: 0 }, data: { app: { id: "mapping-123", appId: "app-123", serverId: "server-1", portMappingId: "mapping-123" } } },
+        { id: "mapping-789", type: "appNode", position: { x: 0, y: 0 }, data: { app: { id: "mapping-789", appId: "app-789", serverId: "server-2", portMappingId: "mapping-789" } } },
+      ]),
     }),
   };
 });
@@ -49,10 +45,13 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe("useDependencyLogic", () => {
+  const workspaceA = "11111111-1111-4111-8111-111111111111";
+  const workspaceB = "22222222-2222-4222-8222-222222222222";
   let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setSelectedWorkspaceId(workspaceA, { persist: false });
     queryClient = createTestQueryClient();
   });
 
@@ -71,11 +70,15 @@ describe("useDependencyLogic", () => {
       servers: [
         {
           id: "srv-1",
+          serverId: "srv-1",
           hostname: "server-01",
           ipAddress: "10.0.0.1",
           applications: [
             {
               id: "app-1",
+              appId: "app-1",
+              serverId: "srv-1",
+              portMappingId: "mapping-1",
               name: "App 1",
               port: 80,
               protocol: "HTTP",
@@ -84,24 +87,19 @@ describe("useDependencyLogic", () => {
           ],
         },
       ],
-      connections: [
-        {
-          sourceAppId: "app-1",
-          targetAppId: "app-2",
-        },
-      ],
+      connections: [],
     };
 
     const mockApps = [
-      { id: "app-1", appName: "App 1", isMapped: false },
-      { id: "app-2", appName: "App 2", isMapped: false },
+      { id: "app-1", appName: "App 1", ownerTeam: "team", risk: "Low", icon: "", techStack: "", labels: [], servers: [{ id: "srv-1", portMappingId: "mapping-1", hostname: "server-01", ipAddress: "10.0.0.1", portNumber: 80, protocol: "HTTP" }] },
+      { id: "app-2", appName: "App 2", ownerTeam: "team", risk: "Low", icon: "", techStack: "", labels: [], servers: [{ id: "srv-2", portMappingId: "mapping-2", hostname: "server-02", ipAddress: "10.0.0.2", portNumber: 81, protocol: "HTTP" }] },
     ];
 
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
       if (url === "/api/v1/topology/map") {
         return Promise.resolve({ data: mockDependencyMap });
       }
-      if (url === "/api/v1/topology/status") {
+      if (url === "/api/v1/applications") {
         return Promise.resolve({ data: mockApps });
       }
       return Promise.reject(new Error("Unknown URL"));
@@ -119,8 +117,7 @@ describe("useDependencyLogic", () => {
     expect(serverNode?.position).toEqual({ x: 100, y: 100 });
     
     expect(result.current.nodes.find(n => n.type === "appNode")).toBeDefined();
-    expect(result.current.edges.length).toBe(1);
-    expect(result.current.edges[0].type).toBe("floatingSmooth");
+    expect(result.current.edges.length).toBe(0);
     expect(result.current.availableApps.length).toBe(2);
   });
 
@@ -129,12 +126,12 @@ describe("useDependencyLogic", () => {
       if (url === "/api/v1/topology/map") {
         return Promise.resolve({ data: { 
           servers: [
-            { id: "srv-1", hostname: "test-server", applications: [{ id: "app-1", name: "Test App", port: 443, protocol: "HTTPS", riskLevel: "High" }] }
+            { id: "srv-1", serverId: "srv-1", hostname: "test-server", ipAddress: "10.0.0.1", labels: [], applications: [{ id: "mapping-1", appId: "app-1", serverId: "srv-1", portMappingId: "mapping-1", name: "Test App", port: 443, protocol: "HTTPS", riskLevel: "High" }] }
           ], 
           connections: [] 
         }});
       }
-      if (url === "/api/v1/topology/status") {
+      if (url === "/api/v1/applications") {
         return Promise.resolve({ data: [] });
       }
       return Promise.reject(new Error("Unknown URL"));
@@ -168,11 +165,11 @@ describe("useDependencyLogic", () => {
 
     expect(result.current.selectedEnv).toBe("Production");
     expect(invalidateSpy).toHaveBeenCalledWith({ 
-      queryKey: ["dependency-map", "Production", "All", []] 
+      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111", "Production", "All", []]
     });
   });
 
-  it("handles sync to database by parsing composite IDs and calling API", async () => {
+  it("syncs typed deployment identities without parsing node IDs", async () => {
     vi.mocked(apiClient.put).mockResolvedValue({ data: { success: true } });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
     
@@ -184,24 +181,136 @@ describe("useDependencyLogic", () => {
 
     expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", {
       dependencies: [
-        { sourceAppId: "123", destAppId: "789", destPortId: "pm-789" }
+        { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
       ]
     });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dependency-map"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111"],
+    });
   });
 
-  it("handles reconnecting an edge", async () => {
+  it.each([
+    ["Production environment", (value: ReturnType<typeof useDependencyLogic>) => value.setSelectedEnv("Production")],
+    ["Development environment", (value: ReturnType<typeof useDependencyLogic>) => value.setSelectedEnv("Development")],
+    ["datacenter", (value: ReturnType<typeof useDependencyLogic>) => value.setSelectedDatacenter("dc-1")],
+    ["labels", (value: ReturnType<typeof useDependencyLogic>) => value.setSelectedLabels(["tier=api"])],
+  ])("blocks topology save and standalone dependency sync for a narrowed %s", async (_name, narrow) => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") return Promise.resolve({ data: { servers: [], connections: [] } });
+      if (url === "/api/v1/topology/state") return Promise.resolve({ data: { nodes: [], edges: [] } });
+      return Promise.resolve({ data: [] });
+    });
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
-
-    const oldEdge = { id: "e-1", source: "app-1", target: "app-2" };
-    const newConnection = { source: "app-1", target: "app-3", sourceHandle: null, targetHandle: null };
+    act(() => narrow(result.current));
+    vi.mocked(apiClient.put).mockClear();
 
     await act(async () => {
-      result.current.onReconnect(oldEdge as any, newConnection);
+      await result.current.handleSaveNetworkState();
+      await result.current.handleSync();
     });
 
-    // Check if edges were updated (reconnectEdge is a utility from @xyflow/react)
-    // We expect the hook to call setEdges which eventually updates edges state
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/topology/state", expect.anything());
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
+  });
+
+  it("saves the complete graph through the canonical state endpoint idempotently", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") return Promise.resolve({ data: { servers: [], connections: [] } });
+      if (url === "/api/v1/topology/state") return Promise.resolve({ data: { nodes: [], edges: [] } });
+      if (url === "/api/v1/applications" || url === "/api/v1/servers") return Promise.resolve({ data: [] });
+      return Promise.reject(new Error(`Unknown URL: ${url}`));
+    });
+    vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    await act(async () => {
+      await result.current.handleSaveNetworkState();
+      await result.current.handleSaveNetworkState();
+    });
+
+    const stateCalls = vi.mocked(apiClient.put).mock.calls.filter(([url]) => url === "/api/v1/topology/state");
+    expect(stateCalls).toHaveLength(2);
+    expect(stateCalls[0][1]).toEqual(stateCalls[1][1]);
+    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", { dependencies: [] });
+  });
+
+  it("clears stale dependency identity when reconnecting an edge", async () => {
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+
+    const appNode = (id: string, appId: string) => ({
+      id,
+      type: "appNode",
+      position: { x: 0, y: 0 },
+      data: { app: { id, appId, serverId: `server-${id}`, portMappingId: id } },
+    });
+    const oldEdge = {
+      id: "e-1",
+      source: "mapping-1",
+      target: "mapping-2",
+      data: {
+        dependencyId: "dependency-old",
+        referenceId: "dependency-old",
+        destinationPortMappingId: "mapping-2",
+        destinationServerId: "server-mapping-2",
+      },
+    };
+    const newConnection = { source: "mapping-1", target: "mapping-3", sourceHandle: null, targetHandle: null };
+
+    act(() => {
+      result.current.setNodes([
+        appNode("mapping-1", "app-1"),
+        appNode("mapping-2", "app-2"),
+        appNode("mapping-3", "app-3"),
+      ]);
+      result.current.setEdges([oldEdge]);
+    });
+
+    act(() => {
+      result.current.onReconnect(oldEdge, newConnection);
+    });
+
+    await waitFor(() => expect(result.current.edges[0]?.target).toBe("mapping-3"));
+    expect(result.current.edges[0]?.data).toEqual(expect.objectContaining({
+      dependencyId: undefined,
+      referenceId: undefined,
+      destinationPortMappingId: undefined,
+      destinationServerId: undefined,
+    }));
+    expect(toTopologyState(result.current.nodes, result.current.edges).edges[0].referenceId).toBeNull();
+  });
+
+  it("does not render a late workspace A graph response after switching to workspace B", async () => {
+    let resolveA!: (value: { data: unknown }) => void;
+    let resolveB!: (value: { data: unknown }) => void;
+    const requestA = new Promise<{ data: unknown }>((resolve) => { resolveA = resolve; });
+    const requestB = new Promise<{ data: unknown }>((resolve) => { resolveB = resolve; });
+    let mapCalls = 0;
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") return ++mapCalls === 1 ? requestA : requestB;
+      if (url === "/api/v1/topology/state") return Promise.resolve({ data: { nodes: [], edges: [] } });
+      return Promise.resolve({ data: [] });
+    });
+    const graph = (serverId: string, hostname: string) => ({
+      servers: [{ serverId, hostname, ipAddress: "10.0.0.1", applications: [] }],
+      connections: [],
+    });
+
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+    await waitFor(() => expect(mapCalls).toBe(1));
+    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    await waitFor(() => expect(mapCalls).toBe(2));
+
+    await act(async () => { resolveB({ data: graph("server-b", "Workspace B") }); });
+    await waitFor(() => expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true));
+    await act(async () => { resolveA({ data: graph("server-a", "Workspace A") }); });
+
+    expect(result.current.nodes.some((node) => node.id === "server-a")).toBe(false);
+    expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true);
+    const mapConfigs = vi.mocked(apiClient.get).mock.calls
+      .filter(([url]) => url === "/api/v1/topology/map")
+      .map(([, config]) => config);
+    expect(mapConfigs).toHaveLength(2);
+    expect(mapConfigs.every((config) => config?.signal instanceof AbortSignal)).toBe(true);
   });
 
   it("clusters servers into boundaryFrames when selectedLabels is provided and preserves 3-tier nesting", async () => {
@@ -209,12 +318,16 @@ describe("useDependencyLogic", () => {
       servers: [
         {
           id: "srv-1",
+          serverId: "srv-1",
           hostname: "server-01",
           ipAddress: "10.0.0.1",
           labels: [{ key: "tier", value: "database" }],
           applications: [
             {
               id: "app-1",
+              appId: "app-1",
+              serverId: "srv-1",
+              portMappingId: "mapping-1",
               name: "App 1",
               port: 5432,
               protocol: "TCP",
@@ -224,6 +337,7 @@ describe("useDependencyLogic", () => {
         },
         {
           id: "srv-2",
+          serverId: "srv-2",
           hostname: "server-02",
           ipAddress: "10.0.0.2",
           labels: [{ key: "tier", value: "database" }],
@@ -237,11 +351,11 @@ describe("useDependencyLogic", () => {
       if (url === "/api/v1/topology/map") {
         return Promise.resolve({ data: mockDependencyMapWithLabels });
       }
-      if (url === "/api/v1/topology/status") {
+      if (url === "/api/v1/applications") {
         return Promise.resolve({ data: [] });
       }
-      if (url === "/api/v1/frames") {
-        return Promise.resolve({ data: [] });
+      if (url === "/api/v1/topology/state") {
+        return Promise.resolve({ data: { nodes: [], edges: [] } });
       }
       return Promise.reject(new Error("Unknown URL: " + url));
     });

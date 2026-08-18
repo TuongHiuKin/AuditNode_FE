@@ -3,7 +3,10 @@ import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { X, Loader2, Save, ChevronDown, MoveHorizontal } from "lucide-react";
 import { toast } from "sonner";
-import apiClient, { Schemas } from "../../shared/api/client";
+import { Schemas } from "../../shared/api/client";
+import { ServerService } from "../../services/serverService";
+import { ApplicationService } from "../../services/applicationService";
+import type { ApplicationDeployment } from "../../shared/api/applicationTypes";
 
 interface MigrationDrawerProps {
   applicationId: string | null;
@@ -25,6 +28,8 @@ export function MigrationDrawer({
 }: MigrationDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [servers, setServers] = useState<Schemas["ServerResponseDto"][]>([]);
+  const [deployments, setDeployments] = useState<ApplicationDeployment[]>([]);
+  const [selectedMappingId, setSelectedMappingId] = useState<string | null>(null);
   const [loadingServers, setLoadingServers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { register, handleSubmit, reset, setValue } = useForm<MigrationForm>();
@@ -41,17 +46,16 @@ export function MigrationDrawer({
       fetchAppDetails();
     } else {
       reset();
+      setDeployments([]);
+      setSelectedMappingId(null);
     }
   }, [applicationId, isOpen]);
 
   const fetchServers = async () => {
     setLoadingServers(true);
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
-      const rawResponse = response as any;
-      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
-      setServers(data);
-    } catch (error: any) {
+      setServers(await ServerService.getServers());
+    } catch (error: unknown) {
       toast.error("Failed to fetch available servers");
     } finally {
       setLoadingServers(false);
@@ -61,28 +65,39 @@ export function MigrationDrawer({
   const fetchAppDetails = async () => {
     if (!applicationId) return;
     try {
-      const response = await apiClient.get(`/api/v1/applications/${applicationId}`);
-      const rawResponse = response as any;
-      const data = rawResponse.data?.data ?? rawResponse.data;
-      
-      if (data.portNumber) setValue("portNumber", data.portNumber);
-      if (data.serverId) setValue("serverId", data.serverId);
+      const data = await ApplicationService.getApplication(applicationId);
+      setDeployments(data.servers || []);
+      if (data.servers.length === 1) selectDeployment(data.servers[0]);
     } catch (error) {
       console.error("Error fetching app details for migration", error);
     }
   };
 
+  const selectDeployment = (deployment: ApplicationDeployment) => {
+    setSelectedMappingId(deployment.portMappingId);
+    setValue("portNumber", deployment.portNumber);
+    setValue("serverId", deployment.id);
+  };
+
   const onSubmit = async (formData: MigrationForm) => {
     if (submitting) return;
+    if (!selectedMappingId) {
+      toast.error("Please select a deployment to migrate");
+      return;
+    }
+    if (!formData.serverId) {
+      toast.error("Please select a target server");
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
-        applicationId,
+        portMappingId: selectedMappingId,
         serverId: formData.serverId,
         portNumber: Number(formData.portNumber),
       };
 
-      await apiClient.put("/api/v1/infrastructure/apps/migrate", payload);
+      await ApplicationService.migrateDeployment(payload);
       
       toast.success("Deployment updated successfully");
       
@@ -92,8 +107,8 @@ export function MigrationDrawer({
       
       // Keep drawer open for continuous updates/corrections per UX mandate
       // onClose(); 
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Update failed");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Update failed"));
     } finally {
       setSubmitting(false);
     }
@@ -131,11 +146,30 @@ export function MigrationDrawer({
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           <form id="migration-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
+              {deployments.length > 0 && (
+                <fieldset className="space-y-2 rounded-lg border border-border bg-panel/50 p-4">
+                  <legend className="px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground font-label">
+                    Select deployment to migrate
+                  </legend>
+                  {deployments.map((deployment) => (
+                    <label key={deployment.portMappingId} className="flex cursor-pointer items-center gap-3 text-sm text-foreground/80">
+                      <input
+                        type="radio"
+                        name="migrationDeployment"
+                        checked={selectedMappingId === deployment.portMappingId}
+                        onChange={() => selectDeployment(deployment)}
+                        className="h-4 w-4 border-border bg-surface text-primary focus:ring-primary"
+                      />
+                      <span>{deployment.hostname} ({deployment.ipAddress}) - Port {deployment.portNumber}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
               <div>
                 <label className="block text-xs font-bold text-foreground uppercase mb-2 tracking-widest font-label">Target Server</label>
                 <div className="relative">
                   <select 
-                    {...register("serverId", { required: true })}
+                    {...register("serverId")}
                     disabled={loadingServers}
                     className="w-full bg-surface border border-border rounded-lg p-3 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer disabled:opacity-50"
                   >
@@ -155,7 +189,7 @@ export function MigrationDrawer({
                 <label className="block text-xs font-bold text-foreground uppercase mb-2 tracking-widest font-label">Target Port Number</label>
                 <input 
                   type="number"
-                  {...register("portNumber", { required: true, min: 1, max: 65535 })}
+                  {...register("portNumber")}
                   placeholder="e.g. 8080"
                   className="w-full bg-surface border border-border rounded-lg p-3 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all" 
                 />
@@ -187,4 +221,13 @@ export function MigrationDrawer({
     </div>,
     document.body
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (!isRecord(error) || !isRecord(error.response) || !isRecord(error.response.data)) return fallback;
+  return typeof error.response.data.message === "string" ? error.response.data.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

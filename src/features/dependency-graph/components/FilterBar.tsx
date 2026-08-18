@@ -3,6 +3,8 @@ import apiClient, { Schemas } from "../../../shared/api/client";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
 import { LabelFilterDropdown } from "../../../app/components/LabelFilterDropdown";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../../shared/workspace/workspaceStore";
 
 interface FilterBarProps {
   selectedEnv: string;
@@ -33,14 +35,16 @@ export function FilterBar({
   onQueryChange,
   onSelectResult,
 }: FilterBarProps) {
+  const { selectedWorkspaceId } = useWorkspace();
   // Fetch real datacenters from the API
   const { data: datacenterData = [] } = useQuery({
-    queryKey: ["datacenters"],
+    queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
     queryFn: async () => {
       const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
       const rawResponse = response as any;
       return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
     },
+    enabled: !!selectedWorkspaceId,
   });
 
   const datacenterOptions = [

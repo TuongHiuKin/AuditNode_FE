@@ -18,6 +18,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card } from "./ui/card";
+import { API_ENDPOINTS } from "../../config/endpoints";
+import {
+  getErrorMessage,
+  getImportProblemIssues,
+  type ImportProblemIssue,
+} from "../../shared/utils/errorUtils";
 
 /**
  * CORE DATA STRUCTURES
@@ -26,8 +32,32 @@ type ImportRow = {
   _id: string;
   status: "valid" | "error";
   errors: Record<string, string>;
-  data: Record<string, any>;
+  data: CanonicalImportData;
 };
+
+export const INVENTORY_IMPORT_HEADERS = [
+  "Server Name",
+  "IP",
+  "Environment",
+  "App Code",
+  "App Name",
+  "Owner Team",
+  "Port",
+  "Protocol",
+] as const;
+
+type CanonicalImportData = {
+  serverName: string;
+  ipAddress: string;
+  environment: string;
+  appCode: string;
+  appName: string;
+  ownerTeam: string;
+  port: string;
+  protocol: string;
+};
+
+type CanonicalWorkbookRow = Record<(typeof INVENTORY_IMPORT_HEADERS)[number], string>;
 
 export interface BulkImportModalProps {
   onClose: () => void;
@@ -38,7 +68,7 @@ export interface BulkImportModalProps {
  * MOCK VALIDATION ENGINE
  * In a real app, this would match your backend schema
  */
-const validateRow = (data: any): Record<string, string> => {
+const validateRow = (data: CanonicalImportData): Record<string, string> => {
   const errors: Record<string, string> = {};
   
   // 1. Required String Fields
@@ -52,6 +82,18 @@ const validateRow = (data: any): Record<string, string> => {
 
   if (!data.appName || String(data.appName).trim() === "") {
     errors.appName = "Application Name is required";
+  }
+
+  if (!data.environment.trim()) {
+    errors.environment = "Environment is required";
+  }
+
+  if (!data.ownerTeam.trim()) {
+    errors.ownerTeam = "Owner Team is required";
+  }
+
+  if (!data.protocol.trim()) {
+    errors.protocol = "Protocol is required";
   }
   
   // 2. IP Address Validation (Strict IPv4)
@@ -74,13 +116,38 @@ const validateRow = (data: any): Record<string, string> => {
     }
   }
 
-  // 4. Optional Field Validation (if provided)
-  if (data.environment && !["Production", "Staging", "Development", "UAT"].includes(data.environment)) {
-    errors.environment = "Invalid Environment value";
-  }
-
   return errors;
 };
+
+function parseWorkbookRow(row: Record<string, unknown>): CanonicalImportData {
+  return {
+    serverName: cellText(row["Server Name"]),
+    ipAddress: cellText(row.IP),
+    environment: cellText(row.Environment),
+    appCode: cellText(row["App Code"]),
+    appName: cellText(row["App Name"]),
+    ownerTeam: cellText(row["Owner Team"]),
+    port: cellText(row.Port),
+    protocol: cellText(row.Protocol),
+  };
+}
+
+function toWorkbookRow(data: CanonicalImportData): CanonicalWorkbookRow {
+  return {
+    "Server Name": data.serverName,
+    IP: data.ipAddress,
+    Environment: data.environment,
+    "App Code": data.appCode,
+    "App Name": data.appName,
+    "Owner Team": data.ownerTeam,
+    Port: data.port,
+    Protocol: data.protocol,
+  };
+}
+
+function cellText(value: unknown): string {
+  return value === null || value === undefined ? "" : String(value).trim();
+}
 
 export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   // State Management
@@ -90,6 +157,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [importIssues, setImportIssues] = useState<ImportProblemIssue[]>([]);
   
   const isFilePickerOpen = useRef(false);
 
@@ -122,6 +190,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
     if (!selectedFile) return;
     
     setFile(selectedFile);
+    setImportIssues([]);
     setIsProcessing(true);
 
     try {
@@ -132,21 +201,10 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
           const wb = XLSX.read(bstr, { type: "binary" });
           const wsname = wb.SheetNames[0];
           const ws = wb.Sheets[wsname];
-          const rawData = XLSX.utils.sheet_to_json(ws);
+          const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
-          const normalizedRows: ImportRow[] = rawData.map((row: any) => {
-            // Normalize Excel headers to internal camelCase keys
-            const mappedData = {
-              serverName: row['Server Name'] || row['ServerName'] || row['serverName'] || '',
-              ipAddress: row['IP Address'] || row['IP'] || row['ipAddress'] || '',
-              environment: row['Environment'] || row['environment'] || '',
-              appCode: row['App Code'] || row['AppCode'] || row['appCode'] || '',
-              appName: row['App Name'] || row['AppName'] || row['appName'] || '',
-              ownerTeam: row['Owner Team'] || row['OwnerTeam'] || row['ownerTeam'] || '',
-              port: row['Port'] || row['port'] || '',
-              protocol: row['Protocol'] || row['protocol'] || '',
-              labels: row['Labels'] || row['labels'] || ''
-            };
+          const normalizedRows: ImportRow[] = rawData.map((row) => {
+            const mappedData = parseWorkbookRow(row);
 
             const errors = validateRow(mappedData);
             return {
@@ -158,7 +216,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
           });
           
           setRows(normalizedRows);
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("[Parse Error]", err);
           toast.error("Failed to parse the Excel file.");
         } finally {
@@ -170,9 +228,9 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         setIsProcessing(false);
       };
       reader.readAsBinaryString(selectedFile);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[File Read Error]", err);
-      toast.error(err.message || "Failed to process the file.");
+      toast.error(getErrorMessage(err, "Failed to process the file."));
       setIsProcessing(false);
     } finally {
       e.target.value = "";
@@ -182,7 +240,8 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
   /**
    * PHASE 2: INLINE EDITING LOGIC
    */
-  const handleCellChange = (rowId: string, field: string, value: string) => {
+  const handleCellChange = (rowId: string, field: keyof CanonicalImportData, value: string) => {
+    setImportIssues([]);
     setRows((prev) =>
       prev.map((row) => {
         if (row._id !== rowId) return row;
@@ -215,17 +274,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
     
     try {
       // 1. Re-create Excel structure from validRows
-      const exportData = validRows.map(r => ({
-        'Server Name': r.data.serverName,
-        'IP Address': r.data.ipAddress,
-        'Environment': r.data.environment,
-        'App Code': r.data.appCode,
-        'App Name': r.data.appName,
-        'Owner Team': r.data.ownerTeam,
-        'Port': r.data.port,
-        'Protocol': r.data.protocol,
-        'Labels': r.data.labels
-      }));
+      const exportData = validRows.map((row) => toWorkbookRow(row.data));
 
       // 2. Build workbook
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -238,27 +287,16 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
 
-      // 4. Submit via native fetch & FormData
+      // 4. Submit through the standard API client so the in-memory token is applied.
       const formData = new FormData();
       formData.append("file", newFileBlob, "partial_import.xlsx");
       
-      const token = localStorage.getItem("accessToken");
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
-
-      const response = await fetch(`${baseUrl}/api/v1/inventory/bulk-import`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: formData
+      await apiClient.post(API_ENDPOINTS.INVENTORY.IMPORT, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Bulk import failed on server.");
-      }
       
       toast.success(`Successfully imported ${validRows.length} rows`);
+      setImportIssues([]);
       
       // CRITICAL SUCCESS LOGIC: Remove only successfully imported rows
       const validIds = new Set(validRows.map(r => r._id));
@@ -272,9 +310,34 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
       } else {
         setFilterTab("error"); // Focus on what's left to fix
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Upload Error]", err);
-      toast.error(err.message || "Bulk import failed");
+      const issues = getImportProblemIssues(err);
+      if (issues.length > 0) {
+        const issueMessagesByRowId = new Map<string, string[]>();
+        issues.forEach((issue) => {
+          if (issue.row === undefined) return;
+          const submittedRow = validRows[issue.row - 2];
+          if (!submittedRow) return;
+          const messages = issueMessagesByRowId.get(submittedRow._id) ?? [];
+          messages.push(issue.message);
+          issueMessagesByRowId.set(submittedRow._id, messages);
+        });
+        setRows((currentRows) => currentRows.map((row) => {
+          const messages = issueMessagesByRowId.get(row._id);
+          return messages
+            ? {
+                ...row,
+                status: "error",
+                errors: { ...row.errors, backend: messages.join(" ") },
+              }
+            : row;
+        }));
+        setImportIssues(issues);
+        setView("review");
+        setFilterTab("error");
+      }
+      toast.error(getErrorMessage(err, "Bulk import failed"));
     } finally {
       setIsImporting(false);
     }
@@ -293,7 +356,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to download template");
     }
   };
@@ -336,6 +399,9 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                   <h4 className="text-2xl font-bold text-foreground font-display">Import Your Inventory</h4>
                   <p className="text-muted-foreground leading-relaxed">
                     Drop your Excel file here. Our system will automatically detect errors and let you fix them before committing to the database.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-label">
+                    Required headers: {INVENTORY_IMPORT_HEADERS.join(", ")}
                   </p>
                 </div>
               </div>
@@ -422,7 +488,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                 </Button>
 
                 <button
-                  onClick={() => { setRows([]); setFile(null); }}
+                  onClick={() => { setRows([]); setFile(null); setImportIssues([]); }}
                   className="text-muted-foreground hover:text-danger text-sm transition-colors mt-1 text-center"
                 >
                   Start over with new file
@@ -433,7 +499,7 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
             <div className="flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Review Phase UI */}
               <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-surface/30">
-                <Tabs value={filterTab} onValueChange={(v: any) => setFilterTab(v)} className="w-auto">
+                <Tabs value={filterTab} onValueChange={(value) => setFilterTab(value as typeof filterTab)} className="w-auto">
                   <TabsList className="bg-background border border-border">
                     <TabsTrigger value="all" className="gap-2">
                       All <Badge variant="secondary" className="bg-surface text-muted-foreground">{stats.total}</Badge>
@@ -461,17 +527,33 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
               </div>
 
               <ScrollArea className="flex-1 min-h-0">
+                {importIssues.length > 0 && (
+                  <div role="alert" className="m-4 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+                    <p className="font-semibold">The backend rejected these workbook rows:</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {importIssues.map((issue, index) => (
+                        <li key={`${issue.kind}-${issue.row ?? "global"}-${index}`}>
+                          {issue.row ? `Row ${issue.row}: ` : ""}
+                          {issue.message}
+                          {issue.appCode ? ` (${issue.appCode})` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <Table>
                   <TableHeader className="sticky top-0 bg-panel z-10">
                     <TableRow className="border-border hover:bg-transparent">
                       <TableHead className="w-12 text-center">#</TableHead>
                       <TableHead className="w-24">Status</TableHead>
                       <TableHead>Server Name</TableHead>
-                      <TableHead>IP Address</TableHead>
+                      <TableHead>IP</TableHead>
+                      <TableHead>Environment</TableHead>
+                      <TableHead>App Code</TableHead>
                       <TableHead>App Name</TableHead>
+                      <TableHead>Owner Team</TableHead>
                       <TableHead className="w-24">Port</TableHead>
-                      <TableHead>Env</TableHead>
-                      <TableHead>Labels</TableHead>
+                      <TableHead>Protocol</TableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -511,9 +593,30 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                         </TableCell>
                         <TableCell>
                           <EditableCell 
+                            value={row.data.environment || ""} 
+                            error={row.errors.environment}
+                            onChange={(val) => handleCellChange(row._id, "environment", val)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell 
+                            value={row.data.appCode || ""} 
+                            error={row.errors.appCode}
+                            onChange={(val) => handleCellChange(row._id, "appCode", val)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell 
                             value={row.data.appName || ""} 
                             error={row.errors.appName}
                             onChange={(val) => handleCellChange(row._id, "appName", val)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell 
+                            value={row.data.ownerTeam || ""} 
+                            error={row.errors.ownerTeam}
+                            onChange={(val) => handleCellChange(row._id, "ownerTeam", val)}
                           />
                         </TableCell>
                         <TableCell>
@@ -525,18 +628,10 @@ export function BulkImportModal({ onClose, onSuccess }: BulkImportModalProps) {
                         </TableCell>
                         <TableCell>
                           <EditableCell 
-                            value={row.data.environment || ""} 
-                            error={row.errors.environment}
-                            onChange={(val) => handleCellChange(row._id, "environment", val)}
-                            placeholder="Prod..."
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <EditableCell 
-                            value={row.data.labels || ""} 
-                            error={row.errors.labels}
-                            onChange={(val) => handleCellChange(row._id, "labels", val)}
-                            placeholder="env:prod"
+                            value={row.data.protocol || ""} 
+                            error={row.errors.protocol}
+                            onChange={(val) => handleCellChange(row._id, "protocol", val)}
+                            placeholder="HTTP"
                           />
                         </TableCell>
                         <TableCell>
@@ -611,7 +706,7 @@ function EditableCell({
   onChange, 
   placeholder 
 }: { 
-  value: any; 
+  value: unknown; 
   error?: string; 
   onChange: (val: string) => void;
   placeholder?: string;
