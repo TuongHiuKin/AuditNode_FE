@@ -163,6 +163,9 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
     // 3. Login as Admin
     await loginToKeycloak(page, 'Ankinnnnn', '12345');
 
+    // Wait for the app to finish loading and tokens to be saved
+    await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
+
     // 4. Navigate directly to Dependency Manager
     page.on('console', msg => console.log('BROWSER:', msg.text()));
     await page.goto('/dependency-manager');

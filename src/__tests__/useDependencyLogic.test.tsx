@@ -270,12 +270,7 @@ describe("useDependencyLogic", () => {
     });
 
     await waitFor(() => expect(result.current.edges[0]?.target).toBe("mapping-3"));
-    expect(result.current.edges[0]?.data).toEqual(expect.objectContaining({
-      dependencyId: undefined,
-      referenceId: undefined,
-      destinationPortMappingId: undefined,
-      destinationServerId: undefined,
-    }));
+    expect(result.current.edges[0]?.data).toBeUndefined();
     expect(toTopologyState(result.current.nodes, result.current.edges).edges[0].referenceId).toBeNull();
   });
 

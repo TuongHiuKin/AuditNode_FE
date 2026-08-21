@@ -696,19 +696,15 @@ export function useDependencyLogic() {
         toast.error(validationError);
         return;
       }
-      setEdges((currentEdges) => currentEdges.map((edge) => edge.id === oldEdge.id
-        ? {
-            ...edge,
-            ...newConnection,
-            data: {
-              ...edge.data,
-              dependencyId: undefined,
-              referenceId: undefined,
-              destinationPortMappingId: undefined,
-              destinationServerId: undefined,
-            },
-          }
-        : edge));
+      setEdges((currentEdges) => currentEdges.map((edge) => {
+        if (edge.id !== oldEdge.id) return edge;
+        const { dependencyId, referenceId, destinationPortMappingId, destinationServerId, ...restData } = edge.data || {};
+        return {
+          ...edge,
+          ...newConnection,
+          data: Object.keys(restData).length > 0 ? restData : undefined,
+        };
+      }));
     },
     [edges, nodes, setEdges]
   );

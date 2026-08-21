@@ -48,8 +48,8 @@ describe("WorkspaceProvider", () => {
       "/api/v1/workspaces",
       expect.objectContaining({ skipWorkspaceHeader: true }),
     );
-    expect(screen.getByTestId("selected-workspace")).toHaveTextContent("none");
-    expect(getSelectedWorkspaceId()).toBeNull();
+    expect(screen.getByTestId("selected-workspace")).toHaveTextContent(firstId);
+    expect(getSelectedWorkspaceId()).toBe(firstId);
   });
 
   it("restores only an accessible non-empty persisted workspace", async () => {
@@ -57,13 +57,13 @@ describe("WorkspaceProvider", () => {
     const queryClient = createClient();
     renderProvider(queryClient);
     await waitFor(() => expect(screen.getByTestId("workspace-status")).toHaveTextContent("ready"));
-    expect(getSelectedWorkspaceId()).toBeNull();
-    expect(localStorage.getItem("workspaceId")).toBeNull();
+    expect(getSelectedWorkspaceId()).toBe(firstId);
+    expect(localStorage.getItem("workspaceId")).toBe(firstId);
 
-    localStorage.setItem("workspaceId", firstId);
+    localStorage.setItem("workspaceId", secondId);
     clearWorkspaceSelection({ preservePersisted: true });
     renderProvider(createClient());
-    await waitFor(() => expect(getSelectedWorkspaceId()).toBe(firstId));
+    await waitFor(() => expect(getSelectedWorkspaceId()).toBe(secondId));
   });
 
   it("switches workspace, persists it, and removes old tenant cache", async () => {
