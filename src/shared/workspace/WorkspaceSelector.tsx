@@ -18,19 +18,20 @@ export function WorkspaceSelector() {
     );
   }
 
-  if (workspace.status === "empty") {
-    return <span className="text-xs text-muted-foreground">No workspaces available</span>;
-  }
-
   return (
     <Dropdown
       label="Workspace"
       value={workspace.selectedWorkspaceId ?? ""}
-      options={[
-        { value: "", label: "Select workspace" },
-        ...workspace.workspaces.map((item) => ({ value: item.id, label: item.name })),
-      ]}
+      options={
+        workspace.workspaces.length > 0
+          ? [
+              { value: "", label: "Select workspace" },
+              ...workspace.workspaces.map((item) => ({ value: item.id, label: item.name })),
+            ]
+          : [{ value: "", label: "No workspaces available" }]
+      }
       onChange={workspace.selectWorkspace}
+      disabled={workspace.workspaces.length === 0}
     />
   );
 }

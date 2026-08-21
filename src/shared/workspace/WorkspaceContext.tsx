@@ -61,7 +61,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     const persisted = localStorage.getItem("workspaceId");
     if (!persisted || !isValidWorkspaceId(persisted)) {
-      clearWorkspaceSelection();
+      if (workspaces.length > 0 && selectedWorkspaceId !== workspaces[0].id) {
+        setSelectedWorkspaceId(workspaces[0].id);
+      } else if (workspaces.length === 0) {
+        clearWorkspaceSelection();
+      }
       return;
     }
 
