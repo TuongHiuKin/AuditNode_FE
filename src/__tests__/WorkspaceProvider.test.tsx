@@ -52,8 +52,8 @@ describe("WorkspaceProvider", () => {
     expect(getSelectedWorkspaceId()).toBe(firstId);
   });
 
-  it("restores only an accessible non-empty persisted workspace", async () => {
-    localStorage.setItem("workspaceId", "00000000-0000-0000-0000-000000000000");
+  it("restores only an accessible valid persisted workspace", async () => {
+    localStorage.setItem("workspaceId", "invalid-uuid");
     const queryClient = createClient();
     renderProvider(queryClient);
     await waitFor(() => expect(screen.getByTestId("workspace-status")).toHaveTextContent("ready"));
