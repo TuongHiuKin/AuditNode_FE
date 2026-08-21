@@ -6,7 +6,7 @@ let selectedWorkspaceId: string | null = null;
 
 export const getSelectedWorkspaceId = () => selectedWorkspaceId;
 export const isValidWorkspaceId = (value: string | null | undefined) =>
-  !!value && value !== EMPTY_GUID;
+  !!value && (value === EMPTY_GUID || GUID_PATTERN.test(value));
 
 export function subscribeToWorkspace(listener: () => void) {
   listeners.add(listener);
