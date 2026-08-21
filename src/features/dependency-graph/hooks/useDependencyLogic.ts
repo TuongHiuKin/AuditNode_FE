@@ -486,7 +486,7 @@ export function useDependencyLogic() {
           group.servers.forEach((srv: any, srvIdx: number) => {
             const col = srvIdx % cols;
             const row = Math.floor(srvIdx / cols);
-            const serverNodeId = srv.serverId;
+            const serverNodeId = srv.serverId || srv.id || `srv-${srvIdx}`;
 
             mappedNodes.push({
               id: serverNodeId,
@@ -497,7 +497,7 @@ export function useDependencyLogic() {
               style: { width: 300, height: 200 },
               data: {
                 server: {
-                  serverId: srv.serverId,
+                  serverId: serverNodeId,
                   hostname: srv.hostname,
                   ipAddress: srv.ipAddress,
                   osType: srv.osType,
@@ -511,23 +511,24 @@ export function useDependencyLogic() {
 
             // Tier 3: App Node (tọa độ tương đối bên trong Server)
             srv.applications?.forEach((app: any, appIdx: number) => {
-              if (!hasDeploymentId(app.portMappingId)) return;
+              const deploymentId = app.portMappingId || app.id || `app-${appIdx}`;
+              if (!hasDeploymentId(deploymentId)) return;
               mappedNodes.push({
-                id: app.portMappingId,
+                id: deploymentId,
                 type: "appNode",
                 position: { x: 40, y: 60 + appIdx * 60 },
                 parentId: serverNodeId,
                 extent: "parent",
                 data: {
                   app: {
-                    id: app.portMappingId,
-                    appId: app.appId,
-                    serverId: app.serverId,
-                    appName: app.name,
-                    portNumber: app.port,
-                    protocol: app.protocol,
-                    risk: app.riskLevel,
-                    portMappingId: app.portMappingId,
+                    id: deploymentId,
+                    appId: app.appId || app.id,
+                    serverId: app.serverId || serverNodeId,
+                    appName: app.name || app.appName,
+                    portNumber: app.port || app.portNumber,
+                    protocol: app.protocol || "TCP",
+                    risk: app.riskLevel || app.risk,
+                    portMappingId: deploymentId,
                   },
                 },
                 zIndex: 0,

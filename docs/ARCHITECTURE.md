@@ -1,69 +1,39 @@
-# Project Architecture
+# Frontend Architecture
 
-## Overview
-The Audit System is a full-stack application designed for infrastructure tracking and dependency visualization. It consists of a robust .NET backend and a highly interactive React frontend.
+AuditNode follows an FSD-Lite structure: application shell and routing in `src/app`, dependency graph behavior in `src/features`, and reusable authentication, API, workspace, UI and utility code in `src/shared`.
 
-## 🏗️ System Components
+## Authentication and session lifecycle
 
-### 1. Backend (`/BE/AuditNode.Backend`)
-Built with **ASP.NET Core 10.0**, following **Clean Architecture** principles.
+The frontend uses custom Login and Register pages backed by the ASP.NET auth gateway. Keycloak remains the identity provider behind the backend; `keycloak-js` and the hosted Keycloak UI are not part of the runtime flow.
 
-- **Transaction-based Upsert Pattern**: The Application Registration logic uses a robust transaction pattern to handle "Insert or Update" operations. This ensures that even in high-concurrency scenarios, the `AppCode` UNIQUE constraint is respected, and the internal `port_mappings` are synchronized without creating orphans or duplicates.
-- **Presentation Layer (`AuditNode.API`)**: RESTful controllers.
-- **Application Layer (`AuditNode.Application`)**: Business logic and DTOs.
-- **Infrastructure Layer (`AuditNode.Infrastructure`)**: EF Core with PostgreSQL.
+The access token exists only in the in-memory auth store. The refresh token is an `HttpOnly` cookie owned by the backend. Application bootstrap attempts one cookie refresh before resolving to authenticated or anonymous state. The API client performs single-flight refresh on eligible `401` responses and retries at most once. Terminal failure and logout clear auth state, workspace state and React Query cache.
 
-### 2. Frontend (`/Interface/Build UI for Audit System`)
-Built with **React 18**, **TypeScript**, and **Vite**.
+## Workspace isolation
 
-- **Universal Search**: 
-  - **Design**: Implements a controlled search component with 500ms debounce.
-  - **Functionality**: Fetches global results (Servers/Apps) and provides deep-linking navigation to the Inventory module with active filtering.
-- **Topology Map (Static Resource Inventory)**: 
-  - **Design**: Uses **XYFlow (React Flow)** with a custom `topologyServerNode` that acts as a nested container for applications.
-  - **Auto-layout**: Implements a symmetrical Grid Auto-layout algorithm that re-calculates node positions when containers expand or collapse.
-  - **Local Canvas Search**: Features a 2-tier matching system that scans both Server metadata (hostname/IP) and Application attributes (name/port).
-  - **Canvas Panning**: Selecting a search result triggers a smooth, animated camera pan and zoom (`setCenter`) to the target node, providing immediate visual context.
-  - **Interaction**: Manual dragging is disabled to maintain inventory structure. Navigation triggers automatic state synchronization via `useLocation` and TanStack Query cache invalidation.
-- **Dependency Graph Manager (Dynamic Service Mapping)**:
-  - **Design**: An interactive canvas for mapping service-to-service dependencies and network flows.
-  - **Environment Context Preservation**: Implements a robust context-passing mechanism between the Inventory and Dependency Manager modules. Deep links now include an `environment` parameter that is normalized and prioritized during initialization to prevent race conditions and ensure the destination graph matches the source context (e.g., automatically switching to "Production" when viewing a production server's dependencies).
-  - **Auto-layout**: Implements a **2D Grid layout algorithm** (3 columns) for initial server placement, ensuring organized visualization even in dense environments like Production.
-  - **Smart Floating Edges**: Uses a custom **Dynamic Intersection Algorithm** to calculate connection points on node borders in real-time. This prevents edges from clipping through icons/text and ensures clean 90-degree orthogonal routing around assets.
-  - **Edge Reconnection**: Supports interactive re-routing by dragging edge endpoints to new target nodes, powered by `@xyflow/react` utilities.
-  - **Sync Logic**: Features a differential synchronization engine that extract raw UUIDs from composite React Flow IDs and maps connections to the required `destPortId` field before saving to the database.
-  - **Custom Nodes Refactor**:
-    *   **AppNode**: Redesigned as a sharp rectangle with 4-sided, hover-reveal handles to balance connectivity and visual clarity.
-    *   **ServerGroupNode**: Optimized for dynamic resizing with an "Auto-fit to content" function that precisely wraps children nodes using bounding-box geometry.
-  - **Canvas Authoring Mode**: Enables "Draw to Create" UX for defining logical groupings (Infrastructure Clusters and Boundary Frames) directly on the viewport, complete with anti-spam validation to prevent empty frame clutter.
-- **EditEntityDrawer**: 
-  - **Design**: Uses **React Portals** (`ReactDOM.createPortal`) to render at the root of the DOM tree (`document.body`).
-  - **Adaptive Deployment Selector**: Implements a dynamic UI block that renders when an application has multiple deployments (1-to-Many). Uses a **Radio Group pattern** to target a specific port mapping for modification.
-  - **Force Hydration Pattern**: Programmatically synchronizes `react-hook-form` state upon deployment selection, ensuring strict validation and reliable payload construction.
-  - **Combobox Integration**: Features a searchable, filtered infrastructure selector with a "Clear on Open" UX and forgiving multi-field matching logic.
-  - **Layout**: This architecture ensures the drawer completely escapes parent layout constraints such as `overflow: hidden` or stacking context issues, providing a reliable slide-out experience with a high Z-index overlay.
-- **IAM Integration (Keycloak)**:
-  - **Authentication**: Uses `keycloak-js` for OIDC-compliant authentication.
-  - **Initialization**: App initialization is guarded in `main.tsx`; the React tree only renders after a successful Keycloak `init`.
-  - **Token Management**: Implements an async Axios interceptor that calls `keycloak.updateToken()` before every request, ensuring no calls are made with expired credentials.
-  - **Identity**: Exposes a `getUsername()` utility for personalized UI components (e.g., Topbar).
-- **Iterative Bulk Import**:
-  - **Design**: Implements an enterprise-grade "Parse-Validate-Fix" workflow for Excel ingestion.
-  - **Data Normalization**: Intercepts raw Excel JSON and maps human-readable headers (with spaces) to strict internal camelCase keys.
-  - **In-Browser Triage**: Performs immediate validation using a robust engine (regex-based IP/Port/AppCode checks) to categorize rows as "Ready" or "Error" before they reach the server.
-  - **Iterative Commit Pattern**: Supports "Partial Imports" where successfully saved rows are removed from local state, while erroneous rows persist in an interactive review grid for inline correction.
-  - **Inline Editing**: Utilizes reactive UI components that re-validate individual records on-the-fly, providing instant feedback and visual cues (badges/tooltips) for data correction.
-- **State Management**: React Hooks and TanStack Query for efficient caching.
-- **Styling**: Tailwind CSS with custom Z-index layering for overlays and sidebars.
+`WorkspaceProvider` loads accessible workspaces after authentication and exposes the validated active workspace. Tenant query keys include `workspaceId`. The API client omits the workspace header until selection is valid. Switching workspace removes old tenant cache; logout clears workspace selection and cache.
 
-## 🔄 Communication Flow
-1. The **React Frontend** sends HTTP requests to the **.NET API**.
-2. **API Versioning**: Implements a strict `/api/v1/` versioning strategy with lowercase routing conventions to ensure long-term backend compatibility and predictable endpoint structure.
-3. The API authenticates/authorizes via Keycloak and processes the request.
-4. The **Infrastructure Layer** queries the **PostgreSQL Database** (using optimized Views for complex joins).
-5. Data is returned as JSON and rendered dynamically on the UI.
+## Inventory contracts
 
-## 🛠️ Tech Stack Summary
-- **Backend**: C#, .NET 10, EF Core, Npgsql, PostgreSQL.
-- **Frontend**: TypeScript, React, Vite, Tailwind CSS, XYFlow.
-- **DevOps**: Git, PowerShell scripts for environment setup.
+Server writes use canonical collection/detail routes. Import uses `/api/v1/inventory/import` multipart upload. Application writes use exact local transport types for labels and deployment data, including explicit `PortMappingId` for deployment update or migration. Focused invalidation replaces full-page reloads.
+
+## XYFlow graph model
+
+Dependency application nodes represent deployments, not application records: node identity and reference use `PortMappingId`, with typed `appId`, `serverId` and `portMappingId` data. Connections map to stable deployment nodes and sync with `destinationPortMappingId`.
+
+Canonical topology state uses `/api/v1/topology/state`. UI node types translate to backend `frame`, `group`, `server` and `application` types while preserving parents, coordinates, dimensions, handles, labels and reference IDs. Label filtering preserves deployment identity and cannot overwrite the unfiltered complete state.
+
+## Export and loading boundaries
+
+Inventory exports use repeated `ids` query parameters, map datacenter/labels/deployment fields, and sanitize formula-prefixed cells. Graph audit export uses the same sanitizer and current workspace identity.
+
+InventoryLayout, Inventory, Topology and Dependency Manager are route-level lazy chunks. Bulk Import is component-lazy, and SheetJS loads through dynamic import. Phase 8 reduced the main production JavaScript chunk from 1,256.38 kB to 400.01 kB; XLSX is isolated in a 429.53 kB lazy chunk.
+
+## Verification
+
+```powershell
+npm.cmd run test:ci
+npx.cmd tsc --noEmit
+npm.cmd run build
+```
+
+OpenAPI regeneration remains deferred after three unavailable local attempts caused by API startup behavior involving DataProtection/EventLog in the PowerShell environment. The generated file is unchanged, and TLS checks were not bypassed.

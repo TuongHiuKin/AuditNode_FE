@@ -41,7 +41,8 @@ export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropd
           signal: controller.signal,
         });
         if (controller.signal.aborted || getSelectedWorkspaceId() !== workspaceId) return;
-        setAvailableLabels(response.data || []);
+        const rawResponse = response as any;
+        setAvailableLabels(Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []));
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Failed to fetch labels", error);

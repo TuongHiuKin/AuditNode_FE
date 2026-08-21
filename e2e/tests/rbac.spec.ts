@@ -8,20 +8,16 @@ async function loginToKeycloak(page: Page, username: string, pass: string) {
   await page.goto('/inventory/servers');
   await page.waitForLoadState('networkidle');
 
-  // Check if we are redirected to Keycloak login screen or local /login page
-  const url = page.url();
-  if (url.includes('localhost:8080') || url.includes('login') || url.includes('realms') || url.includes('auth')) {
-    const userField = page.locator('input[name="username"], #username, #login-username, input[placeholder*="jdoe"], input[type="text"]').first();
-    const passField = page.locator('input[name="password"], #password, #login-password, input[type="password"]').first();
-    const submitBtn = page.locator('button[type="submit"], input[type="submit"], #kc-login, button:has-text("Sign In"), button:has-text("Login")').first();
+  const userField = page.locator('#login-username').first();
+  const passField = page.locator('#login-password').first();
+  const submitBtn = page.locator('#login-submit').first();
 
-    await userField.fill(username);
-    await passField.fill(pass);
-    await submitBtn.click();
-    
-    // Wait for redirect back to the application
-    await page.waitForLoadState('networkidle');
-  }
+  await userField.fill(username);
+  await passField.fill(pass);
+  await submitBtn.click();
+  
+  // Wait for redirect back to the application
+  await page.waitForLoadState('networkidle');
 }
 
 test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
@@ -139,3 +135,5 @@ test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
   });
 
 });
+
+

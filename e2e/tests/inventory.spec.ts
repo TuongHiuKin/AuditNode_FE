@@ -8,15 +8,12 @@ test.describe('Inventory Page - Servers', () => {
     // Wait for redirect to finish
     await page.waitForLoadState('networkidle');
 
-    // If redirected to Keycloak login page
-    if (page.url().includes('localhost:8080') || page.url().includes('login') || page.url().includes('realms')) {
-      await page.locator('input[name="username"], #username').fill('Ankinnnnn');
-      await page.locator('input[name="password"], #password').fill('12345');
-      await page.locator('input[type="submit"], button[type="submit"], #kc-login').click();
-      
-      // Wait for login to complete and redirect back to our app
-      await page.waitForLoadState('networkidle');
-    }
+    await page.locator('#login-username').fill('Ankinnnnn');
+    await page.locator('#login-password').fill('12345');
+    await page.locator('#login-submit').click();
+    
+    // Wait for login to complete and redirect back to our app
+    await page.waitForLoadState('networkidle');
 
     // Now we should be on the inventory page
 
@@ -36,3 +33,5 @@ test.describe('Inventory Page - Servers', () => {
     expect(rowCount).toBeGreaterThan(0);
   });
 });
+
+

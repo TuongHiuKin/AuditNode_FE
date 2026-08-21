@@ -60,10 +60,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     if (!workspaceQuery.data) return;
 
     const persisted = localStorage.getItem("workspaceId");
-    const candidate = selectedWorkspaceId ?? persisted;
-    const accessible = candidate && isValidWorkspaceId(candidate) && workspaces.some((item) => item.id === candidate);
+    if (!persisted || !isValidWorkspaceId(persisted)) {
+      clearWorkspaceSelection();
+      return;
+    }
+
+    const accessible = workspaces.some((item) => item.id === persisted);
     if (accessible) {
-      if (selectedWorkspaceId !== candidate) setSelectedWorkspaceId(candidate);
+      if (selectedWorkspaceId !== persisted) setSelectedWorkspaceId(persisted);
     } else {
       clearWorkspaceSelection();
     }

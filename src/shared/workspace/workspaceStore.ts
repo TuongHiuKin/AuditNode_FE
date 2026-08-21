@@ -6,7 +6,7 @@ let selectedWorkspaceId: string | null = null;
 
 export const getSelectedWorkspaceId = () => selectedWorkspaceId;
 export const isValidWorkspaceId = (value: string | null | undefined) =>
-  !!value && value !== EMPTY_GUID && GUID_PATTERN.test(value);
+  !!value && value !== EMPTY_GUID;
 
 export function subscribeToWorkspace(listener: () => void) {
   listeners.add(listener);
@@ -14,7 +14,9 @@ export function subscribeToWorkspace(listener: () => void) {
 }
 
 export function setSelectedWorkspaceId(workspaceId: string, options: { persist?: boolean } = {}) {
+  console.log("setSelectedWorkspaceId called with:", workspaceId);
   if (!isValidWorkspaceId(workspaceId)) {
+    console.log("Invalid workspaceId!", workspaceId);
     clearWorkspaceSelection();
     return false;
   }
