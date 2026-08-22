@@ -4,17 +4,15 @@ async function loginToKeycloak(page: Page) {
   await page.goto('/inventory/servers');
   await page.waitForLoadState('networkidle');
 
-  // If already at Keycloak login form
   const userField = page.locator('#login-username').first();
   const passField = page.locator('#login-password').first();
   const submitBtn = page.locator('#login-submit').first();
 
-  if (await userField.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await userField.fill('Ankinnnnn');
-    await passField.fill('12345');
-    await submitBtn.click();
-    await page.waitForLoadState('networkidle');
-  }
+  await userField.fill('Ankinnnnn');
+  await passField.fill('12345');
+  await submitBtn.click();
+  
+  await page.waitForLoadState('networkidle');
 }
 
 test.describe('Sidebar Collapse and Sign Out E2E Tests', () => {

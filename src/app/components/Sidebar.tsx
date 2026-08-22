@@ -30,6 +30,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const asideRef = useRef<HTMLElement>(null);
   const profileContainerRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -39,20 +40,22 @@ export function Sidebar() {
 
   const updatePosition = useCallback(() => {
     if (!avatarButtonRef.current) return;
-    const rect = avatarButtonRef.current.getBoundingClientRect();
-    if (collapsed) {
-      // When collapsed: popup floats to the right of the avatar, bottom-aligned with avatar button
+    const avatarRect = avatarButtonRef.current.getBoundingClientRect();
+    const asideRect = asideRef.current?.getBoundingClientRect();
+
+    if (collapsed && asideRect) {
+      // When collapsed: popup floats cleanly to the right of the sidebar border line with an 8px margin
       setMenuPos({
-        left: rect.right + 10,
-        bottom: window.innerHeight - rect.bottom,
-        width: 190,
+        left: asideRect.right + 8,
+        bottom: Math.max(12, window.innerHeight - avatarRect.bottom),
+        width: 200,
       });
     } else {
       // When expanded: popup floats directly above the user profile card
       setMenuPos({
-        left: rect.left,
-        bottom: window.innerHeight - rect.top + 8,
-        width: Math.max(rect.width, 200),
+        left: avatarRect.left,
+        bottom: window.innerHeight - avatarRect.top + 8,
+        width: avatarRect.width,
       });
     }
   }, [collapsed]);
@@ -90,6 +93,7 @@ export function Sidebar() {
 
   return (
     <aside
+      ref={asideRef}
       className={`${
         collapsed ? "w-16" : "w-64"
       } shrink-0 border-r border-border bg-sidebar flex flex-col z-20 relative transition-[width] duration-300 overflow-hidden h-full`}
@@ -180,12 +184,17 @@ export function Sidebar() {
               bottom: `${menuPos.bottom}px`,
               width: `${menuPos.width}px`,
             }}
-            className="bg-surface border border-border rounded-lg shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-150 p-1.5"
+            className="bg-surface/95 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-150 p-1.5"
           >
             {collapsed && (
-              <div className="px-3 py-2 border-b border-border/60 mb-1">
-                <p className="text-xs font-semibold text-foreground truncate">{username}</p>
-                <p className="text-[10px] text-muted-foreground truncate">Enterprise Plan</p>
+              <div className="px-3 py-2.5 border-b border-border/80 mb-1 flex items-center gap-2.5">
+                <div className="size-7 shrink-0 rounded-full bg-surface-hover ring-1 ring-border grid place-items-center text-xs font-semibold text-foreground select-none">
+                  {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-foreground truncate">{username}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">Enterprise Plan</p>
+                </div>
               </div>
             )}
             <button
@@ -198,10 +207,10 @@ export function Sidebar() {
                   navigate("/login", { replace: true });
                 }
               }}
-              className="flex items-center w-full gap-2.5 px-3 py-2 text-sm text-danger hover:bg-danger/10 rounded-md transition-colors font-medium cursor-pointer"
+              className="flex items-center w-full gap-2.5 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 rounded-lg transition-colors cursor-pointer group"
             >
-              <LogOut size={16} />
-              <span className="font-semibold">Sign Out</span>
+              <LogOut size={15} className="group-hover:-translate-x-0.5 transition-transform" />
+              <span>Sign Out</span>
             </button>
           </div>,
           document.body
