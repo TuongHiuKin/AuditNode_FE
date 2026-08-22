@@ -269,9 +269,11 @@ describe("useDependencyLogic", () => {
       result.current.onReconnect(oldEdge, newConnection);
     });
 
-    await waitFor(() => expect(result.current.edges[0]?.target).toBe("mapping-3"));
-    expect(result.current.edges[0]?.data).toBeUndefined();
-    expect(toTopologyState(result.current.nodes, result.current.edges).edges[0].referenceId).toBeNull();
+    await waitFor(() => {
+      expect(result.current.edges[0]?.target).toBe("mapping-3");
+      expect(result.current.edges[0]?.data).toBeUndefined();
+      expect(toTopologyState(result.current.nodes, result.current.edges).edges[0]?.referenceId ?? null).toBeNull();
+    });
   });
 
   it("does not render a late workspace A graph response after switching to workspace B", async () => {

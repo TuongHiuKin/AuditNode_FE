@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Filter, Check, ChevronDown, Search } from "lucide-react";
 import { LabelData } from "./LabelBadge";
-import apiClient from "../../shared/api/client";
 import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { getSelectedWorkspaceId } from "../../shared/workspace/workspaceStore";
+import { useLabels } from "../../hooks/queries/useLabels";
 
 interface LabelFilterDropdownProps {
   selectedKeys: string[];
@@ -12,8 +11,8 @@ interface LabelFilterDropdownProps {
 
 export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropdownProps) {
   const { selectedWorkspaceId } = useWorkspace();
+  const { data: availableLabels = [] } = useLabels();
   const [isOpen, setIsOpen] = useState(false);
-  const [availableLabels, setAvailableLabels] = useState<LabelData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
@@ -23,33 +22,12 @@ export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropd
   selectedKeysRef.current = selectedKeys;
 
   useEffect(() => {
-    const controller = new AbortController();
     const workspaceId = selectedWorkspaceId;
     const workspaceChanged = previousWorkspaceRef.current !== workspaceId;
     previousWorkspaceRef.current = workspaceId;
-    setAvailableLabels([]);
     setSearchTerm("");
     setIsOpen(false);
     if (workspaceChanged && selectedKeysRef.current.length > 0) onChangeRef.current([]);
-
-    if (!selectedWorkspaceId) {
-      return () => controller.abort();
-    }
-    async function fetchLabels() {
-      try {
-        const response = await apiClient.get<LabelData[]>("/api/v1/inventory/labels", {
-          signal: controller.signal,
-        });
-        if (controller.signal.aborted || getSelectedWorkspaceId() !== workspaceId) return;
-        const rawResponse = response as any;
-        setAvailableLabels(Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []));
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        console.error("Failed to fetch labels", error);
-      }
-    }
-    void fetchLabels();
-    return () => controller.abort();
   }, [selectedWorkspaceId]);
 
   useEffect(() => {

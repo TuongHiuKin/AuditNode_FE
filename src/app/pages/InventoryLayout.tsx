@@ -125,6 +125,7 @@ export function InventoryLayout() {
   const onRefresh = () => {
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const onSelectRow = (id: string) => {

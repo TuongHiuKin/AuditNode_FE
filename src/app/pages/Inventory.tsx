@@ -35,6 +35,7 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const handleSelectResult = (id: string, _type: 'SERVER' | 'APP') => {
@@ -95,15 +96,27 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
         entityId={editEntity.id}
         entityType={editEntity.type}
         onClose={() => setEditEntity({ id: null, type: null })}
-        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) })}
-        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) })}
+        onApplicationsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
+        onServersUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
       />
 
       <MigrationDrawer
         applicationId={migrateAppId}
         onClose={() => setMigrateAppId(null)}
-        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) })}
-        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) })}
+        onApplicationsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
+        onServersUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
       />
 
       <DeleteConfirmationModal
