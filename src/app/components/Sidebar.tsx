@@ -30,26 +30,29 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
-  const profileRef = useRef<HTMLDivElement>(null);
+  const profileContainerRef = useRef<HTMLDivElement>(null);
+  const avatarButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ left: 0, bottom: 0, width: 0 });
   const username = user?.username ?? "User";
   const initials = getInitials(username);
 
   const updatePosition = useCallback(() => {
-    if (!profileRef.current) return;
-    const rect = profileRef.current.getBoundingClientRect();
+    if (!avatarButtonRef.current) return;
+    const rect = avatarButtonRef.current.getBoundingClientRect();
     if (collapsed) {
+      // When collapsed: popup floats to the right of the avatar, bottom-aligned with avatar button
       setMenuPos({
         left: rect.right + 10,
         bottom: window.innerHeight - rect.bottom,
         width: 190,
       });
     } else {
+      // When expanded: popup floats directly above the user profile card
       setMenuPos({
-        left: rect.left + 12,
+        left: rect.left,
         bottom: window.innerHeight - rect.top + 8,
-        width: Math.max(rect.width - 24, 180),
+        width: Math.max(rect.width, 200),
       });
     }
   }, [collapsed]);
@@ -61,7 +64,7 @@ export function Sidebar() {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (
-        profileRef.current && !profileRef.current.contains(target) &&
+        profileContainerRef.current && !profileContainerRef.current.contains(target) &&
         menuRef.current && !menuRef.current.contains(target)
       ) {
         setIsProfileOpen(false);
@@ -142,11 +145,13 @@ export function Sidebar() {
       </nav>
 
       {/* Footer: user info + collapse button */}
-      <div className="border-t border-border p-3 shrink-0 relative flex flex-col items-center" ref={profileRef}>
+      <div className="border-t border-border p-3 shrink-0 relative flex flex-col items-center" ref={profileContainerRef}>
         <button 
+          ref={avatarButtonRef}
           onClick={() => {
             setIsProfileOpen((prev) => !prev);
           }}
+          data-testid="sidebar-profile-btn"
           aria-label={username}
           title={collapsed ? username : undefined}
           className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-3 rounded-md py-2 hover:bg-surface-hover transition-colors text-left cursor-pointer ${collapsed ? "px-0" : "px-2"}`}
@@ -168,13 +173,14 @@ export function Sidebar() {
         {isProfileOpen && createPortal(
           <div
             ref={menuRef}
+            data-testid="sidebar-profile-menu"
             style={{
               position: "fixed",
               left: `${menuPos.left}px`,
               bottom: `${menuPos.bottom}px`,
               width: `${menuPos.width}px`,
             }}
-            className="bg-surface border border-border rounded-lg shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-150 p-1"
+            className="bg-surface border border-border rounded-lg shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-150 p-1.5"
           >
             {collapsed && (
               <div className="px-3 py-2 border-b border-border/60 mb-1">
@@ -183,6 +189,7 @@ export function Sidebar() {
               </div>
             )}
             <button
+              data-testid="sidebar-sign-out-btn"
               onClick={async () => {
                 setIsProfileOpen(false);
                 try {
@@ -205,6 +212,7 @@ export function Sidebar() {
             setIsProfileOpen(false);
             setCollapsed((c) => !c);
           }}
+          data-testid="sidebar-collapse-btn"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer ${collapsed ? "px-0" : "px-3"}`}
