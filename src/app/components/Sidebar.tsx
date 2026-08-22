@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
 import { useAuth } from "../../shared/auth/AuthContext";
@@ -30,18 +31,59 @@ export function Sidebar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
   const profileRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ left: 0, bottom: 0, width: 0 });
   const username = user?.username ?? "User";
   const initials = getInitials(username);
 
+  const updatePosition = useCallback(() => {
+    if (!profileRef.current) return;
+    const rect = profileRef.current.getBoundingClientRect();
+    if (collapsed) {
+      setMenuPos({
+        left: rect.right + 10,
+        bottom: window.innerHeight - rect.bottom,
+        width: 190,
+      });
+    } else {
+      setMenuPos({
+        left: rect.left + 12,
+        bottom: window.innerHeight - rect.top + 8,
+        width: Math.max(rect.width - 24, 180),
+      });
+    }
+  }, [collapsed]);
+
   useEffect(() => {
+    if (!isProfileOpen) return;
+    updatePosition();
+
     function handleClickOutside(e: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        profileRef.current && !profileRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setIsProfileOpen(false);
       }
     }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsProfileOpen(false);
+    }
+
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isProfileOpen, updatePosition]);
 
   return (
     <aside
@@ -102,9 +144,12 @@ export function Sidebar() {
       {/* Footer: user info + collapse button */}
       <div className="border-t border-border p-3 shrink-0 relative flex flex-col items-center" ref={profileRef}>
         <button 
-          onClick={() => setIsProfileOpen(!isProfileOpen)}
+          onClick={() => {
+            setIsProfileOpen((prev) => !prev);
+          }}
+          aria-label={username}
           title={collapsed ? username : undefined}
-          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-3 rounded-md py-2 hover:bg-surface-hover transition-colors text-left ${collapsed ? "px-0" : "px-2"}`}
+          className={`w-full flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-3 rounded-md py-2 hover:bg-surface-hover transition-colors text-left cursor-pointer ${collapsed ? "px-0" : "px-2"}`}
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="size-8 shrink-0 rounded-full bg-surface ring-1 ring-border grid place-items-center text-xs font-semibold text-muted-foreground select-none">
@@ -119,9 +164,24 @@ export function Sidebar() {
           </div>
         </button>
 
-        {/* Profile Dropdown */}
-        {isProfileOpen && (
-          <div className={`absolute bottom-[100%] ${collapsed ? "left-12 w-[180px]" : "left-3 w-[calc(100%-24px)]"} mb-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150`}>
+        {/* Profile Dropdown rendered via portal to prevent overflow-hidden clipping */}
+        {isProfileOpen && createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              left: `${menuPos.left}px`,
+              bottom: `${menuPos.bottom}px`,
+              width: `${menuPos.width}px`,
+            }}
+            className="bg-surface border border-border rounded-lg shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-150 p-1"
+          >
+            {collapsed && (
+              <div className="px-3 py-2 border-b border-border/60 mb-1">
+                <p className="text-xs font-semibold text-foreground truncate">{username}</p>
+                <p className="text-[10px] text-muted-foreground truncate">Enterprise Plan</p>
+              </div>
+            )}
             <button
               onClick={async () => {
                 setIsProfileOpen(false);
@@ -131,17 +191,23 @@ export function Sidebar() {
                   navigate("/login", { replace: true });
                 }
               }}
-              className="flex items-center w-full gap-3 px-4 py-3 text-sm text-danger hover:bg-danger/10 transition-colors"
+              className="flex items-center w-full gap-2.5 px-3 py-2 text-sm text-danger hover:bg-danger/10 rounded-md transition-colors font-medium cursor-pointer"
             >
               <LogOut size={16} />
               <span className="font-semibold">Sign Out</span>
             </button>
-          </div>
+          </div>,
+          document.body
         )}
+
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => {
+            setIsProfileOpen(false);
+            setCollapsed((c) => !c);
+          }}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors ${collapsed ? "px-0" : "px-3"}`}
+          className={`mt-1 flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer ${collapsed ? "px-0" : "px-3"}`}
         >
           {collapsed ? (
             <ChevronsRight className="size-4" />
