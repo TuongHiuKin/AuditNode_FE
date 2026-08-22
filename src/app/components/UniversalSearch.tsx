@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import apiClient from '../../shared/api/client';
-import { API_ENDPOINTS } from '../../config/endpoints';
 import { Badge } from './ui/badge';
 import { cn } from './ui/utils';
+import { useWorkspace } from '../../shared/workspace/WorkspaceContext';
+import { getSelectedWorkspaceId } from '../../shared/workspace/workspaceStore';
 
 export type SearchResultType = 'SERVER' | 'APP';
 
@@ -36,11 +37,22 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
   className,
   inputClassName,
 }) => {
+  const { selectedWorkspaceId } = useWorkspace();
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    setDebouncedKeyword('');
+    setResults([]);
+    setIsLoading(false);
+    setIsOpen(false);
+    onChangeRef.current('');
+  }, [selectedWorkspaceId]);
 
   // 1. Debounce logic (500ms delay)
   useEffect(() => {
@@ -52,31 +64,40 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
   }, [value]);
 
   // 2. API Integration
-  const fetchResults = useCallback(async (searchKeyword: string) => {
-    if (!searchKeyword.trim()) {
+  useEffect(() => {
+    const controller = new AbortController();
+    const workspaceId = selectedWorkspaceId;
+    const searchKeyword = debouncedKeyword;
+
+    if (!workspaceId || !searchKeyword.trim()) {
       setResults([]);
       setIsOpen(false);
-      return;
+      return () => controller.abort();
     }
 
     setIsLoading(true);
-    try {
-      const response = await apiClient.get<SearchResult[]>(API_ENDPOINTS.SEARCH.BASE, {
-        params: { keyword: searchKeyword },
-      });
-      setResults(response.data);
-      setIsOpen(response.data.length > 0);
-    } catch (error) {
-      console.error('Search API error:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
+    async function fetchResults() {
+      try {
+        const response = await apiClient.get<SearchResult[]>(`/api/v1/search`, {
+          params: { keyword: searchKeyword },
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted || getSelectedWorkspaceId() !== workspaceId) return;
+        setResults(response.data);
+        setIsOpen(response.data.length > 0);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Search API error:', error);
+        setResults([]);
+      } finally {
+        if (!controller.signal.aborted && getSelectedWorkspaceId() === workspaceId) {
+          setIsLoading(false);
+        }
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    fetchResults(debouncedKeyword);
-  }, [debouncedKeyword, fetchResults]);
+    void fetchResults();
+    return () => controller.abort();
+  }, [debouncedKeyword, selectedWorkspaceId]);
 
   // 3. Close dropdown when clicking outside
   useEffect(() => {

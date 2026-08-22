@@ -1,7 +1,8 @@
 import { RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WorkspaceProvider } from "./hooks/useWorkspaceStore";
 import { router } from "./routes";
+import { AuthProvider } from "../shared/auth/AuthContext";
+import { WorkspaceProvider } from "../shared/workspace/WorkspaceContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,7 +16,11 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+      <AuthProvider>
+        <WorkspaceProvider>
+          <RouterProvider router={router} />
+        </WorkspaceProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

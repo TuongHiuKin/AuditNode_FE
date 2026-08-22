@@ -1,56 +1,41 @@
-const API_VERSION = "/api/v1";
-
 /**
  * Centralized API endpoint configuration.
- * Keep every client-side route here so API versioning and route changes have one owner.
+ * Enforces /api/v1/ prefix and lowercase naming conventions.
  */
 export const API_ENDPOINTS = {
   SERVERS: {
-    BASE: `${API_VERSION}/servers`,
-    BY_ID: (id: string) => `${API_VERSION}/servers/${id}`,
-    DEPLOYED_APPS: (id: string) => `${API_VERSION}/infrastructure/servers/${id}/deployed-apps`,
-    PURGE: (id: string) => `${API_VERSION}/infrastructure/servers/${id}/purge`,
-    EXPORT: `${API_VERSION}/servers/export`,
+    BASE: "/api/v1/servers",
+    BY_ID: (id: string) => `/api/v1/servers/${id}`,
+    DEPLOYED_APPS: (id: string) => `/api/v1/infrastructure/servers/${id}/deployed-apps`,
+    EXPORT: "/api/v1/servers/export",
   },
   APPLICATIONS: {
-    BASE: `${API_VERSION}/applications`,
-    BY_ID: (id: string) => `${API_VERSION}/applications/${id}`,
-    DEPENDENCIES_COUNT: (id: string) => `${API_VERSION}/infrastructure/apps/${id}/dependencies-count`,
-    MIGRATE: `${API_VERSION}/infrastructure/apps/migrate`,
-    PURGE: (id: string) => `${API_VERSION}/infrastructure/apps/${id}/purge`,
-    EXPORT: `${API_VERSION}/applications/export`,
+    BASE: "/api/v1/applications",
+    BY_ID: (id: string) => `/api/v1/applications/${id}`,
+    DEPENDENCIES_COUNT: (id: string) => `/api/v1/infrastructure/apps/${id}/dependencies-count`,
+    MIGRATE: "/api/v1/infrastructure/apps/migrate",
+    PURGE: (id: string) => `/api/v1/infrastructure/apps/${id}/purge`,
+    EXPORT: "/api/v1/applications/export",
   },
   DATACENTERS: {
-    BASE: `${API_VERSION}/datacenters`,
+    BASE: "/api/v1/datacenters",
   },
   SEARCH: {
-    BASE: `${API_VERSION}/search`,
+    BASE: "/api/v1/search",
   },
   TOPOLOGY: {
-    TREE: `${API_VERSION}/topology/tree`,
-    MAP: `${API_VERSION}/topology/map`,
-    STATUS: `${API_VERSION}/topology/status`,
-    EXTERNAL_DEPENDENCIES: (serverId: string) =>
-      `${API_VERSION}/topology/nodes/${serverId}/external-dependencies`,
-    SYNC: `${API_VERSION}/topology/sync`,
+    TREE: "/api/v1/topology/tree",
+    MAP: "/api/v1/topology/map",
+    STATUS: "/api/v1/topology/status",
   },
   ANALYTICS: {
-    DEPENDENCIES: `${API_VERSION}/analytics/dependencies`,
+    DEPENDENCIES: "/api/v1/analytics/dependencies",
   },
   DEPENDENCIES: {
-    SYNC: `${API_VERSION}/dependencies/sync`,
+    SYNC: "/api/v1/dependencies/sync",
   },
   INVENTORY: {
-    IMPORT_TEMPLATE: `${API_VERSION}/inventory/import-template`,
-    BULK_IMPORT: `${API_VERSION}/inventory/bulk-import`,
-    LABELS: `${API_VERSION}/inventory/labels`,
-  },
-  FRAMES: {
-    BASE: `${API_VERSION}/frames`,
-    BY_ID: (id: string) => `${API_VERSION}/frames/${id}`,
-  },
-  AUTH: {
-    LOGIN: `${API_VERSION}/auth/login`,
-    REGISTER: `${API_VERSION}/auth/register`,
+    IMPORT_TEMPLATE: "/api/v1/inventory/import-template",
+    IMPORT: "/api/v1/inventory/import",
   },
 };

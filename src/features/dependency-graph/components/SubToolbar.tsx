@@ -1,5 +1,6 @@
 import { Database, CloudUpload, Loader2 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
+import { useRBAC } from "../../../shared/auth/useRBAC";
 
 interface SubToolbarProps {
   onAutoMap: () => void;
@@ -16,6 +17,8 @@ export function SubToolbar({
   onTogglePalette,
   isPaletteOpen = false
 }: SubToolbarProps) {
+  const { canEditInventory } = useRBAC();
+
   return (
     <div className="flex items-center gap-3">
       {onTogglePalette && (
@@ -28,12 +31,22 @@ export function SubToolbar({
         </Button>
       )}
 
-      <Button onClick={onAutoMap} variant="outline">
+      <Button 
+        onClick={onAutoMap} 
+        disabled={!canEditInventory} 
+        variant="outline"
+        title={!canEditInventory ? "Bạn không có quyền thao tác" : undefined}
+      >
         <Database size={14} className="group-hover:animate-pulse text-muted-foreground" />
         Auto-Map from DB
       </Button>
 
-      <Button onClick={onSync} disabled={isSyncing} variant="primary">
+      <Button 
+        onClick={onSync} 
+        disabled={isSyncing || !canEditInventory} 
+        variant="primary"
+        title={!canEditInventory ? "Bạn không có quyền thao tác" : undefined}
+      >
         {isSyncing ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (

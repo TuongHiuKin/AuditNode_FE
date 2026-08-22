@@ -39,7 +39,7 @@ describe("InventoryLayout", () => {
     expect(screen.getByText("Applications")).toBeDefined();
   });
 
-  it("opens bulk import modal when clicking bulk import button", () => {
+  it("opens the lazily loaded bulk import modal when clicking bulk import button", async () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -54,7 +54,7 @@ describe("InventoryLayout", () => {
     const bulkImportBtn = screen.getByText("Import");
     fireEvent.click(bulkImportBtn);
 
-    expect(screen.getByText("Iterative Bulk Import")).toBeDefined();
+    expect(await screen.findByText("Iterative Bulk Import", {}, { timeout: 5000 })).toBeDefined();
   });
 
   it("toggles export view dropdown", () => {

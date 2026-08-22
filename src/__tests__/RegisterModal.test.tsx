@@ -118,18 +118,49 @@ describe("RegisterModal", () => {
     fireEvent.change(screen.getByPlaceholderText("e.g. FinOps Team"), { target: { value: "Team-A" } });
     fireEvent.change(screen.getByPlaceholderText("PAY-01"), { target: { value: "APP-01" } });
     fireEvent.change(screen.getByPlaceholderText("e.g. Payment Gateway"), { target: { value: "Test App" } });
+    fireEvent.change(screen.getByPlaceholderText("Key (e.g. Env)"), { target: { value: "ENV" } });
+    fireEvent.change(screen.getByPlaceholderText("Value (e.g. Prod)"), { target: { value: "PROD" } });
+    fireEvent.click(screen.getByText("Add"));
     
     fireEvent.click(screen.getByText("Deploy App"));
     
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/v1/applications", expect.objectContaining({
-        serverId: "1",
         ownerTeam: "Team-A",
         appCode: "APP-01",
         appName: "Test App",
+        labels: [{ key: "ENV", value: "PROD" }],
+        deployment: expect.objectContaining({
+          serverId: "1",
+          portNumber: 443,
+          protocol: "HTTPS",
+        }),
       }));
+      const payload = vi.mocked(apiClient.post).mock.calls[0][1] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty("serverId");
     });
     expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it("creates application metadata without inventing a deployment", async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
+    renderWithProvider(<RegisterModal onClose={mockOnClose} defaultMode="app" />);
+
+    fireEvent.change(screen.getByPlaceholderText("e.g. FinOps Team"), { target: { value: "Team-A" } });
+    fireEvent.change(screen.getByPlaceholderText("PAY-01"), { target: { value: "APP-02" } });
+    fireEvent.change(screen.getByPlaceholderText("e.g. Payment Gateway"), { target: { value: "Metadata App" } });
+    fireEvent.click(screen.getByText("Deploy App"));
+
+    await waitFor(() => {
+      const payload = vi.mocked(apiClient.post).mock.calls[0][1] as Record<string, unknown>;
+      expect(payload).toEqual(expect.objectContaining({
+        appCode: "APP-02",
+        appName: "Metadata App",
+        ownerTeam: "Team-A",
+        labels: [],
+      }));
+      expect(payload).not.toHaveProperty("deployment");
+    });
   });
 
   it("calls onSuccess after successful submission", async () => {

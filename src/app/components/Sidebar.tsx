@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
-import { getUsername } from "../../services/keycloakService";
+import { useAuth } from "../../shared/auth/AuthContext";
 
 const navGroups = [
   {
@@ -28,8 +28,9 @@ export function Sidebar() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user, logout } = useAuth();
   const profileRef = useRef<HTMLDivElement>(null);
-  const username = getUsername();
+  const username = user?.username ?? "User";
   const initials = getInitials(username);
 
   useEffect(() => {
@@ -122,9 +123,13 @@ export function Sidebar() {
         {isProfileOpen && (
           <div className={`absolute bottom-[100%] ${collapsed ? "left-12 w-[180px]" : "left-3 w-[calc(100%-24px)]"} mb-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150`}>
             <button
-              onClick={() => {
-                localStorage.removeItem("accessToken");
-                navigate("/login", { replace: true });
+              onClick={async () => {
+                setIsProfileOpen(false);
+                try {
+                  await logout();
+                } finally {
+                  navigate("/login", { replace: true });
+                }
               }}
               className="flex items-center w-full gap-3 px-4 py-3 text-sm text-danger hover:bg-danger/10 transition-colors"
             >

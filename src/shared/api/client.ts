@@ -1,92 +1,129 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosHeaders,
+  type AxiosError,
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+} from "axios";
+import { toast } from "sonner";
+import { clearClientSession, getAccessToken, setAccessToken } from "../auth/authStore";
+import { getSelectedWorkspaceId } from "../workspace/workspaceStore";
 import { paths } from "./v1-contract";
-import { RUNTIME_CONFIG } from "../../config/runtime";
 
-/**
- * Base URL for the API. Configure through VITE_API_BASE_URL.
- * An undefined value keeps Axios relative to the current origin.
- */
-export const API_BASE_URL = RUNTIME_CONFIG.apiBaseUrl;
+declare module "axios" {
+  interface AxiosRequestConfig {
+    skipAuthRefresh?: boolean;
+    skipWorkspaceHeader?: boolean;
+  }
 
-/**
- * Centralized Axios instance with type safety and interceptors.
- */
+  interface InternalAxiosRequestConfig {
+    skipAuthRefresh?: boolean;
+    _authRetry?: boolean;
+  }
+}
+
+interface RefreshResponse {
+  accessToken: string;
+  expiresIn: number;
+}
+
+interface ErrorResponse {
+  error?: string;
+  message?: string;
+  errors?: unknown;
+}
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:7126";
+const AUTH_REFRESH_EXCLUSIONS = new Set([
+  "/api/v1/auth/login",
+  "/api/v1/auth/register",
+  "/api/v1/auth/refresh",
+]);
+
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: API_BASE,
+  headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Request interceptor handler to inject the JWT Bearer Token.
- */
+let refreshInFlight: Promise<string> | null = null;
+
 export const requestInterceptorHandler = async (config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem("accessToken");
-  if (token && config.headers) {
-    if (typeof config.headers.set === 'function') {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    } else {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
+  const token = getAccessToken();
+  const workspaceId = getSelectedWorkspaceId();
 
-  // CRITICAL FIX: Gỡ bỏ ép buộc JSON nếu payload là FormData
-  if (config.data instanceof FormData && config.headers) {
-    if (typeof config.headers.delete === 'function') {
-      config.headers.delete('Content-Type');
-    } else {
-      delete config.headers['Content-Type'];
-    }
-  }
+  config.headers ??= new AxiosHeaders();
+  if (token) config.headers.set("Authorization", `Bearer ${token}`);
+  if (workspaceId && !config.skipWorkspaceHeader) config.headers.set("X-Workspace-Id", workspaceId);
 
+  if (config.data instanceof FormData) config.headers.delete("Content-Type");
   return config;
 };
 
-apiClient.interceptors.request.use(requestInterceptorHandler, (error) => {
-  return Promise.reject(error);
-});
+apiClient.interceptors.request.use(requestInterceptorHandler, (error: unknown) => Promise.reject(error));
 
-/**
- * Response interceptor for centralized error handling and enhanced debugging.
- */
-export const responseInterceptorErrorHandler = (error: any) => {
-  const { response, config } = error;
-  const status = response?.status;
-  const url = config?.url;
-  const message = response?.data?.message || error.message || "An unexpected error occurred";
+export const responseInterceptorErrorHandler = async (error: unknown) => {
+  if (!axios.isAxiosError<ErrorResponse>(error)) return Promise.reject(error);
 
-  console.error(`[API Error] ${status || "Network Error"} | ${url || "Unknown URL"} | ${message}`);
-  
-  if (response?.data?.errors) {
-    console.error("[Validation Errors]", response.data.errors);
+  const status = error.response?.status;
+  const config = error.config;
+  const url = config?.url ?? "";
+  const safeMessage = error.response?.data?.message ?? error.response?.data?.error ?? error.message;
+  console.error(`[API Error] ${status ?? "Network Error"} | ${url || "Unknown URL"} | ${safeMessage || "Request failed"}`);
+
+  if (status === 403) {
+    toast.error("Bạn không có quyền thực hiện thao tác này.");
   }
 
-  // Handle 401 Unauthorized globally
-  if (status === 401) {
-    localStorage.removeItem("accessToken");
-    // Only redirect if we are not already on the login page
-    if (window.location.pathname !== "/login") {
-      window.location.href = "/login";
-    }
+  if (status !== 401 || !config || config.skipAuthRefresh || isRefreshExcluded(url)) {
+    return Promise.reject(error);
   }
 
-  return Promise.reject(error);
+  if (config._authRetry) {
+    clearClientSession();
+    return Promise.reject(error);
+  }
+
+  config._authRetry = true;
+  try {
+    const token = await refreshAccessToken();
+    config.headers ??= new AxiosHeaders();
+    config.headers.set("Authorization", `Bearer ${token}`);
+    return apiClient.request(config);
+  } catch {
+    clearClientSession();
+    return Promise.reject(error);
+  }
 };
 
 apiClient.interceptors.response.use(
   (response) => response,
-  responseInterceptorErrorHandler
+  responseInterceptorErrorHandler,
 );
 
+function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = apiClient
+      .post<RefreshResponse>(
+        "/api/v1/auth/refresh",
+        undefined,
+        { withCredentials: true, skipAuthRefresh: true },
+      )
+      .then((response) => {
+        setAccessToken(response.data.accessToken);
+        return response.data.accessToken;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+
+  return refreshInFlight;
+}
+
+function isRefreshExcluded(url: string) {
+  const path = url.split("?")[0];
+  return AUTH_REFRESH_EXCLUSIONS.has(path);
+}
+
 export default apiClient;
-
-/**
- * Type-safe API methods mapping.
- */
 export type ApiPaths = paths;
-
-/**
- * Utility to extract component schemas.
- */
 export type Schemas = import("./v1-contract").components["schemas"];

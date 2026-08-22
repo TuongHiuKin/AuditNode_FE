@@ -6,6 +6,8 @@ import { EditEntityDrawer } from "../components/EditEntityDrawer";
 import { MigrationDrawer } from "../components/MigrationDrawer";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useInventoryContext } from "./InventoryLayout";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
   const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl, onOpenCreateDc } = useInventoryContext();
@@ -28,10 +30,12 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
   });
 
   const queryClient = useQueryClient();
+  const { selectedWorkspaceId } = useWorkspace();
 
   const refreshData = () => {
-    queryClient.invalidateQueries({ queryKey: ["servers"] });
-    queryClient.invalidateQueries({ queryKey: ["applications"] });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const handleSelectResult = (id: string, _type: 'SERVER' | 'APP') => {
@@ -92,15 +96,27 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
         entityId={editEntity.id}
         entityType={editEntity.type}
         onClose={() => setEditEntity({ id: null, type: null })}
-        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: ["applications"] })}
-        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: ["servers"] })}
+        onApplicationsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
+        onServersUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
       />
 
       <MigrationDrawer
         applicationId={migrateAppId}
         onClose={() => setMigrateAppId(null)}
-        onApplicationsUpdated={() => queryClient.invalidateQueries({ queryKey: ["applications"] })}
-        onServersUpdated={() => queryClient.invalidateQueries({ queryKey: ["servers"] })}
+        onApplicationsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
+        onServersUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+        }}
       />
 
       <DeleteConfirmationModal

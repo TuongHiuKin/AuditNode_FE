@@ -1,6 +1,6 @@
 # 🔍 Phân Tích Đồng Bộ API — AuditNode (FE ↔ BE)
 
-> **Historical record — superseded on 2026-07-15.** The issues below describe the pre-`/api/v1` contract. The current contract is generated from backend OpenAPI into `src/shared/api/v1-contract.ts`; use that file and `src/config/endpoints.ts` for current routes and schemas.
+> **Historical snapshot (May 2026):** Routes and findings below predate the Phase 3–8 remediation and must not be used as the current contract. See [API.md](./API.md) and [FRONTEND_REMEDIATION_PHASES_3_8.md](./FRONTEND_REMEDIATION_PHASES_3_8.md) for the active frontend behavior.
 
 > **Ngày tạo:** 2026-05-25  
 > **Mục đích:** Phát hiện các API chưa đồng bộ giữa Frontend và Backend

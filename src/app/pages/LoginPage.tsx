@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import apiClient from "../../shared/api/client";
-import { API_ENDPOINTS } from "../../config/endpoints";
+import axios from "axios";
+import { useAuth } from "../../shared/auth/AuthContext";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -9,28 +9,24 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError(null);
     setLoading(true);
 
     try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, { username, password });
-      const accessToken = response.data?.data?.accessToken || response.data?.accessToken;
-
-      if (accessToken) {
-        localStorage.setItem("accessToken", accessToken);
-        navigate("/");
-      } else {
-        setError("Authentication failed. No access token received.");
-      }
-    } catch (err: any) {
-      setError(
-        err.response?.data?.error
-        || err.response?.data?.message
-        || "Invalid credentials or server error. Please try again.",
-      );
+      await login(username, password);
+      navigate("/");
+    } catch (error: unknown) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      setError(status === 401
+        ? "Invalid username or password."
+        : status === 503
+          ? "Authentication service is temporarily unavailable."
+          : "Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
     }

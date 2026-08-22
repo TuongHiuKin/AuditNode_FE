@@ -1,16 +1,31 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { NavLink, Outlet, useOutletContext, useLocation } from "react-router";
 import { Server, Grid, Download, ChevronDown, FileText, Upload, X, ArrowRight, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useHeader } from "../hooks/useHeader";
-import { BulkImportModal } from "../components/BulkImportModal";
+import { useRBAC } from "../../shared/auth/useRBAC";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
-import { API_ENDPOINTS } from "../../config/endpoints";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
+import type { ApplicationResponse } from "../../shared/api/applicationTypes";
+import {
+  buildRepeatedIdParams,
+  mapApplicationExportRows,
+  mapServerExportRows,
+  selectExportColumns,
+  unwrapExportList,
+  workspaceExportName,
+  type ServerExportRecord,
+} from "../../shared/utils/inventoryExport";
+import { getErrorMessage } from "../../shared/utils/errorUtils";
 
 import { RegisterModal } from "../components/RegisterModal";
 import { CreateDatacenterModal } from "../components/CreateDatacenterModal";
+
+const BulkImportModal = lazy(() => import("../components/BulkImportModal")
+  .then((module) => ({ default: module.BulkImportModal })));
 
 // Context type shared with child routes
 type InventoryOutletContext = {
@@ -56,14 +71,18 @@ const APP_COLUMNS: ColumnOption[] = [
   { key: "risk", label: "Risk Level" },
   { key: "portNumber", label: "Port" },
   { key: "protocol", label: "Protocol" },
+  { key: "portMappingId", label: "Port Mapping ID" },
+  { key: "serverName", label: "Deployment Server" },
   { key: "techStack", label: "Tech Stack" },
   { key: "labels", label: "Labels" },
 ];
 
 export function InventoryLayout() {
   const { setHeader } = useHeader();
+  const { canEditInventory } = useRBAC();
 
   const queryClient = useQueryClient();
+  const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
   const location = useLocation();
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -104,8 +123,9 @@ export function InventoryLayout() {
   }, [location.pathname, isSelectionMode]);
 
   const onRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["servers"] });
-    queryClient.invalidateQueries({ queryKey: ["applications"] });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
+    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const onSelectRow = (id: string) => {
@@ -159,52 +179,36 @@ export function InventoryLayout() {
     setIsExporting(true);
     try {
       // Step 3: API Fetch (Bulk fetch with specific IDs and /export endpoint)
-      const endpoint = currentTab.type === "servers"
-        ? API_ENDPOINTS.SERVERS.EXPORT
-        : API_ENDPOINTS.APPLICATIONS.EXPORT;
-      const response = await apiClient.get(endpoint, {
-        params: { ids: selectedIds.join(',') }
+      const baseEndpoint = currentTab.type === "servers" ? "/api/v1/servers" : "/api/v1/applications";
+      const response = await apiClient.get<unknown>(`${baseEndpoint}/export`, {
+        params: buildRepeatedIdParams(selectedIds),
       });
-      
-      let rawData = Array.isArray(response.data) ? response.data : (response.data as any)?.data || [];
-      
-      // Secondary filter in case the API doesn't support the param yet
-      if (rawData.length > selectedIds.length) {
-        rawData = rawData.filter((item: any) => selectedIds.includes(item.id));
-      }
-
-      // Step 4: Data Mapping (Create objects with ONLY selected columns)
-      const exportData = rawData.map((item: any) => {
-        const row: Record<string, any> = {};
-        columns.forEach((col) => {
-          if (selectedColumns.includes(col.key)) {
-            // Use Label as Key for the exported file headers
-            row[col.label] = item[col.key] ?? "N/A";
-          }
-        });
-        return row;
-      });
+      const mappedRows = currentTab.type === "servers"
+        ? mapServerExportRows(unwrapExportList<ServerExportRecord>(response.data))
+        : mapApplicationExportRows(unwrapExportList<ApplicationResponse>(response.data));
+      const requestedRows = mappedRows.filter((item) => selectedIds.includes(item.id));
+      const exportData = selectExportColumns(requestedRows, columns, selectedColumns);
 
       // Step 5: File Generation
       const date = new Date().toISOString().split("T")[0];
-      const workspaceName = "Global";
+      const workspaceName = workspaceExportName(selectedWorkspace, selectedWorkspaceId)
+        .replace(/[^a-zA-Z0-9_-]+/g, "_");
       const typeLabel = currentTab.type === "servers" ? "Servers" : "Applications";
       const baseFileName = `${workspaceName}_${typeLabel}_AuditExport_${date}`;
       
       if (exportFormat === "excel") {
-        exportToExcel(exportData, baseFileName);
+        await exportToExcel(exportData, baseFileName);
       } else {
-        exportToCSV(exportData, baseFileName);
+        await exportToCSV(exportData, baseFileName);
       }
 
       toast.success(`${exportFormat.toUpperCase()} export generated successfully!`);
       
       // Step 6: Cleanup
       disableSelectionMode();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[Export Error]", err);
-      const errorMessage = err.response?.data?.message || err.message || "Failed to generate export file.";
-      toast.error(errorMessage);
+      toast.error(getErrorMessage(err, "Failed to generate export file."));
     } finally {
       setIsExporting(false);
     }
@@ -272,8 +276,16 @@ export function InventoryLayout() {
             <>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsBulkImportOpen(true)}
-                  className="bg-surface hover:bg-surface-hover border border-border px-3.5 h-9 rounded-lg text-sm font-semibold flex items-center gap-2 text-foreground transition-all shadow-sm ring-1 ring-transparent hover:ring-border"
+                  onClick={() => {
+                    if (canEditInventory) setIsBulkImportOpen(true);
+                  }}
+                  disabled={!canEditInventory}
+                  title={!canEditInventory ? "Bạn không có quyền thao tác" : "Import"}
+                  className={`border px-3.5 h-9 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm ${
+                    canEditInventory
+                      ? "bg-surface hover:bg-surface-hover border-border text-foreground ring-1 ring-transparent hover:ring-border"
+                      : "bg-surface/50 border-border/50 text-muted-foreground/50 cursor-not-allowed"
+                  }`}
                 >
                   <Upload size={15} className="text-muted-foreground" />
                   Import
@@ -315,8 +327,16 @@ export function InventoryLayout() {
               <div className="h-5 w-px bg-border mx-1" />
 
               <button
-                onClick={() => setIsRegisterModalOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 h-9 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-[0_0_24px_oklch(0.62_0.22_25/0.35)] hover:shadow-[0_0_32px_oklch(0.62_0.22_25/0.5)]"
+                onClick={() => {
+                  if (canEditInventory) setIsRegisterModalOpen(true);
+                }}
+                disabled={!canEditInventory}
+                title={!canEditInventory ? "Bạn không có quyền thao tác" : "Register Entity"}
+                className={`px-4 h-9 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
+                  canEditInventory
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_24px_oklch(0.62_0.22_25/0.35)] hover:shadow-[0_0_32px_oklch(0.62_0.22_25/0.5)]"
+                    : "bg-primary/40 text-primary-foreground/60 cursor-not-allowed shadow-none"
+                }`}
               >
                 <Plus size={16} />
                 Register Entity
@@ -353,10 +373,12 @@ export function InventoryLayout() {
 
       {/* Modals */}
       {isBulkImportOpen && (
-        <BulkImportModal
-          onClose={() => setIsBulkImportOpen(false)}
-          onSuccess={onRefresh}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80" aria-label="Loading import tools" />}>
+          <BulkImportModal
+            onClose={() => setIsBulkImportOpen(false)}
+            onSuccess={onRefresh}
+          />
+        </Suspense>
       )}
       {isRegisterModalOpen && (
         <RegisterModal

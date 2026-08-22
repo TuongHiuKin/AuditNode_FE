@@ -2,13 +2,16 @@ import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
+import { useRBAC } from "../../../shared/auth/useRBAC";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
+  onAddBoundaryFrame?: () => void;
 }
 
-export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
+export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
+  const { canEditInventory } = useRBAC();
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -43,22 +46,34 @@ export function GraphToolbar({ onQuickAdd, onAddGroup }: GraphToolbarProps) {
           <Camera size={18} />
         </Button>
         <Button
-          onClick={onQuickAdd}
-          title="Quick Add Infrastructure"
+          onClick={onAddGroup}
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Group Box"}
           variant="ghost"
           size="icon"
           className="border-b border-border rounded-none"
         >
-          <Plus size={18} />
+          <Briefcase size={18} />
         </Button>
         <Button
-          onClick={onAddGroup}
-          title="Draw Infrastructure Group"
+          onClick={onAddBoundaryFrame}
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Boundary Frame"}
+          variant="ghost"
+          size="icon"
+          className="border-b border-border font-bold uppercase rounded-none"
+        >
+          [ ]
+        </Button>
+        <Button
+          onClick={onQuickAdd}
+          disabled={!canEditInventory}
+          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Quick Add Infrastructure"}
           variant="ghost"
           size="icon"
           className="rounded-none"
         >
-          <Briefcase size={18} />
+          <Plus size={18} />
         </Button>
       </div>
 

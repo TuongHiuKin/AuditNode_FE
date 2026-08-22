@@ -39,7 +39,7 @@ describe("AppTable Reproduction", () => {
     vi.clearAllMocks();
   });
 
-  it("routes to dependency manager with lowercase environment parameter", async () => {
+  it("routes to dependency manager using application identity from the response contract", async () => {
     const mockData = [
       {
         id: "app-1",
@@ -78,7 +78,7 @@ describe("AppTable Reproduction", () => {
     const depButton = screen.getByTitle("View Dependency");
     fireEvent.click(depButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith("/dependency-manager?entityId=app-1&type=app&environment=staging");
+    expect(mockNavigate).toHaveBeenCalledWith("/dependency-manager?entityId=app-1&type=app");
   });
 
   it("renders 'N/A' when app.risk is undefined instead of crashing", async () => {

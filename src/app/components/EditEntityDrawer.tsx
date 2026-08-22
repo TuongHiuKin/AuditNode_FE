@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { X, Loader2, Save, ChevronDown, MoveHorizontal, Check } from "lucide-react";
 import { toast } from "sonner";
-import apiClient, { Schemas } from "../../shared/api/client";
-import { API_ENDPOINTS } from "../../config/endpoints";
+import { Schemas } from "../../shared/api/client";
+import { ServerService } from "../../services/serverService";
+import { ApplicationService } from "../../services/applicationService";
+import type { ApplicationDeployment, ApplicationLabel, UpdateApplicationRequest } from "../../shared/api/applicationTypes";
 
 interface EditEntityDrawerProps {
   entityId: string | null;
@@ -12,6 +14,23 @@ interface EditEntityDrawerProps {
   onClose: () => void;
   onApplicationsUpdated: () => void;
   onServersUpdated: () => void;
+}
+
+interface EntityFormData {
+  appCode?: string;
+  appName?: string;
+  ownerTeam?: string;
+  risk?: string;
+  icon?: string;
+  techStack?: string;
+  serverId?: string;
+  portNumber?: number;
+  hostname?: string;
+  ipAddress?: string;
+  osType?: string;
+  environment?: string;
+  status?: string;
+  datacenterId?: string;
 }
 
 const PREDEFINED_ENV = ["Production", "Staging", "Development"];
@@ -30,14 +49,14 @@ export function EditEntityDrawer({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
-  const [portMappings, setPortMappings] = useState<any[]>([]);
+  const [portMappings, setPortMappings] = useState<ApplicationDeployment[]>([]);
   const [selectedMappingId, setSelectedMappingId] = useState<string | null>(null);
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [serverSearchTerm, setServerSearchTerm] = useState("");
-  const [labels, setLabels] = useState<{ key: string; value: string }[]>([]);
+  const [labels, setLabels] = useState<ApplicationLabel[]>([]);
   const [labelInput, setLabelInput] = useState({ key: '', value: '' });
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { register, handleSubmit, reset, setValue, watch } = useForm();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<EntityFormData>();
 
   const handleAddLabel = () => {
     const k = labelInput.key.trim();
@@ -114,6 +133,8 @@ export function EditEntityDrawer({
   useEffect(() => {
     if (isOpen) {
       setFetchError(null);
+      setSelectedMappingId(null);
+      setServerSearchTerm("");
       fetchData();
       if (entityType === "APP") {
         fetchAvailableServers();
@@ -128,30 +149,20 @@ export function EditEntityDrawer({
 
   const fetchAvailableServers = async () => {
     try {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>(API_ENDPOINTS.SERVERS.BASE);
-      const rawResponse = response as any;
-      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
-      setAvailableServers(data);
+      setAvailableServers(await ServerService.getServers());
     } catch (error) {
       console.error("Failed to fetch available servers", error);
     }
   };
 
   const fetchData = async () => {
-    if (!entityId || !entityType) return;
-
     setLoading(true);
     try {
-      const endpoint = entityType === "SERVER"
-        ? API_ENDPOINTS.SERVERS.BY_ID(entityId)
-        : API_ENDPOINTS.APPLICATIONS.BY_ID(entityId);
-      const response = await apiClient.get(endpoint);
-      const rawResponse = response as any;
-      const data = rawResponse.data?.data ?? rawResponse.data;
-      
-      setLabels(data.labels || []);
-      
       if (entityType === "SERVER") {
+        const data = await ServerService.getServer(entityId!);
+        setLabels((data.labels || []).flatMap((label) =>
+          label.key && label.value ? [{ key: label.key, value: label.value }] : [],
+        ));
         setValue("hostname", data.hostname);
         setValue("ipAddress", data.ipAddress);
         setValue("osType", data.osType);
@@ -159,22 +170,20 @@ export function EditEntityDrawer({
         setValue("status", data.status);
         setValue("datacenterId", data.datacenterId);
       } else {
+        const data = await ApplicationService.getApplication(entityId!);
+        setLabels(data.labels || []);
         setValue("appName", data.appName);
         setValue("appCode", data.appCode);
-        setValue("ownerId", data.ownerId);
         setValue("ownerTeam", data.ownerTeam || "");
         setValue("risk", data.risk);
-        
-        // Populate deployments for selector (supports both 'servers' and 'portMappings' from API)
-        const deployments = data.servers || data.portMappings || [];
-        setPortMappings(deployments);
-
-        // Pre-fill migration fields if available
-        if (data.serverId) setValue("serverId", data.serverId);
-        if (data.portNumber) setValue("portNumber", data.portNumber);
+        setValue("icon", data.icon);
+        setValue("techStack", data.techStack);
+        setPortMappings(data.servers || []);
+        setValue("serverId", undefined);
+        setValue("portNumber", undefined);
       }
-    } catch (error: any) {
-      const msg = error.response?.data?.message || "Failed to fetch entity details";
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error, "Failed to fetch entity details");
       setFetchError(msg);
       toast.error(msg);
     } finally {
@@ -182,49 +191,21 @@ export function EditEntityDrawer({
     }
   };
 
-  // Hydration Logic: Auto-select mapping when drawer opens or mappings change
-  useEffect(() => {
-    if (entityType === "APP" && portMappings.length > 0) {
-      const defaultMapping = portMappings[0];
-      setSelectedMappingId(defaultMapping.id);
-      // Ensure we use the correct ID property (serverId vs id)
-      const targetServerId = defaultMapping.serverId || defaultMapping.id;
-      
-      // Force Hydration into react-hook-form
-      setValue("serverId", targetServerId, { shouldValidate: true, shouldDirty: true });
-      setValue("portNumber", defaultMapping.portNumber, { shouldValidate: true, shouldDirty: true });
-    }
-  }, [portMappings, entityType, setValue]);
-
-  const handleSelectMapping = (mapping: any) => {
-    setSelectedMappingId(mapping.id);
-    const targetServerId = mapping.serverId || mapping.id;
-    
-    // Force Hydration into react-hook-form
-    setValue("serverId", targetServerId, { shouldValidate: true, shouldDirty: true });
+  const handleSelectMapping = (mapping: ApplicationDeployment) => {
+    setSelectedMappingId(mapping.portMappingId);
+    setValue("serverId", mapping.id, { shouldValidate: true, shouldDirty: true });
     setValue("portNumber", mapping.portNumber, { shouldValidate: true, shouldDirty: true });
+    setServerSearchTerm(`${mapping.hostname} (${mapping.ipAddress})`);
   };
 
-  const onSubmit = async (formData: any) => {
-    if (!entityId || !entityType) return;
-
-    if (entityType === "APP") {
-      if (!selectedMappingId && portMappings.length > 0) {
-        toast.error("Please select a deployment to update");
-        return;
-      }
-      if (!formData.serverId) {
-        toast.error("Please select a Target Server");
-        return;
-      }
+  const onSubmit = async (formData: EntityFormData) => {
+    if (entityType === "APP" && selectedMappingId && !formData.serverId) {
+      toast.error("Please select a Target Server");
+      return;
     }
 
     setSubmitting(true);
     try {
-      const endpoint = entityType === "SERVER"
-        ? API_ENDPOINTS.SERVERS.BY_ID(entityId)
-        : API_ENDPOINTS.APPLICATIONS.BY_ID(entityId);
-      
       // Combine already added labels with any pending typed label
       const finalLabels = [...labels];
       const pendingKey = labelInput.key.trim();
@@ -240,46 +221,51 @@ export function EditEntityDrawer({
         }
       }
 
-      // Aligned with Backend DTO properties
-      const payload = entityType === "APP" 
-        ? {
-            // App Metadata
-            appCode: formData.appCode,
-            appName: formData.appName,
-            ownerTeam: formData.ownerTeam,
-            risk: formData.risk,
-            labels: finalLabels,
-            
-            // Network Mapping Payload - EXACT PROPERTY NAMES FOR BACKEND
-            portMappingId: selectedMappingId, 
-            serverId: formData.serverId,     // Target Infrastructure ID
-            portNumber: Number(formData.portNumber), // Deployment Port
-          }
-        : {
-            ...formData,
-            // Ensure values not explicitly registered but set via setValue are included
-            datacenterId: watch("datacenterId"),
-            labels: finalLabels,
-          };
-
-      console.log('[DEBUG FE PAYLOAD]', payload);
-      await apiClient.put(endpoint, payload);
+      if (entityType === "SERVER") {
+        const ipAddress = watch("ipAddress");
+        if (!ipAddress) {
+          toast.error("IP Address is required");
+          return;
+        }
+        await ServerService.updateServer(entityId!, {
+          hostname: formData.hostname,
+          ipAddress,
+          osType: formData.osType,
+          environment: formData.environment,
+          status: formData.status,
+          datacenterId: watch("datacenterId"),
+          labels: finalLabels,
+        });
+      } else {
+        const payload: UpdateApplicationRequest = {
+          appName: formData.appName || "",
+          ownerTeam: formData.ownerTeam || "",
+          risk: formData.risk || "",
+          icon: formData.icon || "",
+          techStack: formData.techStack || "",
+          labels: finalLabels,
+        };
+        if (selectedMappingId) {
+          payload.portMappingId = selectedMappingId;
+          payload.serverId = formData.serverId;
+          payload.portNumber = Number(formData.portNumber);
+        }
+        await ApplicationService.updateApplication(entityId!, payload);
+      }
       
       toast.success(`${entityType === "SERVER" ? "Server" : "Application"} updated successfully`);
       
-      // Full state invalidation across domain boundaries
-      onApplicationsUpdated();
-      onServersUpdated();
-      
-      // Auto-reload to immediately reflect custom labels on the filter dropdowns
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
+      if (entityType === "SERVER") {
+        onServersUpdated();
+      } else {
+        onApplicationsUpdated();
+        if (selectedMappingId) onServersUpdated();
+      }
       
       // Keep drawer open for continuous updates/corrections per UX mandate
       // onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Update failed");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Update failed"));
     } finally {
       setSubmitting(false);
     }
@@ -408,25 +394,25 @@ export function EditEntityDrawer({
                     </div>
                     
                     <div className="space-y-4">
-                      {portMappings && portMappings.length > 1 && (
+                      {portMappings.length > 0 && (
                         <div className="mb-6 p-4 border border-border bg-panel/50 rounded-lg">
                           <label className="text-[10px] font-bold mb-3 block text-muted-foreground uppercase tracking-widest font-label">
                             Select Deployment to Modify
                           </label>
                           <div className="space-y-3">
-                            {portMappings.map((dep: any) => (
-                              <label key={dep.id} className="flex items-center space-x-3 text-sm text-foreground/80 cursor-pointer hover:text-foreground group">
+                            {portMappings.map((dep) => (
+                              <label key={dep.portMappingId} className="flex items-center space-x-3 text-sm text-foreground/80 cursor-pointer hover:text-foreground group">
                                 <input 
                                   type="radio" 
                                   name="deploymentSelector"
-                                  value={dep.id}
-                                  checked={selectedMappingId === dep.id}
+                                  value={dep.portMappingId}
+                                  checked={selectedMappingId === dep.portMappingId}
                                   onChange={() => handleSelectMapping(dep)}
                                   className="w-4 h-4 text-primary bg-surface border-border focus:ring-primary focus:ring-offset-panel"
                                 />
                                 <span className="flex flex-col">
-                                  <span className={`font-medium ${selectedMappingId === dep.id ? 'text-foreground' : ''}`}>
-                                    {dep.hostname || dep.serverName}
+                                  <span className={`font-medium ${selectedMappingId === dep.portMappingId ? 'text-foreground' : ''}`}>
+                                    {dep.hostname}
                                   </span>
                                   <span className="text-[10px] text-muted-foreground font-label">
                                     {dep.ipAddress} &mdash; Port: {dep.portNumber}
@@ -570,4 +556,13 @@ export function EditEntityDrawer({
     </div>,
     document.body
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (!isRecord(error) || !isRecord(error.response) || !isRecord(error.response.data)) return fallback;
+  return typeof error.response.data.message === "string" ? error.response.data.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

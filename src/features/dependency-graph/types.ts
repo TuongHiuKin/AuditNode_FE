@@ -2,24 +2,17 @@ import { type Node, type Edge, type Viewport } from "@xyflow/react";
 
 export interface PaletteApp {
   id: string;
+  appId: string;
+  serverId: string;
+  portMappingId: string;
   appName: string;
-  ownerId?: string;
+  ownerId: string;
   portNumber: number;
   protocol: string;
-  icon?: string;
-  techStack?: string;
+  icon: string;
+  techStack: string;
   risk?: string;
   isMapped?: boolean;
-  portMappingId?: string;
-  labels?: GraphLabelData[];
-  isDerivedLabelInstance?: boolean;
-}
-
-export interface GraphLabelData {
-  id: string;
-  key: string;
-  value: string;
-  colorHex?: string;
 }
 
 export interface AppNodeData extends Record<string, unknown> {
@@ -27,22 +20,13 @@ export interface AppNodeData extends Record<string, unknown> {
 }
 
 export interface ServerNodeData extends Record<string, unknown> {
-  entityId?: string;
   server: {
+    serverId?: string;
     hostname: string;
     ipAddress: string;
     osType?: string;
+    labels?: { key: string; value: string }[];
   };
-  labels?: GraphLabelData[];
-  width: number;
-  height: number;
-  isDerivedLabelInstance?: boolean;
-}
-
-export interface DependencyLabelGroupNodeData extends Record<string, unknown> {
-  label: GraphLabelData;
-  serverCount: number;
-  applicationCount: number;
   width: number;
   height: number;
 }
@@ -55,16 +39,10 @@ export interface ZoneNodeData extends Record<string, unknown> {
   height?: number;
 }
 
-export type CustomNode = Node<
-  AppNodeData | ServerNodeData | ZoneNodeData | DependencyLabelGroupNodeData
->;
+export type CustomNode = Node<AppNodeData | ServerNodeData | ZoneNodeData>;
 export type ServerNode = Node<ServerNodeData, "serverNode">;
 export type AppNode = Node<AppNodeData, "appNode">;
 export type ZoneNodeType = Node<ZoneNodeData, "zoneNode">;
-export type DependencyLabelGroupNode = Node<
-  DependencyLabelGroupNodeData,
-  "dependencyLabelGroupNode"
->;
 
 export interface DependencyMap {
   calling: string[];

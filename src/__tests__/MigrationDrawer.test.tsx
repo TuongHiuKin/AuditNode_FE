@@ -32,8 +32,10 @@ describe("MigrationDrawer", () => {
   const mockApp = {
     id: "app-1",
     appName: "Test App",
-    portNumber: 8080,
-    serverId: "srv-1",
+    servers: [
+      { portMappingId: "mapping-1", id: "srv-1", hostname: "server-01", ipAddress: "192.168.1.1", portNumber: 8080, protocol: "HTTP" },
+      { portMappingId: "mapping-2", id: "srv-2", hostname: "server-02", ipAddress: "192.168.1.2", portNumber: 8181, protocol: "HTTP" },
+    ],
   };
 
   it("renders correctly when open and fetches data", async () => {
@@ -59,8 +61,7 @@ describe("MigrationDrawer", () => {
       expect(screen.getByText("server-02 (192.168.1.2)")).toBeDefined();
     });
 
-    const portInput = screen.getByPlaceholderText("e.g. 8080") as HTMLInputElement;
-    expect(portInput.value).toBe("8080");
+    expect(screen.getByText(/Select deployment to migrate/i)).toBeDefined();
   });
 
   it("submits the migration form successfully and stays open", async () => {
@@ -87,6 +88,8 @@ describe("MigrationDrawer", () => {
 
     await waitFor(() => screen.getByText("server-01 (192.168.1.1)"));
 
+    fireEvent.click(screen.getByRole("radio", { name: /server-02.*8181/i }));
+
     // Select a different server
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "srv-2" } });
     
@@ -98,7 +101,7 @@ describe("MigrationDrawer", () => {
 
     await waitFor(() => {
       expect(apiClient.put).toHaveBeenCalledWith("/api/v1/infrastructure/apps/migrate", {
-        applicationId: "app-1",
+        portMappingId: "mapping-2",
         serverId: "srv-2",
         portNumber: 9090,
       });
@@ -131,11 +134,35 @@ describe("MigrationDrawer", () => {
 
     await waitFor(() => screen.getByText("server-01 (192.168.1.1)"));
 
+    fireEvent.click(screen.getByRole("radio", { name: /server-01.*8080/i }));
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "srv-2" } });
     fireEvent.click(screen.getByText("Update Configuration"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Update failed");
     });
+  });
+
+  it("blocks migration until a concrete deployment is selected", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url) => {
+      if (url === "/api/v1/servers") return Promise.resolve({ data: mockServers });
+      if (url === "/api/v1/applications/app-1") return Promise.resolve({ data: mockApp });
+      return Promise.reject(new Error("Not found"));
+    });
+
+    render(
+      <MigrationDrawer
+        applicationId="app-1"
+        onClose={vi.fn()}
+        onApplicationsUpdated={vi.fn()}
+        onServersUpdated={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByText(/Select deployment to migrate/i)).toBeDefined());
+    fireEvent.click(screen.getByText("Update Configuration"));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Please select a deployment to migrate"));
+    expect(apiClient.put).not.toHaveBeenCalled();
   });
 });

@@ -8,6 +8,7 @@ import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { useDatacenters } from "../../hooks/queries/useDatacenters";
+import { useRBAC } from "../../shared/auth/useRBAC";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -71,9 +72,10 @@ export function ServerTable({
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [envFilter, setEnvFilter] = useState("Development");
-  const [datacenterFilter, setDatacenterFilter] = useState("");
+  const [datacenterFilter, setDatacenterFilter] = useState("ALL");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
+  const { canManageSystem } = useRBAC();
 
   const { data: servers = [], isLoading } = useServers();
   const { data: datacenters = [] } = useDatacenters();
@@ -81,11 +83,12 @@ export function ServerTable({
   const LAST_DC_KEY = "auditnode_last_datacenter";
 
   useEffect(() => {
-    if (datacenters && datacenters.length > 0 && !datacenterFilter) {
+    if (datacenters && datacenters.length > 0 && datacenterFilter === "ALL") {
       const savedDcId = localStorage.getItem(LAST_DC_KEY);
-      const isValid = savedDcId && datacenters.some(dc => dc.id === savedDcId);
-      const dcToSelect = isValid ? savedDcId : datacenters[0].id!;
-      setDatacenterFilter(dcToSelect);
+      const isValid = savedDcId && (savedDcId === "ALL" || savedDcId === "00000000-0000-0000-0000-000000000000" || datacenters.some(dc => dc.id === savedDcId));
+      if (isValid && savedDcId !== "ALL") {
+        setDatacenterFilter(savedDcId);
+      }
     }
   }, [datacenters, datacenterFilter]);
 
@@ -94,19 +97,11 @@ export function ServerTable({
     localStorage.setItem(LAST_DC_KEY, newDcId);
   };
   
-  const datacenterOptions = datacenters.map(dc => ({ value: dc.id!, label: dc.name! }));
-
-  const availableLabels = useMemo(() => {
-    const labelsMap = new Map<string, LabelData>();
-    servers.forEach((s: any) => {
-      s.labels?.forEach((l: any) => {
-        if (!labelsMap.has(l.key)) {
-          labelsMap.set(l.key, l);
-        }
-      });
-    });
-    return Array.from(labelsMap.values());
-  }, [servers]);
+  const datacenterOptions = [
+    { value: "ALL", label: "All Datacenters" },
+    ...datacenters.map(dc => ({ value: dc.id!, label: dc.name! })),
+    { value: "00000000-0000-0000-0000-000000000000", label: "Unassigned" }
+  ];
 
   const filteredServers = useMemo(() => {
     if (filterId) {
@@ -122,7 +117,8 @@ export function ServerTable({
         s.osType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.environment?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesDatacenter = !datacenterFilter || 
+      const matchesDatacenter = datacenterFilter === "ALL" || !datacenterFilter || 
+        (datacenterFilter === "00000000-0000-0000-0000-000000000000" && (!s.datacenterId || s.datacenterId === "00000000-0000-0000-0000-000000000000")) ||
         s.datacenterId === datacenterFilter ||
         (s as any).datacenter?.id === datacenterFilter ||
         (s as any).datacenter?.name === datacenterFilter;
@@ -170,7 +166,7 @@ export function ServerTable({
             value={datacenterFilter}
             options={datacenterOptions}
             onChange={handleDatacenterChange}
-            onAdd={onOpenCreateDc}
+            onAdd={canManageSystem ? onOpenCreateDc : undefined}
             addLabel="Add Datacenter"
           />
 
@@ -186,7 +182,6 @@ export function ServerTable({
           <div className="h-5 w-px bg-border mx-1" />
 
           <LabelFilterDropdown
-            availableLabels={availableLabels}
             selectedKeys={selectedLabelKeys}
             onChange={setSelectedLabelKeys}
           />

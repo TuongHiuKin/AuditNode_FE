@@ -1,122 +1,145 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  useEdgesState,
   useNodesState,
+  useEdgesState,
   useReactFlow,
-  type Edge,
   type Node,
+  type Edge,
 } from "@xyflow/react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient, { type Schemas } from "../../../shared/api/client";
-import { API_ENDPOINTS } from "../../../config/endpoints";
+import apiClient from "../../../shared/api/client";
 import { SelectedItem } from "../types";
-import type {
-  TopologyAppData,
-  TopologyLabelData,
-  TopologyServerNodeData,
-} from "../topology-types";
-import { getLayoutedElements } from "../utils/layout";
-import { buildTopologyNodes } from "../utils/topologyGrouping";
+import type { DependencyMapResponse } from "../graphContract";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
+import { getSelectedWorkspaceId, tenantQueryKey } from "../../../shared/workspace/workspaceStore";
 
 export function useTopologyLogic() {
+  const { selectedWorkspaceId } = useWorkspace();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [selectedItem, setSelectedItem] = useState<SelectedItem>({
-    type: null,
-    id: null,
-  });
-  const [rightPanelData, setRightPanelData] = useState<unknown>(null);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
+  const [rightPanelData, setRightPanelData] = useState<any>(null);
+
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
-  const [selectedLabels, setSelectedLabels] = useState<TopologyLabelData[]>([]);
   const [appSearchQuery, setAppSearchQuery] = useState("");
-  const [viewportRevision, setViewportRevision] = useState(0);
-  const lastLayoutSizeSignature = useRef("");
 
   const reactFlowInstance = useReactFlow();
-  const selectedLabelIds = useMemo(
-    () => selectedLabels.map((label) => label.id),
-    [selectedLabels],
-  );
-  const performLayout = useCallback(
-    (currentNodes: Node[], currentEdges: Edge[]) =>
-      getLayoutedElements(currentNodes, currentEdges, "TB"),
-    [],
-  );
+  const activeWorkspaceRef = useRef(selectedWorkspaceId);
+  activeWorkspaceRef.current = selectedWorkspaceId;
 
   useEffect(() => {
-    if (viewportRevision === 0) return;
+    setNodes([]);
+    setEdges([]);
+    setSelectedItem({ type: null, id: null });
+    setRightPanelData(null);
+    setAppSearchQuery("");
+  }, [selectedWorkspaceId, setEdges, setNodes]);
 
-    const timerId = window.setTimeout(() => {
-      void reactFlowInstance.fitView({
-        padding: 0.18,
-        duration: 450,
-        minZoom: 0.1,
-        maxZoom: 1.2,
-      });
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
-  }, [reactFlowInstance, viewportRevision]);
-
+  // ── Highlighting Logic based on Search ───────────────────────────────
   useEffect(() => {
     if (nodes.length === 0) return;
 
     setNodes((currentNodes) => {
       const query = appSearchQuery.toLowerCase().trim();
-
+      
       if (!query) {
+        // Reset styles if no query
         return currentNodes.map((node) => ({
           ...node,
           style: { ...node.style, opacity: 1, filter: "none" },
         }));
       }
 
-      const isAppMatch = (app: TopologyAppData) =>
-        app.appName.toLowerCase().includes(query) ||
-        app.portNumber.toString().includes(query);
+      // 1. Define Matching Helpers
+      const isServerDirectMatch = (node: Node) => {
+        const srvData = (node.data as any).server || node.data || {};
+        const hostname = (srvData.hostname || "").toLowerCase();
+        const ip = (srvData.ipAddress || srvData.ip || "").toLowerCase();
+        const label = (node.data as any).label?.toLowerCase() || "";
+        return hostname.includes(query) || ip.includes(query) || label.includes(query);
+      };
 
-      const matchedEntityIds = new Set<string>();
-      currentNodes.forEach((node) => {
-        if (node.type !== "topologyServerNode") return;
+      const isAppMatch = (node: Node | any, isEmbedded = false) => {
+        const appData = isEmbedded ? node : ((node.data as any).app || node.data || {});
+        const name = (appData.appName || appData.name || appData.label || "").toLowerCase();
+        const port = (appData.portNumber || appData.port || "").toString();
+        return name.includes(query) || port.includes(query);
+      };
 
-        const data = node.data as TopologyServerNodeData;
-        const isDirectMatch =
-          data.server.hostname.toLowerCase().includes(query) ||
-          data.server.ipAddress.toLowerCase().includes(query) ||
-          data.labels.some(
-            (label) =>
-              label.key.toLowerCase().includes(query) ||
-              label.value.toLowerCase().includes(query),
+      // 2. Identify Matched Servers (Rule B)
+      const matchedServerIds = new Set<string>();
+      currentNodes.forEach(node => {
+        if (node.type === 'topologyServerNode' || node.type === 'serverNode') {
+          // Rule B.1: Direct Match
+          if (isServerDirectMatch(node)) {
+            matchedServerIds.add(node.id);
+            return;
+          }
+
+          // Rule B.2: Child Match (Embedded Apps)
+          const apps = (node.data as any).apps || [];
+          if (apps.some((app: any) => isAppMatch(app, true))) {
+            matchedServerIds.add(node.id);
+            return;
+          }
+
+          // Rule B.2: Child Match (Separate App Nodes)
+          const hasChildMatch = currentNodes.some(child => 
+            child.parentId === node.id && isAppMatch(child)
           );
-
-        if (isDirectMatch || data.apps.some(isAppMatch)) {
-          matchedEntityIds.add(data.entityId);
+          if (hasChildMatch) {
+            matchedServerIds.add(node.id);
+          }
         }
       });
 
+      // 3. Apply Styling (Rule C)
       return currentNodes.map((node) => {
-        if (node.type !== "topologyServerNode") return node;
+        // If it's a Server
+        if (node.type === 'topologyServerNode' || node.type === 'serverNode') {
+          const hasMatch = matchedServerIds.has(node.id);
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              opacity: hasMatch ? 1 : 0.3,
+              filter: hasMatch 
+                ? "brightness(1.1) drop-shadow(0 0 8px rgba(59, 130, 246, 0.3))" 
+                : "grayscale(0.6)",
+            },
+          };
+        }
 
-        const data = node.data as TopologyServerNodeData;
-        const hasMatch = matchedEntityIds.has(data.entityId);
-        return {
-          ...node,
-          style: {
-            ...node.style,
-            opacity: hasMatch ? 1 : 0.3,
-            filter: hasMatch
-              ? "brightness(1.1) drop-shadow(0 0 8px rgba(255, 77, 126, 0.25))"
-              : "grayscale(0.6)",
-          },
-        };
+        // If it's an Application
+        if (node.type === 'appNode' || node.type === 'topologyAppNode') {
+          const isDirectMatch = isAppMatch(node);
+          const parentNode = node.parentId ? currentNodes.find(n => n.id === node.parentId) : null;
+          const parentMatchedDirectly = parentNode && isServerDirectMatch(parentNode);
+
+          let opacity = 1;
+          if (!isDirectMatch) {
+            opacity = parentMatchedDirectly ? 0.5 : 0.3;
+          }
+
+          return {
+            ...node,
+            style: {
+              ...node.style,
+              opacity,
+            },
+          };
+        }
+
+        return node;
       });
     });
-  }, [appSearchQuery, nodes.length, setNodes]);
+  }, [appSearchQuery, setNodes]);
 
+  // ── Listen for app double-click events from TopologyServerNode ────────
   useEffect(() => {
-    const handleAppDblClick = (event: Event) => {
-      const detail = (event as CustomEvent).detail;
+    const handleAppDblClick = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
       setSelectedItem({ type: "node", id: detail.app.id });
       setRightPanelData({
         app: detail.app,
@@ -128,163 +151,149 @@ export function useTopologyLogic() {
     return () => window.removeEventListener("topology-app-dblclick", handleAppDblClick);
   }, []);
 
+  // ── Auto-Layout Logic ──────────────────────────────────────────────────
+  const performLayout = useCallback((currentNodes: Node[]) => {
+    const servers = currentNodes.filter(n => n.type === "topologyServerNode");
+
+    const GRID_GAP = 60;
+    const COLUMNS = 3;
+    let currentRowHeight = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    const layoutedServers = servers.map((srv, index) => {
+      const data = srv.data as any;
+      const width = data.isExpanded ? (data.width || 400) : 280;
+      const height = data.isExpanded ? (data.height || 200) : 80;
+
+      if (index > 0 && index % COLUMNS === 0) {
+        currentX = 0;
+        currentY += currentRowHeight + GRID_GAP;
+        currentRowHeight = 0;
+      }
+
+      const position = { x: currentX, y: currentY };
+
+      currentX += width + GRID_GAP;
+      currentRowHeight = Math.max(currentRowHeight, height);
+
+      return {
+        ...srv,
+        position,
+        data: { ...data, width, height }
+      };
+    });
+
+    return layoutedServers;
+  }, []);
+
+  // Re-layout when nodes change (expansion toggle)
   useEffect(() => {
-    const handleLoadExternal = async (event: Event) => {
-      const { serverId } = (event as CustomEvent<{ serverId: string }>).detail;
+    if (nodes.length === 0) return;
+
+    const layouted = performLayout(nodes);
+    const needsUpdate = layouted.some((node, i) =>
+      node.position.x !== nodes[i]?.position.x ||
+      node.position.y !== nodes[i]?.position.y ||
+      node.hidden !== nodes[i]?.hidden
+    );
+
+    if (needsUpdate) {
+      setNodes(layouted);
+    }
+  }, [nodes, performLayout, setNodes]);
+
+  // ── Fetch graph data ──────────────────────────────────────────────────────
+  const { isLoading: isGraphLoading, refetch } = useQuery({
+    queryKey: tenantQueryKey("topology-inventory-map", selectedWorkspaceId, selectedEnv, selectedDatacenter),
+    staleTime: 0, // Ensure data is considered stale immediately for fresh fetches
+    enabled: !!selectedWorkspaceId,
+    queryFn: async ({ queryKey, signal }) => {
+      const [_scope, workspaceId, environment, datacenterId] = queryKey as [string, string, string, string];
       try {
-        const response = await apiClient.get<Schemas["ServerNodeDto"][]>(
-          API_ENDPOINTS.TOPOLOGY.EXTERNAL_DEPENDENCIES(serverId),
+        const response = await apiClient.get<DependencyMapResponse>(
+          "/api/v1/topology/map",
           {
             params: {
-              labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
+              environment: environment === "All" ? undefined : environment,
+              datacenterId: datacenterId === "All" ? undefined : datacenterId,
             },
-            paramsSerializer: { indexes: null },
-          },
+            signal,
+          }
         );
+        const data = response.data;
 
-        const currentNodes = reactFlowInstance.getNodes();
-        const newNodes = [...currentNodes];
-        response.data.forEach((server) => {
-          if (!server.id) return;
+        const mappedNodes: Node[] = [];
+        const mappedEdges: Edge[] = []; // No edges for Topology view
 
-          const ghostId = `ghost-${server.id}`;
-          if (newNodes.some((node) => node.id === ghostId)) return;
+        data.servers?.forEach((srv) => {
+          const serverNodeId = srv.serverId;
 
-          const ghostNode = buildTopologyNodes([server], [])[0];
-          if (!ghostNode) return;
+          // Map apps data to embed directly in server node
+          const apps = (srv.applications || []).map((app) => ({
+            id: app.portMappingId,
+            appId: app.appId,
+            serverId: app.serverId,
+            portMappingId: app.portMappingId,
+            appName: app.name,
+            portNumber: app.port,
+            protocol: app.protocol,
+            risk: app.riskLevel,
+            icon: app.icon,
+          }));
 
-          newNodes.push({
-            ...ghostNode,
-            id: ghostId,
+          const appCount = apps.length;
+          const rows = Math.ceil(appCount / 2);
+          const expandedHeight = Math.max(200, 100 + rows * 72 + 16);
+
+          mappedNodes.push({
+            id: serverNodeId,
+            type: "topologyServerNode",
+            position: { x: 0, y: 0 },
             data: {
-              ...ghostNode.data,
-              isGhost: true,
+              server: {
+                serverId: srv.serverId,
+                hostname: srv.hostname,
+                ipAddress: srv.ipAddress,
+                osType: srv.osType,
+                environment: srv.environment || "PROD"
+              },
+              apps,        // Embed apps data directly
+              appCount,
+              isExpanded: false,
+              width: 280,
+              height: 80
             },
           });
         });
 
-        const { nodes: layouted } = await performLayout(newNodes, edges);
-        setNodes(layouted);
-        setViewportRevision((revision) => revision + 1);
-      } catch (error: unknown) {
-        console.error("Failed to load external dependencies", error);
-      }
-    };
-
-    window.addEventListener("topology-load-external", handleLoadExternal);
-    return () => window.removeEventListener("topology-load-external", handleLoadExternal);
-  }, [
-    edges,
-    performLayout,
-    reactFlowInstance,
-    selectedLabelIds,
-    setNodes,
-  ]);
-
-  const serverSizeSignature = useMemo(
-    () =>
-      nodes
-        .filter((node) => node.type === "topologyServerNode")
-        .map((node) => {
-          const data = node.data as TopologyServerNodeData;
-          return `${node.id}:${data.width}x${data.height}`;
-        })
-        .join("|"),
-    [nodes],
-  );
-
-  useEffect(() => {
-    if (
-      !serverSizeSignature ||
-      lastLayoutSizeSignature.current === serverSizeSignature
-    ) {
-      return;
-    }
-
-    lastLayoutSizeSignature.current = serverSizeSignature;
-    let cancelled = false;
-    void performLayout(nodes, edges).then(
-      ({ nodes: layoutedNodes }) => {
-        if (!cancelled) setNodes(layoutedNodes);
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    edges,
-    nodes,
-    performLayout,
-    serverSizeSignature,
-    setNodes,
-  ]);
-
-  const { isLoading: isGraphLoading, refetch } = useQuery({
-    queryKey: [
-      "topology-inventory-map",
-      selectedEnv,
-      selectedDatacenter,
-      selectedLabelIds,
-    ],
-    staleTime: 0,
-    queryFn: async () => {
-      try {
-        const response = await apiClient.get<Schemas["DependencyMapDto"]>(
-          API_ENDPOINTS.TOPOLOGY.MAP,
-          {
-            params: {
-              environment: selectedEnv === "All" ? undefined : selectedEnv,
-              datacenterId:
-                selectedDatacenter === "All" ? undefined : selectedDatacenter,
-              labelIds:
-                selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
-            },
-            paramsSerializer: { indexes: null },
-          },
-        );
-
-        const mappedNodes = buildTopologyNodes(
-          response.data.servers ?? [],
-          selectedLabels,
-        );
-        const mappedEdges: Edge[] = [];
-        const {
-          nodes: layoutedNodes,
-          edges: layoutedEdges,
-        } = await performLayout(mappedNodes, mappedEdges);
-
+        const layoutedNodes = performLayout(mappedNodes);
+        if (signal.aborted || activeWorkspaceRef.current !== workspaceId || getSelectedWorkspaceId() !== workspaceId) {
+          return { nodes: layoutedNodes, edges: mappedEdges };
+        }
         setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
-        setViewportRevision((revision) => revision + 1);
-        return { nodes: layoutedNodes, edges: layoutedEdges };
-      } catch (error: unknown) {
-        console.error("Failed to fetch topology inventory", error);
-        throw error;
+        setEdges(mappedEdges);
+        return { nodes: layoutedNodes, edges: mappedEdges };
+      } catch (err) {
+        console.error("Failed to fetch topology inventory", err);
+        throw err;
       }
     },
   });
 
-  const onNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      if (node.type !== "topologyServerNode") return;
+  const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    if (node.type === "topologyServerNode") {
+      setSelectedItem({ type: "server", id: node.id });
+      setRightPanelData({ server: (node.data as any).server });
+    }
+  }, []);
 
-      const data = node.data as TopologyServerNodeData;
-      setSelectedItem({ type: "server", id: data.entityId });
-      setRightPanelData({ server: data.server });
-    },
-    [],
-  );
-
-  const onSelectionChange = useCallback(
-    ({ nodes: selectedNodes }: { nodes: Node[] }) => {
-      if (selectedNodes.length === 0) {
-        setSelectedItem({ type: null, id: null });
-        setRightPanelData(null);
-      }
-    },
-    [],
-  );
+  const onSelectionChange = useCallback(({ nodes: selNodes }: { nodes: Node[] }) => {
+    if (selNodes.length === 0) {
+      setSelectedItem({ type: null, id: null });
+      setRightPanelData(null);
+    }
+  }, []);
 
   return {
     nodes,
@@ -303,8 +312,6 @@ export function useTopologyLogic() {
     setSelectedEnv,
     selectedDatacenter,
     setSelectedDatacenter,
-    selectedLabels,
-    setSelectedLabels,
     appSearchQuery,
     setAppSearchQuery,
   };

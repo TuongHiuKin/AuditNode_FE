@@ -1,32 +1,34 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Filter, Check, ChevronDown, Search } from "lucide-react";
 import { LabelData } from "./LabelBadge";
-import apiClient from "../../shared/api/client";
-import { API_ENDPOINTS } from "../../config/endpoints";
+import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
+import { useLabels } from "../../hooks/queries/useLabels";
 
 interface LabelFilterDropdownProps {
-  availableLabels?: LabelData[];
   selectedKeys: string[];
   onChange: (selectedKeys: string[]) => void;
 }
 
 export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropdownProps) {
+  const { selectedWorkspaceId } = useWorkspace();
+  const { data: availableLabels = [] } = useLabels();
   const [isOpen, setIsOpen] = useState(false);
-  const [availableLabels, setAvailableLabels] = useState<LabelData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const onChangeRef = useRef(onChange);
+  const selectedKeysRef = useRef(selectedKeys);
+  const previousWorkspaceRef = useRef(selectedWorkspaceId);
+  onChangeRef.current = onChange;
+  selectedKeysRef.current = selectedKeys;
 
   useEffect(() => {
-    async function fetchLabels() {
-      try {
-        const response = await apiClient.get(API_ENDPOINTS.INVENTORY.LABELS);
-        setAvailableLabels(response.data || []);
-      } catch (error) {
-        console.error("Failed to fetch labels", error);
-      }
-    }
-    fetchLabels();
-  }, []);
+    const workspaceId = selectedWorkspaceId;
+    const workspaceChanged = previousWorkspaceRef.current !== workspaceId;
+    previousWorkspaceRef.current = workspaceId;
+    setSearchTerm("");
+    setIsOpen(false);
+    if (workspaceChanged && selectedKeysRef.current.length > 0) onChangeRef.current([]);
+  }, [selectedWorkspaceId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
