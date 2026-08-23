@@ -2,7 +2,7 @@ import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
-import { useRBAC } from "../../../shared/auth/useRBAC";
+import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
@@ -11,7 +11,7 @@ interface GraphToolbarProps {
 }
 
 export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
-  const { canEditInventory } = useRBAC();
+  const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;

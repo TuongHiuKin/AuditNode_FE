@@ -4,7 +4,7 @@ import { Server, Grid, Download, ChevronDown, FileText, Upload, X, ArrowRight, P
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useHeader } from "../hooks/useHeader";
-import { useRBAC } from "../../shared/auth/useRBAC";
+import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
 import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
@@ -79,7 +79,7 @@ const APP_COLUMNS: ColumnOption[] = [
 
 export function InventoryLayout() {
   const { setHeader } = useHeader();
-  const { canEditInventory } = useRBAC();
+  const { canWriteInventory: canEditInventory, canImport } = useWorkspaceCapabilities();
 
   const queryClient = useQueryClient();
   const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
@@ -277,10 +277,10 @@ export function InventoryLayout() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    if (canEditInventory) setIsBulkImportOpen(true);
+                    if (canImport) setIsBulkImportOpen(true);
                   }}
-                  disabled={!canEditInventory}
-                  title={!canEditInventory ? "Bạn không có quyền thao tác" : "Import"}
+                  disabled={!canImport}
+                  title={!canImport ? "Bạn không có quyền thao tác" : "Import"}
                   className={`border px-3.5 h-9 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm ${
                     canEditInventory
                       ? "bg-surface hover:bg-surface-hover border-border text-foreground ring-1 ring-transparent hover:ring-border"

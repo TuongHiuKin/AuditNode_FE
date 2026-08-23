@@ -13,6 +13,7 @@ import { RegisterModal } from "../components/RegisterModal";
 import { useHeader } from "../hooks/useHeader";
 import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
 import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
+import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 
 function DependencyManagerContent() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -47,6 +48,7 @@ function DependencyManagerContent() {
     const { setHeader } = useHeader();
     const queryClient = useQueryClient();
     const { selectedWorkspaceId } = useWorkspace();
+    const { canEditGraph } = useWorkspaceCapabilities();
 
     const refreshData = () => {
       queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
@@ -99,6 +101,7 @@ function DependencyManagerContent() {
           availableApps={availableApps} 
           isLoading={isAppsLoading} 
           onClose={() => setIsPaletteOpen(false)}
+          readOnly={!canEditGraph}
         />
       </div>
 
@@ -143,6 +146,7 @@ function DependencyManagerContent() {
               onAddGroup={addGroupBox}
               onAddBoundaryFrame={addBoundaryFrame}
               onNodeDragStop={onNodeDragStop}
+              readOnly={!canEditGraph}
             />
           </div>
 

@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SubToolbar } from "../features/dependency-graph/components/SubToolbar";
-import * as useRBACHook from "../shared/auth/useRBAC";
+import * as capabilityHook from "../shared/workspace/useWorkspaceCapabilities";
 
-vi.mock("../shared/auth/useRBAC", () => ({
-  useRBAC: vi.fn(),
+vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({
+  useWorkspaceCapabilities: vi.fn(),
 }));
 
 describe("SubToolbar UI Action Gating", () => {
@@ -13,15 +13,7 @@ describe("SubToolbar UI Action Gating", () => {
   });
 
   it("enables Auto-Map and Sync buttons when canEditInventory is true", () => {
-    vi.mocked(useRBACHook.useRBAC).mockReturnValue({
-      isAdmin: false,
-      isAuditor: true,
-      isViewer: false,
-      canEditInventory: true,
-      canManageSystem: false,
-      isReadOnly: false,
-      roles: ["Auditor"],
-    });
+    vi.mocked(capabilityHook.useWorkspaceCapabilities).mockReturnValue({ canEditGraph: true } as ReturnType<typeof capabilityHook.useWorkspaceCapabilities>);
 
     const onAutoMap = vi.fn();
     const onSync = vi.fn();
@@ -38,15 +30,7 @@ describe("SubToolbar UI Action Gating", () => {
   });
 
   it("disables Auto-Map and Sync buttons with tooltip when user is Viewer (canEditInventory: false)", () => {
-    vi.mocked(useRBACHook.useRBAC).mockReturnValue({
-      isAdmin: false,
-      isAuditor: false,
-      isViewer: true,
-      canEditInventory: false,
-      canManageSystem: false,
-      isReadOnly: true,
-      roles: ["Viewer"],
-    });
+    vi.mocked(capabilityHook.useWorkspaceCapabilities).mockReturnValue({ canEditGraph: false } as ReturnType<typeof capabilityHook.useWorkspaceCapabilities>);
 
     const onAutoMap = vi.fn();
     const onSync = vi.fn();

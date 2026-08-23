@@ -21,9 +21,9 @@ function Probe() {
     <div>
       <span data-testid="workspace-status">{workspace.status}</span>
       <span data-testid="selected-workspace">{workspace.selectedWorkspaceId ?? "none"}</span>
-      <button onClick={() => {
+      <button onClick={async () => {
         queryClient.setQueryData(["servers", firstId], ["old-data"]);
-        workspace.selectWorkspace(secondId);
+        await workspace.selectWorkspace(secondId);
       }}>Select second</button>
     </div>
   );

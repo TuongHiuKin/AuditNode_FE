@@ -7,9 +7,10 @@ interface AppPaletteProps {
   availableApps: PaletteApp[];
   isLoading: boolean;
   onClose?: () => void;
+  readOnly?: boolean;
 }
 
-export function AppPalette({ availableApps, isLoading, onClose }: AppPaletteProps) {
+export function AppPalette({ availableApps, isLoading, onClose, readOnly = false }: AppPaletteProps) {
   return (
     <div className="w-72 bg-surface border-r border-border flex flex-col h-full shadow-2xl z-20">
       <div className="p-4 border-b border-border bg-background flex items-center justify-between">
@@ -51,12 +52,13 @@ export function AppPalette({ availableApps, isLoading, onClose }: AppPaletteProp
             return (
               <div
                 key={app.id}
-                draggable
+                draggable={!readOnly}
                 onDragStart={(e) => {
+                  if (readOnly) { e.preventDefault(); return; }
                   e.dataTransfer.setData("application/reactflow", app.id);
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                className="flex items-center gap-3 p-2.5 bg-background border border-border rounded-lg cursor-grab hover:border-primary/50 hover:bg-surface/50 transition-colors shadow-sm group"
+                className={`flex items-center gap-3 p-2.5 bg-background border border-border rounded-lg transition-colors shadow-sm group ${readOnly ? "cursor-not-allowed opacity-60" : "cursor-grab hover:border-primary/50 hover:bg-surface/50"}`}
               >
                 <Icon size={16} className="text-muted-foreground group-hover:text-foreground transition-colors" />
                 <p className="text-sm font-medium text-foreground truncate flex-1 font-body">{app.appName}</p>

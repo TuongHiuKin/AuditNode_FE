@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Tags } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient, { type Schemas } from "../../../shared/api/client";
-import { API_ENDPOINTS } from "../../../config/endpoints";
+import apiClient from "../../../shared/api/client";
 import type { TopologyLabelData } from "../topology-types";
+import type { GraphTopologyLabelDto } from "../types";
 import { normalizeTopologyLabel } from "../utils/topologyGrouping";
 
 interface TopologyLabelPickerProps {
@@ -19,8 +19,8 @@ export function TopologyLabelPicker({
   const { data: availableLabels = [], isLoading } = useQuery({
     queryKey: ["topology-label-options"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["TopologyLabelDto"][]>(
-        API_ENDPOINTS.INVENTORY.LABELS,
+      const response = await apiClient.get<GraphTopologyLabelDto[]>(
+        "/api/v1/inventory/labels",
       );
 
       return response.data

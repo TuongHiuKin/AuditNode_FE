@@ -8,7 +8,7 @@ import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { useDatacenters } from "../../hooks/queries/useDatacenters";
-import { useRBAC } from "../../shared/auth/useRBAC";
+import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -75,7 +75,7 @@ export function ServerTable({
   const [datacenterFilter, setDatacenterFilter] = useState("ALL");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { canManageSystem } = useRBAC();
+  const { canManageDatacenters: canManageSystem } = useWorkspaceCapabilities();
 
   const { data: servers = [], isLoading } = useServers();
   const { data: datacenters = [] } = useDatacenters();
@@ -398,7 +398,7 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-sm">{app.appName}</td>
                         <td className="px-4 py-2 font-label text-[11px] font-bold text-primary tracking-tighter">{app.portNumber}</td>
                         <td className="px-4 py-2 text-[10px] font-label font-bold text-muted-foreground/70 uppercase">{app.protocol}</td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground/70">{app.ownerTeam || "—"}</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground/70">{app.ownerId || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

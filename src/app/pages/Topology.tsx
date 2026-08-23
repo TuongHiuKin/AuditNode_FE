@@ -46,7 +46,7 @@ function TopologyContent() {
 
       // Highlight the node by selecting it
       const entityId = (targetNode.data as TopologyServerNodeData).entityId;
-      setSelectedItem({ type: 'server', id: entityId });
+      setSelectedItem({ type: 'server', id: entityId ?? targetNode.id });
       setRightPanelData({ server: (targetNode.data as any).server });
 
       // Update search input to match selected node name

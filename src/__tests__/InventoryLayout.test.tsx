@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InventoryLayout } from "../app/pages/InventoryLayout";
+vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({ useWorkspaceCapabilities: () => ({ canWriteInventory: true, canImport: true }) }));
 
 vi.mock("../app/hooks/useHeader", () => ({
   useHeader: () => ({

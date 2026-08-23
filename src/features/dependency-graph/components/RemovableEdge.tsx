@@ -18,6 +18,7 @@ export function RemovableEdge({
   targetPosition,
   style = {},
   markerEnd,
+  data,
 }: EdgeProps) {
   const { setEdges } = useReactFlow();
   const [isHovered, setIsHovered] = useState(false);
@@ -34,6 +35,7 @@ export function RemovableEdge({
 
   const onEdgeClick = (evt: React.MouseEvent) => {
     evt.stopPropagation();
+    if (data?.readOnly) return;
     setEdges((edges) => edges.filter((edge) => edge.id !== id));
   };
 
@@ -58,13 +60,13 @@ export function RemovableEdge({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <button
+          {!data?.readOnly && <button
             onClick={onEdgeClick}
             className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground shadow-md transition-all hover:bg-danger hover:text-foreground hover:border-danger active:scale-90 pointer-events-auto"
             title="Remove Connection"
           >
             <X size={10} strokeWidth={3} />
-          </button>
+          </button>}
         </div>
       </EdgeLabelRenderer>
     </>

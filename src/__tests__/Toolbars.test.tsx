@@ -4,6 +4,7 @@ import { FilterBar } from "../features/dependency-graph/components/FilterBar";
 import { SubToolbar } from "../features/dependency-graph/components/SubToolbar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
+vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({ useWorkspaceCapabilities: () => ({ canEditGraph: true }) }));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },

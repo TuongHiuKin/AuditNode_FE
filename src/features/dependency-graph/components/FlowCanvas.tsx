@@ -19,6 +19,7 @@ import { DependencyLabelGroupNode } from "./DependencyLabelGroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
+import { RestrictedNode } from "./RestrictedNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -45,6 +46,7 @@ interface FlowCanvasProps {
   isLoading: boolean;
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
+  onAddBoundaryFrame?: () => void;
   onNodeDragStop?: (event: React.MouseEvent, node: any) => void;
   drawingMode?: 'server' | 'groupBox' | 'boundaryFrame' | null;
   drawBox?: { 
@@ -54,6 +56,7 @@ interface FlowCanvasProps {
   onPaneMouseDown?: (event: React.MouseEvent) => void;
   onPaneMouseMove?: (event: React.MouseEvent) => void;
   onPaneMouseUp?: () => void;
+  readOnly?: boolean;
 }
 
 export function FlowCanvas({
@@ -69,12 +72,14 @@ export function FlowCanvas({
   isLoading,
   onQuickAdd,
   onAddGroup,
+  onAddBoundaryFrame,
   onNodeDragStop,
   drawingMode,
   drawBox,
   onPaneMouseDown,
   onPaneMouseMove,
   onPaneMouseUp,
+  readOnly = false,
 }: FlowCanvasProps) {
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
@@ -83,6 +88,7 @@ export function FlowCanvas({
     zoneNode: ZoneNode as ComponentType<any>,
     boundaryFrame: BoundaryFrameNode as ComponentType<any>,
     dependencyLabelGroupNode: DependencyLabelGroupNode as ComponentType<any>,
+    restricted: RestrictedNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({
@@ -125,16 +131,21 @@ export function FlowCanvas({
 
       <ReactFlow
         nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onReconnect={onReconnect}
+        edges={edges.map((edge) => ({ ...edge, data: { ...edge.data, readOnly } }))}
+        onNodesChange={readOnly ? undefined : onNodesChange}
+        onEdgesChange={readOnly ? undefined : onEdgesChange}
+        onConnect={readOnly ? undefined : onConnect}
+        onReconnect={readOnly ? undefined : onReconnect}
         isValidConnection={(connection) => connection.source !== connection.target}
         onSelectionChange={onSelectionChange}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onNodeDragStop={onNodeDragStop}
+        onDrop={readOnly ? undefined : onDrop}
+        onDragOver={readOnly ? undefined : onDragOver}
+        onNodeDragStop={readOnly ? undefined : onNodeDragStop}
+        nodesDraggable={!readOnly}
+        nodesConnectable={!readOnly}
+        edgesReconnectable={!readOnly}
+        elementsSelectable
+        deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
 
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -149,7 +160,7 @@ export function FlowCanvas({
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} />
+        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} onAddBoundaryFrame={onAddBoundaryFrame} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "var(--color-surface)" : "var(--color-primary)")}
           maskColor="var(--color-background)"

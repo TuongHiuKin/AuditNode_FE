@@ -16,6 +16,7 @@ interface FilterBarProps {
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
+  showLabelPicker?: boolean;
 }
 
 const envOptions = [
@@ -34,6 +35,7 @@ export function FilterBar({
   query = "",
   onQueryChange,
   onSelectResult,
+  showLabelPicker = true,
 }: FilterBarProps) {
   const { selectedWorkspaceId } = useWorkspace();
   // Fetch real datacenters from the API
@@ -70,7 +72,7 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
-        {setSelectedLabels && (
+        {showLabelPicker && setSelectedLabels && (
           <LabelFilterDropdown
             selectedKeys={selectedLabels || []}
             onChange={setSelectedLabels}

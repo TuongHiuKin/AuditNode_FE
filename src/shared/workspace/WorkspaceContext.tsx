@@ -10,9 +10,32 @@ import {
   subscribeToWorkspace,
 } from "./workspaceStore";
 
+export type WorkspaceRelationship = "owner" | "admin" | "shared";
+export type WorkspaceRole = "owner" | "admin" | "auditor" | "viewer";
+export type WorkspaceScopeMode = "all" | "labels" | "frames";
+
+export interface WorkspaceScopeTarget { id: string; displayName: string; }
+export interface WorkspaceScope {
+  mode: WorkspaceScopeMode;
+  labels: WorkspaceScopeTarget[];
+  frames: WorkspaceScopeTarget[];
+}
+export interface WorkspaceCapabilities {
+  canManageShares: boolean;
+  canWriteInventory: boolean;
+  canEditGraph: boolean;
+  canManageDatacenters: boolean;
+  canManageLabels: boolean;
+  canImport: boolean;
+}
 export interface WorkspaceSummary {
   id: string;
   name: string;
+  description?: string | null;
+  relationship?: WorkspaceRelationship;
+  effectiveRole?: WorkspaceRole;
+  scope?: WorkspaceScope;
+  capabilities?: WorkspaceCapabilities;
 }
 
 export type WorkspaceStatus = "idle" | "loading" | "ready" | "empty" | "error";
@@ -77,13 +100,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authStatus, selectedWorkspaceId, workspaceQuery.data, workspaces]);
 
-  const selectWorkspace = useCallback((workspaceId: string) => {
+  const selectWorkspace = useCallback(async (workspaceId: string) => {
     if (!isValidWorkspaceId(workspaceId) || !workspaces.some((item) => item.id === workspaceId)) return;
     if (workspaceId === getSelectedWorkspaceId()) return;
 
-    queryClient.removeQueries({
+    await queryClient.cancelQueries({
       predicate: (query) => query.queryKey[0] !== "workspaces",
     });
+    queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "workspaces" });
     setSelectedWorkspaceId(workspaceId);
   }, [queryClient, workspaces]);
 

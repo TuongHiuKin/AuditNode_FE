@@ -13,6 +13,7 @@ const Topology = lazy(() => import("./pages/Topology")
   .then((module) => ({ default: module.Topology })));
 const DependencyManager = lazy(() => import("./pages/Dependency")
   .then((module) => ({ default: module.DependencyManager })));
+const AdminUsers = lazy(() => import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
 
 function lazyRoute(element: ReactNode) {
   return (
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       },
       { path: "topology", element: lazyRoute(<Topology />) },
       { path: "dependency-manager", element: lazyRoute(<DependencyManager />) },
+      { path: "admin/users", element: <ProtectedRoute allowedRoles={["SystemAdmin"]}>{lazyRoute(<AdminUsers />)}</ProtectedRoute> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

@@ -48,6 +48,7 @@ export interface TopologyNodeState {
   height: number | null;
   parentNodeId: string | null;
   referenceId: string | null;
+  isRestricted?: boolean;
 }
 
 export interface TopologyEdgeState {
@@ -301,6 +302,11 @@ export function restoreTopologyState(
         },
       }];
     }
+    if (saved.nodeType === "restricted" || saved.isRestricted) return [{
+      id: saved.id, type: "restricted", position: { x: saved.x, y: saved.y },
+      data: { label: saved.label || "External Resource (Restricted)", isRestricted: true },
+      draggable: false, connectable: false, deletable: false, selectable: true,
+    }];
     if (saved.nodeType !== "frame" && saved.nodeType !== "group") return [];
     return [{
       id: saved.id,

@@ -6,37 +6,34 @@ import { useRBAC } from "../shared/auth/useRBAC";
 describe("useRBAC Hook", () => {
   beforeEach(() => setRoles([]));
 
-  it("returns Admin permissions when user has Admin role", () => {
-    setRoles(["Admin"]);
+  it("returns system permissions only for SystemAdmin", () => {
+    setRoles(["SystemAdmin"]);
     const { result } = renderHook(() => useRBAC());
     expect(result.current).toMatchObject({
-      isAdmin: true, isAuditor: false, isViewer: false,
-      canEditInventory: true, canManageSystem: true, isReadOnly: false,
+      isSystemAdmin: true, canManageSystem: true,
     });
   });
 
-  it("returns Auditor permissions when user has Auditor role", () => {
+  it("does not treat workspace roles as system roles", () => {
     setRoles(["Auditor"]);
     const { result } = renderHook(() => useRBAC());
     expect(result.current).toMatchObject({
-      isAdmin: false, isAuditor: true, isViewer: false,
-      canEditInventory: true, canManageSystem: false, isReadOnly: false,
+      isSystemAdmin: false, canManageSystem: false,
     });
   });
 
-  it("returns Viewer permissions from context roles", () => {
+  it("does not elevate Viewer", () => {
     setRoles(["Viewer"]);
     const { result } = renderHook(() => useRBAC());
     expect(result.current).toMatchObject({
-      isAdmin: false, isAuditor: false, isViewer: true,
-      canEditInventory: false, canManageSystem: false, isReadOnly: true,
+      isSystemAdmin: false, canManageSystem: false,
     });
   });
 
   it("handles empty roles safely", () => {
     const { result } = renderHook(() => useRBAC());
     expect(result.current.roles).toEqual([]);
-    expect(result.current.isReadOnly).toBe(true);
+    expect(result.current.isSystemAdmin).toBe(false);
   });
 });
 

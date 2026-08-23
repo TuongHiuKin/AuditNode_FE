@@ -1,6 +1,6 @@
 import { Database, CloudUpload, Loader2 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
-import { useRBAC } from "../../../shared/auth/useRBAC";
+import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
 
 interface SubToolbarProps {
   onAutoMap: () => void;
@@ -17,7 +17,7 @@ export function SubToolbar({
   onTogglePalette,
   isPaletteOpen = false
 }: SubToolbarProps) {
-  const { canEditInventory } = useRBAC();
+  const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
 
   return (
     <div className="flex items-center gap-3">

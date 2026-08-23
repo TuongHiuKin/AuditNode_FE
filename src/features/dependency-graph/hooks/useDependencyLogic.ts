@@ -794,6 +794,9 @@ export function useDependencyLogic() {
         const edge = selEdges[0];
         const sourceNode = nodes.find((n) => n.id === edge.source);
         const targetNode = nodes.find((n) => n.id === edge.target);
+        if (sourceNode?.type === "restricted" || targetNode?.type === "restricted") {
+          setSelectedItem({ type: null, id: null }); setRightPanelData(null); return;
+        }
         setSelectedItem({ type: "edge", id: edge.id });
         setRightPanelData({
           edgeData: edge.data,
@@ -806,6 +809,9 @@ export function useDependencyLogic() {
 
       if (selNodes.length > 0) {
         const node = selNodes[0];
+        if (node.type === "restricted" || node.data?.isRestricted === true) {
+          setSelectedItem({ type: null, id: null }); setRightPanelData(null); return;
+        }
         if (node.type === "appNode") {
           const serverNode = node.parentId
             ? nodes.find((n) => n.id === node.parentId)

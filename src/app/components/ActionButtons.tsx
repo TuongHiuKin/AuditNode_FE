@@ -1,5 +1,5 @@
 import { Edit2, Network, Trash2 } from "lucide-react";
-import { useRBAC } from "../../shared/auth/useRBAC";
+import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 
 interface ActionButtonsProps {
   onDepClick?: () => void;
@@ -8,7 +8,7 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: ActionButtonsProps) {
-  const { canEditInventory } = useRBAC();
+  const { canWriteInventory: canEditInventory } = useWorkspaceCapabilities();
 
   return (
     <div className="flex items-center justify-end gap-1">

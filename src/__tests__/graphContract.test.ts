@@ -101,4 +101,12 @@ describe("Phase 7 graph contract", () => {
       parentId: "frame-1",
     }));
   });
+  it("preserves opaque restricted nodes and rewritten boundary edges without references", () => {
+    const restored = restoreTopologyState({ nodes: [
+      { id: "visible", nodeType: "group", label: "Visible", x: 0, y: 0, width: null, height: null, parentNodeId: null, referenceId: null },
+      { id: "opaque", nodeType: "restricted", label: "External Resource (Restricted)", x: 100, y: 0, width: null, height: null, parentNodeId: null, referenceId: null, isRestricted: true },
+    ], edges: [{ id: "boundary", sourceNodeId: "visible", targetNodeId: "opaque", sourceHandle: "", targetHandle: "", edgeType: "floatingSmooth", label: "", referenceId: null }] }, { nodes: [], edges: [] });
+    expect(restored.nodes.find((node) => node.id === "opaque")).toEqual(expect.objectContaining({ type: "restricted", draggable: false, connectable: false, deletable: false, data: { label: "External Resource (Restricted)", isRestricted: true } }));
+    expect(restored.edges).toEqual([expect.objectContaining({ source: "visible", target: "opaque" })]);
+  });
 });

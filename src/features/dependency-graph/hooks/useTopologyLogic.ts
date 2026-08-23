@@ -23,6 +23,7 @@ export function useTopologyLogic() {
   const [selectedEnv, setSelectedEnv] = useState("Development");
   const [selectedDatacenter, setSelectedDatacenter] = useState("All");
   const [appSearchQuery, setAppSearchQuery] = useState("");
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   const reactFlowInstance = useReactFlow();
   const activeWorkspaceRef = useRef(selectedWorkspaceId);
@@ -314,5 +315,7 @@ export function useTopologyLogic() {
     setSelectedDatacenter,
     appSearchQuery,
     setAppSearchQuery,
+    selectedLabels,
+    setSelectedLabels,
   };
 }

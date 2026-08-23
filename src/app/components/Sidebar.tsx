@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
-import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut, Users } from "lucide-react";
+import { useRBAC } from "../../shared/auth/useRBAC";
 import { useAuth } from "../../shared/auth/AuthContext";
 
 const navGroups = [
@@ -30,6 +31,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { isSystemAdmin } = useRBAC();
   const asideRef = useRef<HTMLElement>(null);
   const profileContainerRef = useRef<HTMLDivElement>(null);
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
@@ -146,6 +148,7 @@ export function Sidebar() {
             </div>
           </div>
         ))}
+        {isSystemAdmin && <div><div className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Administration</div><Link to="/admin/users" className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${location.pathname.startsWith("/admin/users") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"}`}><Users className="size-4" />{!collapsed && <span>Users</span>}</Link></div>}
       </nav>
 
       {/* Footer: user info + collapse button */}
