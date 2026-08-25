@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/Analytics/topology": {
+    "/api/v1/admin/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -14,8 +14,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    environment?: string;
-                    datacenterId?: string;
+                    search?: string;
+                    first?: number | string;
+                    max?: number | string;
                 };
                 header?: never;
                 path?: never;
@@ -28,64 +29,212 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/Analytics/dependencies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
-            parameters: {
-                query?: {
-                    environment?: string;
-                    datacenterId?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
+                    content: {
+                        "text/plain": components["schemas"]["IdentityAdminUserDto"][];
+                        "application/json": components["schemas"]["IdentityAdminUserDto"][];
+                        "text/json": components["schemas"]["IdentityAdminUserDto"][];
                     };
-                    content?: never;
                 };
             };
         };
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/Applications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: {
+        post: {
             parameters: {
                 query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateIdentityAdminUserDto"];
+                    "text/json": components["schemas"]["CreateIdentityAdminUserDto"];
+                    "application/*+json": components["schemas"]["CreateIdentityAdminUserDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateIdentityStatus"];
+                    "text/json": components["schemas"]["UpdateIdentityStatus"];
+                    "application/*+json": components["schemas"]["UpdateIdentityStatus"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateSystemAdminRole"];
+                    "text/json": components["schemas"]["UpdateSystemAdminRole"];
+                    "application/*+json": components["schemas"]["UpdateSystemAdminRole"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Analytics/topology": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    environment?: string;
+                    datacenterId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Analytics/dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    environment?: string;
+                    datacenterId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    labelKey?: string;
+                    labelValue?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -126,6 +275,152 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationResponseDto"];
+                        "application/json": components["schemas"]["ApplicationResponseDto"];
+                        "text/json": components["schemas"]["ApplicationResponseDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Applications/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    ids?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationResponseDto"][];
+                        "application/json": components["schemas"]["ApplicationResponseDto"][];
+                        "text/json": components["schemas"]["ApplicationResponseDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationResponseDto"];
+                        "application/json": components["schemas"]["ApplicationResponseDto"];
+                        "text/json": components["schemas"]["ApplicationResponseDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateApplicationDto"];
+                    "text/json": components["schemas"]["UpdateApplicationDto"];
+                    "application/*+json": components["schemas"]["UpdateApplicationDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LoginRequestDto"];
+                    "text/json": components["schemas"]["LoginRequestDto"];
+                    "application/*+json": components["schemas"]["LoginRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content?: never;
                 };
             };
@@ -136,7 +431,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Datacenters": {
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RegisterRequestDto"];
+                    "text/json": components["schemas"]["RegisterRequestDto"];
+                    "application/*+json": components["schemas"]["RegisterRequestDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Datacenters": {
         parameters: {
             query?: never;
             header?: never;
@@ -158,9 +591,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["Datacenter"][];
-                        "application/json": components["schemas"]["Datacenter"][];
-                        "text/json": components["schemas"]["Datacenter"][];
+                        "text/plain": components["schemas"]["DatacenterDto"][];
+                        "application/json": components["schemas"]["DatacenterDto"][];
+                        "text/json": components["schemas"]["DatacenterDto"][];
                     };
                 };
             };
@@ -187,9 +620,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["Datacenter"];
-                        "application/json": components["schemas"]["Datacenter"];
-                        "text/json": components["schemas"]["Datacenter"];
+                        "text/plain": components["schemas"]["DatacenterDto"];
+                        "application/json": components["schemas"]["DatacenterDto"];
+                        "text/json": components["schemas"]["DatacenterDto"];
                     };
                 };
             };
@@ -200,7 +633,270 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Servers": {
+    "/api/v1/Dependencies/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SyncDependenciesDto"];
+                    "text/json": components["schemas"]["SyncDependenciesDto"];
+                    "application/*+json": components["schemas"]["SyncDependenciesDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Infrastructure/apps/{id}/dependencies-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": number | string;
+                        "application/json": number | string;
+                        "text/json": number | string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Infrastructure/apps/migrate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MigrateAppDto"];
+                    "text/json": components["schemas"]["MigrateAppDto"];
+                    "application/*+json": components["schemas"]["MigrateAppDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Infrastructure/apps/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Infrastructure/servers/{id}/deployed-apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["DeployedAppDto"][];
+                        "application/json": components["schemas"]["DeployedAppDto"][];
+                        "text/json": components["schemas"]["DeployedAppDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/import-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        file?: components["schemas"]["IFormFile"];
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -210,9 +906,82 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    environment?: string;
-                    datacenterId?: string;
+                    keyword?: string;
                 };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["SearchResultDto"][];
+                        "application/json": components["schemas"]["SearchResultDto"][];
+                        "text/json": components["schemas"]["SearchResultDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelDto"][];
+                        "application/json": components["schemas"]["LabelDto"][];
+                        "text/json": components["schemas"]["LabelDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -253,7 +1022,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "text/plain": components["schemas"]["ServerResponseDto"];
+                        "application/json": components["schemas"]["ServerResponseDto"];
+                        "text/json": components["schemas"]["ServerResponseDto"];
+                    };
                 };
             };
         };
@@ -263,7 +1036,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Topology/tree": {
+    "/api/v1/Servers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ServerResponseDto"];
+                        "application/json": components["schemas"]["ServerResponseDto"];
+                        "text/json": components["schemas"]["ServerResponseDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateServerDto"];
+                    "text/json": components["schemas"]["UpdateServerDto"];
+                    "application/*+json": components["schemas"]["UpdateServerDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Servers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    ids?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ServerResponseDto"][];
+                        "application/json": components["schemas"]["ServerResponseDto"][];
+                        "text/json": components["schemas"]["ServerResponseDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Topology/tree": {
         parameters: {
             query?: never;
             header?: never;
@@ -276,6 +1171,7 @@ export interface paths {
                     datacenterId?: string;
                     skip?: number | string;
                     take?: number | string;
+                    labels?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -304,7 +1200,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/Topology/map": {
+    "/api/v1/Topology/map": {
         parameters: {
             query?: never;
             header?: never;
@@ -313,7 +1209,11 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    environment?: string;
+                    datacenterId?: string;
+                    labels?: string[];
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -341,99 +1241,429 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/Topology/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ApplicationStatusDto"][];
+                        "application/json": components["schemas"]["ApplicationStatusDto"][];
+                        "text/json": components["schemas"]["ApplicationStatusDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Topology/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["TopologyStateDto"];
+                        "application/json": components["schemas"]["TopologyStateDto"];
+                        "text/json": components["schemas"]["TopologyStateDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TopologyStateDto"];
+                    "text/json": components["schemas"]["TopologyStateDto"];
+                    "application/*+json": components["schemas"]["TopologyStateDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TopologyStateDto"];
+                    "text/json": components["schemas"]["TopologyStateDto"];
+                    "application/*+json": components["schemas"]["TopologyStateDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["WorkspaceDto"][];
+                        "application/json": components["schemas"]["WorkspaceDto"][];
+                        "text/json": components["schemas"]["WorkspaceDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/share-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    search?: string;
+                    first?: number | string;
+                    max?: number | string;
+                };
+                header?: never;
+                path: {
+                    workspaceId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["WorkspaceShareOptionsDto"];
+                        "application/json": components["schemas"]["WorkspaceShareOptionsDto"];
+                        "text/json": components["schemas"]["WorkspaceShareOptionsDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["WorkspaceShareDto"][];
+                        "application/json": components["schemas"]["WorkspaceShareDto"][];
+                        "text/json": components["schemas"]["WorkspaceShareDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpsertWorkspaceShareDto"];
+                    "text/json": components["schemas"]["UpsertWorkspaceShareDto"];
+                    "application/*+json": components["schemas"]["UpsertWorkspaceShareDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["WorkspaceShareDto"];
+                        "application/json": components["schemas"]["WorkspaceShareDto"];
+                        "text/json": components["schemas"]["WorkspaceShareDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/shares/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpsertWorkspaceShareDto"];
+                    "text/json": components["schemas"]["UpsertWorkspaceShareDto"];
+                    "application/*+json": components["schemas"]["UpsertWorkspaceShareDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["WorkspaceShareDto"];
+                        "application/json": components["schemas"]["WorkspaceShareDto"];
+                        "text/json": components["schemas"]["WorkspaceShareDto"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: {
+                    version?: number | string;
+                };
+                header?: never;
+                path: {
+                    workspaceId: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        AppDependency: unknown;
-        Application: {
-            /** Format: uuid */
-            id?: string;
-            appCode?: string;
-            appName?: string;
-            /** Format: uuid */
-            ownerId?: string;
-            /** Format: int32 */
-            portNumber?: number | string;
-            protocol?: string;
-            risk?: string;
-            icon?: string;
-            techStack?: string;
-            riskLevel?: components["schemas"]["RiskLevel"];
-            /** Format: uuid */
-            targetApplicationId?: null | string;
-            /** Format: uuid */
-            serverId?: string;
-            targetApplication?: null | components["schemas"]["Application"];
-            server?: null | components["schemas"]["Server"];
-            portMappings?: unknown;
-            dependencies?: unknown;
-            dependents?: unknown;
-            sourceDependencies?: unknown;
-            destinationDependencies?: unknown;
-        };
         ApplicationNodeDto: {
             /** Format: uuid */
             id?: string;
+            /** Format: uuid */
+            appId?: string;
+            /** Format: uuid */
+            serverId?: string;
             name?: string;
+            /** Format: uuid */
+            portMappingId?: string;
             /** Format: int32 */
             port?: number | string;
             protocol?: string;
-            riskLevel?: string;
         };
         ApplicationOnServerDto: {
+            /** Format: uuid */
+            portMappingId?: string;
             /** Format: uuid */
             id?: string;
             appCode?: string;
             appName?: string;
-            /** Format: uuid */
-            ownerId?: string;
+            ownerTeam?: string;
             /** Format: int32 */
             portNumber?: number | string;
             protocol?: string;
-        };
-        LabelDto: {
-            key?: string;
-            value?: string;
         };
         ApplicationResponseDto: {
             /** Format: uuid */
             id?: string;
             appCode?: string;
             appName?: string;
-            /** Format: uuid */
-            ownerId?: string;
+            ownerTeam?: string;
             risk?: string;
             icon?: string;
             techStack?: string;
             servers?: components["schemas"]["ServerOnApplicationDto"][];
+            labels?: components["schemas"]["LabelDto"][];
+        };
+        ApplicationStatusDto: {
+            /** Format: uuid */
+            id?: string;
+            appName?: string;
+            isMapped?: boolean;
         };
         ConnectionDto: {
+            /** Format: uuid */
+            id?: string;
             /** Format: uuid */
             sourceAppId?: string;
             /** Format: uuid */
             targetAppId?: string;
+            /** Format: uuid */
+            destinationPortMappingId?: string;
+            /** Format: uuid */
+            destinationServerId?: string;
+            connectionType?: string;
+            isRestricted?: boolean;
+        };
+        CreateApplicationDeploymentDto: {
+            /** Format: uuid */
+            serverId?: string;
+            /** Format: int32 */
+            portNumber?: number | string;
+            protocol?: string;
         };
         CreateApplicationDto: {
             appCode?: string;
             appName?: string;
-            /** Format: uuid */
-            ownerId?: string;
-            /** Format: int32 */
-            portNumber?: number | string;
-            protocol?: string;
-            risk?: string;
-            icon?: string;
-            techStack?: string;
-            riskLevel?: components["schemas"]["RiskLevel"];
-            /** Format: uuid */
-            targetApplicationId?: null | string;
-            /** Format: uuid */
-            serverId?: string;
+            ownerTeam?: string;
+            risk?: null | string;
+            icon?: null | string;
+            techStack?: null | string;
+            labels?: components["schemas"]["LabelDto"][];
+            deployment?: null | components["schemas"]["CreateApplicationDeploymentDto"];
         };
         CreateDatacenterDto: {
             name?: string;
             location?: string;
+        };
+        CreateIdentityAdminUserDto: {
+            username: string;
+            email: string;
+            password: string;
         };
         CreateServerDto: {
             /** Format: uuid */
@@ -444,55 +1674,102 @@ export interface components {
             environment?: string;
             datacenter?: string;
             status?: string;
+            labels?: components["schemas"]["LabelDto"][];
         };
-        Datacenter: {
+        DatacenterDto: {
             /** Format: uuid */
             id?: string;
             name?: string;
             location?: string;
-            servers?: components["schemas"]["Server"][];
+        };
+        DependencyItemDto: {
+            /** Format: uuid */
+            sourceAppId?: string;
+            /** Format: uuid */
+            destAppId?: string;
+            /** Format: uuid */
+            destinationPortMappingId?: string;
         };
         DependencyMapDto: {
             servers?: components["schemas"]["ServerNodeDto"][];
             connections?: components["schemas"]["ConnectionDto"][];
+            restrictedNodes?: components["schemas"]["RestrictedDependencyNodeDto"][];
         };
-        PortMapping: {
+        DeployedAppDto: {
             /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            serverId?: string;
+            portMappingId?: string;
             /** Format: uuid */
             appId?: string;
+            appCode?: string;
+            appName?: string;
             /** Format: int32 */
             portNumber?: number | string;
-            protocol?: string;
-            server?: null | components["schemas"]["Server"];
-            application?: null | components["schemas"]["Application"];
-            appDependencies?: components["schemas"]["AppDependency"][];
         };
-        RiskLevel: number;
-        Server: {
+        IdentityAdminUserDto: {
+            id: string;
+            username: string;
+            email: null | string;
+            enabled: boolean;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            workspaceCount: number | string;
+            /** @default false */
+            isSystemAdmin: boolean;
+        };
+        /** Format: binary */
+        IFormFile: string;
+        LabelDto: {
+            key?: string;
+            value?: string;
+        };
+        LoginRequestDto: {
+            username: string;
+            password: string;
+        };
+        MigrateAppDto: {
+            /** Format: uuid */
+            portMappingId?: string;
+            /** Format: uuid */
+            serverId?: string;
+            /** Format: int32 */
+            portNumber?: number | string;
+        };
+        RegisterRequestDto: {
+            username: string;
+            email: string;
+            password: string;
+        };
+        RestrictedDependencyNodeDto: {
+            /** Format: uuid */
+            id: string;
+            /** @default External Resource (Restricted) */
+            displayName: string;
+            /** @default true */
+            isRestricted: boolean;
+        };
+        SearchResultDto: {
             /** Format: uuid */
             id?: string;
-            /** Format: uuid */
-            datacenterId?: string;
-            datacenter?: null | components["schemas"]["Datacenter"];
-            ipAddress?: string;
-            hostname?: string;
-            osType?: string;
-            environment?: string;
-            status?: string;
-            portMappings?: components["schemas"]["PortMapping"][];
-            applications?: components["schemas"]["Application"][];
+            type?: string;
+            title?: string;
+            subtitle?: string;
+            matchReason?: string;
         };
         ServerNodeDto: {
             /** Format: uuid */
             id?: string;
+            /** Format: uuid */
+            serverId?: string;
             hostname?: string;
             ipAddress?: string;
+            labels?: components["schemas"]["LabelDto"][];
             applications?: components["schemas"]["ApplicationNodeDto"][];
         };
         ServerOnApplicationDto: {
+            /** Format: uuid */
+            portMappingId?: string;
             /** Format: uuid */
             id?: string;
             hostname?: string;
@@ -515,12 +1792,144 @@ export interface components {
             applications?: components["schemas"]["ApplicationOnServerDto"][];
             labels?: components["schemas"]["LabelDto"][];
         };
+        ShareOptionTargetDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+        };
+        ShareOptionUserDto: {
+            id: string;
+            username: string;
+            email: null | string;
+        };
+        SyncDependenciesDto: {
+            dependencies?: components["schemas"]["DependencyItemDto"][];
+        };
+        TopologyEdgeDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            sourceNodeId?: string;
+            /** Format: uuid */
+            targetNodeId?: string;
+            sourceHandle?: string;
+            targetHandle?: string;
+            edgeType?: string;
+            label?: string;
+            /** Format: uuid */
+            referenceId?: null | string;
+        };
+        TopologyNodeDto: {
+            /** Format: uuid */
+            id?: string;
+            nodeType?: string;
+            label?: string;
+            /** Format: double */
+            x?: number | string;
+            /** Format: double */
+            y?: number | string;
+            /** Format: double */
+            width?: null | number | string;
+            /** Format: double */
+            height?: null | number | string;
+            /** Format: uuid */
+            parentNodeId?: null | string;
+            /** Format: uuid */
+            referenceId?: null | string;
+            isRestricted?: boolean;
+        };
+        TopologyStateDto: {
+            nodes?: components["schemas"]["TopologyNodeDto"][];
+            edges?: components["schemas"]["TopologyEdgeDto"][];
+        };
         TopologyTreeDto: {
             /** Format: uuid */
             id?: string;
             name?: string;
             location?: string;
             servers?: components["schemas"]["ServerNodeDto"][];
+        };
+        UpdateApplicationDto: {
+            appName?: string;
+            ownerTeam?: string;
+            risk?: string;
+            icon?: string;
+            techStack?: string;
+            labels?: null | components["schemas"]["LabelDto"][];
+            /** Format: uuid */
+            portMappingId?: null | string;
+            /** Format: uuid */
+            serverId?: null | string;
+            /** Format: int32 */
+            portNumber?: null | number | string;
+        };
+        UpdateIdentityStatus: {
+            enabled: boolean;
+        };
+        UpdateServerDto: {
+            ipAddress?: string;
+            hostname?: string;
+            osType?: string;
+            environment?: string;
+            status?: string;
+            /** Format: uuid */
+            datacenterId?: string;
+            labels?: null | components["schemas"]["LabelDto"][];
+        };
+        UpdateSystemAdminRole: {
+            systemAdmin: boolean;
+        };
+        UpsertWorkspaceShareDto: {
+            userId: string;
+            role: string;
+            scopeMode: string;
+            targetIds: string[];
+            /**
+             * Format: int64
+             * @default 0
+             */
+            version: number | string;
+        };
+        WorkspaceCapabilitiesDto: {
+            canManageShares: boolean;
+            canWriteInventory: boolean;
+            canEditGraph: boolean;
+            canManageDatacenters: boolean;
+            canManageLabels: boolean;
+            canImport: boolean;
+        };
+        WorkspaceDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            description?: null | string;
+            relationship?: string;
+            effectiveRole?: string;
+            scope?: components["schemas"]["WorkspaceScopeDto"];
+            capabilities?: components["schemas"]["WorkspaceCapabilitiesDto"];
+        };
+        WorkspaceScopeDto: {
+            mode: string;
+            labels: components["schemas"]["WorkspaceScopeTargetDto"][];
+            frames: components["schemas"]["WorkspaceScopeTargetDto"][];
+        };
+        WorkspaceScopeTargetDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+        };
+        WorkspaceShareDto: {
+            userId: string;
+            role: string;
+            scopeMode: string;
+            targetIds: string[];
+            /** Format: int64 */
+            version: number | string;
+        };
+        WorkspaceShareOptionsDto: {
+            users: components["schemas"]["ShareOptionUserDto"][];
+            labels: components["schemas"]["ShareOptionTargetDto"][];
+            frames: components["schemas"]["ShareOptionTargetDto"][];
         };
     };
     responses: never;

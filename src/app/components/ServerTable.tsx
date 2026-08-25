@@ -388,7 +388,6 @@ function ServerRowItem({
                       <th className="px-4 py-2 font-bold">App Name</th>
                       <th className="px-4 py-2 font-bold">Port</th>
                       <th className="px-4 py-2 font-bold">Protocol</th>
-                      <th className="px-4 py-2 font-bold">Owner</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -398,7 +397,6 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-sm">{app.appName}</td>
                         <td className="px-4 py-2 font-label text-[11px] font-bold text-primary tracking-tighter">{app.portNumber}</td>
                         <td className="px-4 py-2 text-[10px] font-label font-bold text-muted-foreground/70 uppercase">{app.protocol}</td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground/70">{app.ownerId || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

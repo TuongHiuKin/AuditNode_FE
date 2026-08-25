@@ -42,16 +42,15 @@ export function FilterBar({
   const { data: datacenterData = [] } = useQuery({
     queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
-      const rawResponse = response as any;
-      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>("/api/v1/datacenters");
+      return Array.isArray(response.data) ? response.data : [];
     },
     enabled: !!selectedWorkspaceId,
   });
 
   const datacenterOptions = [
     { value: "All", label: "All" },
-    ...datacenterData.map((dc: any) => ({
+    ...datacenterData.filter((dc): dc is typeof dc & { id: string; name: string } => Boolean(dc.id && dc.name)).map((dc) => ({
       value: dc.id,
       label: dc.name,
     })),

@@ -35,4 +35,4 @@ The latest Phase 8 verification completed with 40 test files and 151 tests passi
 
 ## Generated API contract
 
-`src/shared/api/v1-contract.ts` is retained but currently behind the backend Phase 6–8 contracts. OpenAPI regeneration was attempted three times and was unavailable because the local API could not remain available in the current PowerShell environment due to DataProtection/EventLog startup behavior. TLS verification was not bypassed. Until the backend is available for deterministic generation, focused exact local transport types document the confirmed contracts.
+`src/shared/api/v1-contract.ts` is generated from a pinned backend OpenAPI artifact. Run `npm.cmd run sync-api:safe -- <artifact-path>` to update it, then `npm.cmd run sync-api:check -- <artifact-path>` to generate it twice and fail if the output is non-deterministic or differs from the checked-in contract. HTTPS inputs use normal Node.js certificate verification; TLS verification must not be bypassed.

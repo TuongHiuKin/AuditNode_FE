@@ -12,7 +12,9 @@
     "test:e2e:headed": "playwright test --headed --project=chromium",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "sync-api": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 openapi-typescript https://localhost:7126/openapi/v1.json --output src/shared/api/v1-contract.ts"
+    "sync-api": "node scripts/sync-api.mjs",
+    "sync-api:safe": "node scripts/sync-api.mjs",
+    "sync-api:check": "node scripts/verify-api-contract.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

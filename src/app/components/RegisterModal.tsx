@@ -30,7 +30,7 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
   const { data: datacenters = [] } = useQuery({
     queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>("/api/v1/datacenters");
       return Array.isArray(response.data) ? response.data : [];
     },
     enabled: !!selectedWorkspaceId,

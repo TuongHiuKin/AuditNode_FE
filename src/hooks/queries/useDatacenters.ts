@@ -11,9 +11,8 @@ export function useDatacenters() {
   return useQuery({
     queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
-      const rawData = response as any;
-      return (Array.isArray(rawData.data) ? rawData.data : (rawData.data?.data || [])) as Schemas["Datacenter"][];
+      const response = await apiClient.get<Schemas["DatacenterDto"][]>("/api/v1/datacenters");
+      return Array.isArray(response.data) ? response.data : [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!selectedWorkspaceId,
