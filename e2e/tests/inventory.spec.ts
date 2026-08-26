@@ -1,19 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAs } from '../fixtures/actors';
 
 test.describe('Inventory Page - Servers', () => {
   test('should load the inventory page and display servers', async ({ page }) => {
-    // Navigate to the inventory page (will redirect to Keycloak if not logged in)
-    await page.goto('/inventory');
-
-    // Wait for redirect to finish
-    await page.waitForLoadState('networkidle');
-
-    await page.locator('#login-username').fill('Ankinnnnn');
-    await page.locator('#login-password').fill('12345');
-    await page.locator('#login-submit').click();
-    
-    // Wait for login to complete and redirect back to our app
-    await page.waitForLoadState('networkidle');
+    await loginAs(page, 'owner', '/inventory');
 
     // Now we should be on the inventory page
 

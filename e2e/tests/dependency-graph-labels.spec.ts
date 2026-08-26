@@ -1,54 +1,12 @@
-import { test, expect, Page } from '@playwright/test';
-
-/**
- * Helper function to perform Keycloak login in Playwright E2E tests.
- */
-async function loginToKeycloak(page: Page, username: string, pass: string) {
-  await page.goto('/inventory');
-  await page.waitForLoadState('networkidle');
-
-  const userField = page.locator('#login-username').first();
-  const passField = page.locator('#login-password').first();
-  const submitBtn = page.locator('#login-submit').first();
-
-  await userField.fill(username);
-  await passField.fill(pass);
-  await submitBtn.click();
-  await page.waitForLoadState('networkidle');
-}
+import { test, expect } from '@playwright/test';
+import { loginAs } from '../fixtures/actors';
 
 test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
 
   test('Should render boundary frames and nest servers correctly when filtering by label', async ({ page }) => {
-    // 0. Mock workspaces
-    await page.route(/\/api\/v1\/workspaces/, async route => {
-      console.log('Intercepted workspaces route:', route.request().url());
-      if (route.request().method() === 'OPTIONS') {
-        await route.fulfill({
-          status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': '*',
-            'Access-Control-Allow-Headers': '*'
-          }
-        });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': '*',
-          'Access-Control-Allow-Headers': '*'
-        },
-        body: JSON.stringify([
-          { id: '11111111-1111-1111-1111-111111111111', name: 'E2E Workspace' }
-        ])
-      });
-    });
-
-    // 1. Intercept labels API to provide fake labels for the dropdown
+    // 1. Use the real bootstrapped owner workspace, and mock only graph-specific data.
+    // A fabricated workspace ID makes unrelated tenant-scoped requests fail with 404.
+    // Intercept labels API to provide fake labels for the dropdown.
     await page.route(/\/api\/v1\/inventory\/labels/, async route => {
       console.log('Intercepted labels route:', route.request().url());
       if (route.request().method() === 'OPTIONS') {
@@ -161,7 +119,7 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
     });
 
     // 3. Login as Admin
-    await loginToKeycloak(page, 'Ankinnnnn', '12345');
+    await loginAs(page, 'owner', '/inventory');
 
     // Wait for the app to finish loading and tokens to be saved
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });

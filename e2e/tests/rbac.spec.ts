@@ -1,40 +1,22 @@
-import { test, expect, Page } from '@playwright/test';
-
-/**
- * Helper function to perform Keycloak login in Playwright E2E tests.
- */
-async function loginToKeycloak(page: Page, username: string, pass: string) {
-  // Navigate to inventory servers page
-  await page.goto('/inventory/servers');
-  await page.waitForLoadState('networkidle');
-
-  const userField = page.locator('#login-username').first();
-  const passField = page.locator('#login-password').first();
-  const submitBtn = page.locator('#login-submit').first();
-
-  await userField.fill(username);
-  await passField.fill(pass);
-  await submitBtn.click();
-  
-  // Wait for redirect back to the application
-  await page.waitForLoadState('networkidle');
-}
+import { test, expect } from '@playwright/test';
+import { loginAs } from '../fixtures/actors';
 
 test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
 
-  test('Admin Account (Ankinnnnn) should have full system & inventory management access', async ({ page }) => {
+  test('Workspace owner should have full inventory management access', async ({ page }) => {
     // 1. Login as Admin
-    await loginToKeycloak(page, 'Ankinnnnn', '12345');
+    await loginAs(page, 'owner');
 
     // Verify we reached the Inventory page
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
 
-    // 2. Check Inventory Layout action buttons (Import & Register Entity should be enabled)
+    // 2. Owner can use inventory management actions.
     const importBtn = page.getByRole('button', { name: /import/i });
     const registerBtn = page.getByRole('button', { name: /register entity/i });
 
     await expect(importBtn).toBeVisible();
     await expect(importBtn).toBeEnabled();
+    await expect(importBtn).toHaveAttribute('title', 'Import');
     await expect(registerBtn).toBeVisible();
     await expect(registerBtn).toBeEnabled();
 
@@ -50,19 +32,20 @@ test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
     await page.keyboard.press('Escape');
   });
 
-  test('Auditor Account (Ankinnnn) should have inventory edit access but NO Datacenter management access', async ({ page }) => {
+  test('Label Auditor should have scoped inventory edit access but no Datacenter management access', async ({ page }) => {
     // 1. Login as Auditor
-    await loginToKeycloak(page, 'Ankinnnn', '1234567');
+    await loginAs(page, 'labelAuditor');
 
     // Verify we reached the Inventory page
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
 
-    // 2. Check Inventory Layout action buttons (Import & Register Entity should be enabled)
+    // 2. Auditor can register/edit within scope; bulk import remains owner/admin-only.
     const importBtn = page.getByRole('button', { name: /import/i });
     const registerBtn = page.getByRole('button', { name: /register entity/i });
 
     await expect(importBtn).toBeVisible();
-    await expect(importBtn).toBeEnabled();
+    await expect(importBtn).toBeDisabled();
+    await expect(importBtn).toHaveAttribute('title', 'Bạn không có quyền thao tác');
     await expect(registerBtn).toBeVisible();
     await expect(registerBtn).toBeEnabled();
 
@@ -78,9 +61,9 @@ test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
     await page.keyboard.press('Escape');
 
     // 4. Verify Dependency Manager action buttons are enabled for Auditor
-    await page.goto('/dependency-manager');
+    await page.getByRole('link', { name: /dependencies/i }).click();
+    await expect(page).toHaveURL(/\/dependency-manager/);
     await page.waitForLoadState('networkidle');
-
     const autoMapBtn = page.getByRole('button', { name: /auto-map from db/i });
     const saveStateBtn = page.getByRole('button', { name: /save network state/i });
 
@@ -90,9 +73,9 @@ test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
     await expect(saveStateBtn).toBeEnabled();
   });
 
-  test('Viewer Account (Ankinnn) should have read-only access and all mutating action buttons disabled', async ({ page }) => {
+  test('Viewer should have read-only access and all mutating action buttons disabled', async ({ page }) => {
     // 1. Login as Viewer
-    await loginToKeycloak(page, 'Ankinnn', '1234567');
+    await loginAs(page, 'viewer');
 
     // Verify we reached the Inventory page
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
@@ -119,7 +102,8 @@ test.describe('Keycloak RBAC & Action Gating E2E Tests', () => {
     await page.keyboard.press('Escape');
 
     // 4. Verify Dependency Manager action buttons are DISABLED for Viewer
-    await page.goto('/dependency-manager');
+    await page.getByRole('link', { name: /dependencies/i }).click();
+    await expect(page).toHaveURL(/\/dependency-manager/);
     await page.waitForLoadState('networkidle');
 
     const autoMapBtn = page.getByRole('button', { name: /auto-map from db/i });

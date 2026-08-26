@@ -1,25 +1,11 @@
-import { test, expect, Page } from '@playwright/test';
-
-async function loginToKeycloak(page: Page) {
-  await page.goto('/inventory/servers');
-  await page.waitForLoadState('networkidle');
-
-  const userField = page.locator('#login-username').first();
-  const passField = page.locator('#login-password').first();
-  const submitBtn = page.locator('#login-submit').first();
-
-  await userField.fill('Ankinnnnn');
-  await passField.fill('12345');
-  await submitBtn.click();
-  
-  await page.waitForLoadState('networkidle');
-}
+import { test, expect } from '@playwright/test';
+import { loginAs } from '../fixtures/actors';
 
 test.describe('Sidebar Collapse and Sign Out E2E Tests', () => {
 
   test('should display Sign Out menu correctly when Sidebar is collapsed and successfully sign out', async ({ page }) => {
     // 1. Login
-    await loginToKeycloak(page);
+    await loginAs(page, 'owner');
 
     // 2. Ensure Inventory page is loaded
     const collapseBtn = page.locator('[data-testid="sidebar-collapse-btn"]');
@@ -59,7 +45,7 @@ test.describe('Sidebar Collapse and Sign Out E2E Tests', () => {
 
   test('should display Sign Out menu correctly when Sidebar is expanded and successfully sign out', async ({ page }) => {
     // 1. Login
-    await loginToKeycloak(page);
+    await loginAs(page, 'owner');
 
     // 2. Ensure Inventory page is loaded
     const profileBtn = page.locator('[data-testid="sidebar-profile-btn"]');

@@ -1,0 +1,197 @@
+name: auditnode-e2e
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: auditnode_e2e
+      POSTGRES_USER: ${E2E_DB_USERNAME:?set E2E_DB_USERNAME}
+      POSTGRES_PASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    command: start-dev --health-enabled=true
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${E2E_KEYCLOAK_ADMIN_USERNAME:?set E2E_KEYCLOAK_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${E2E_KEYCLOAK_ADMIN_PASSWORD:?set E2E_KEYCLOAK_ADMIN_PASSWORD}
+    ports:
+      - "127.0.0.1:${E2E_KEYCLOAK_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3; grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keycloak-bootstrap:
+    image: node:20-alpine
+    working_dir: /bootstrap
+    command: ["node", "bootstrap-keycloak.mjs"]
+    volumes:
+      - ./bootstrap-keycloak.mjs:/bootstrap/bootstrap-keycloak.mjs:ro
+    environment:
+      E2E_KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      E2E_KEYCLOAK_ADMIN_USERNAME: ${E2E_KEYCLOAK_ADMIN_USERNAME:?set E2E_KEYCLOAK_ADMIN_USERNAME}
+      E2E_KEYCLOAK_ADMIN_PASSWORD: ${E2E_KEYCLOAK_ADMIN_PASSWORD:?set E2E_KEYCLOAK_ADMIN_PASSWORD}
+      E2E_BFF_CLIENT_SECRET: ${E2E_BFF_CLIENT_SECRET:?set E2E_BFF_CLIENT_SECRET}
+      E2E_ADMIN_CLIENT_SECRET: ${E2E_ADMIN_CLIENT_SECRET:?set E2E_ADMIN_CLIENT_SECRET}
+      E2E_SYSTEM_ADMIN_USERNAME: ${E2E_SYSTEM_ADMIN_USERNAME:?set E2E_SYSTEM_ADMIN_USERNAME}
+      E2E_SYSTEM_ADMIN_PASSWORD: ${E2E_SYSTEM_ADMIN_PASSWORD:?set E2E_SYSTEM_ADMIN_PASSWORD}
+      E2E_OWNER_USERNAME: ${E2E_OWNER_USERNAME:?set E2E_OWNER_USERNAME}
+      E2E_OWNER_PASSWORD: ${E2E_OWNER_PASSWORD:?set E2E_OWNER_PASSWORD}
+      E2E_WORKSPACE_ADMIN_USERNAME: ${E2E_WORKSPACE_ADMIN_USERNAME:?set E2E_WORKSPACE_ADMIN_USERNAME}
+      E2E_WORKSPACE_ADMIN_PASSWORD: ${E2E_WORKSPACE_ADMIN_PASSWORD:?set E2E_WORKSPACE_ADMIN_PASSWORD}
+      E2E_LABEL_AUDITOR_USERNAME: ${E2E_LABEL_AUDITOR_USERNAME:?set E2E_LABEL_AUDITOR_USERNAME}
+      E2E_LABEL_AUDITOR_PASSWORD: ${E2E_LABEL_AUDITOR_PASSWORD:?set E2E_LABEL_AUDITOR_PASSWORD}
+      E2E_FRAME_AUDITOR_USERNAME: ${E2E_FRAME_AUDITOR_USERNAME:?set E2E_FRAME_AUDITOR_USERNAME}
+      E2E_FRAME_AUDITOR_PASSWORD: ${E2E_FRAME_AUDITOR_PASSWORD:?set E2E_FRAME_AUDITOR_PASSWORD}
+      E2E_VIEWER_USERNAME: ${E2E_VIEWER_USERNAME:?set E2E_VIEWER_USERNAME}
+      E2E_VIEWER_PASSWORD: ${E2E_VIEWER_PASSWORD:?set E2E_VIEWER_PASSWORD}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  migrations:
+    build:
+      context: ../../../AuditNode.Backend
+    command: ["dotnet", "AuditNode.API.dll", "--e2e-migrate-only"]
+    environment: &backend-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=auditnode_e2e;Username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME};Password=${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+      Keycloak__Authority: http://keycloak:8080/realms/auditnode-e2e
+      Keycloak__Realm: auditnode-e2e
+      Keycloak__Audience: auditnode-bff
+      Keycloak__BffClientId: auditnode-bff
+      Keycloak__BffClientSecret: ${E2E_BFF_CLIENT_SECRET:?set E2E_BFF_CLIENT_SECRET}
+      Keycloak__AdminClientId: auditnode-admin
+      Keycloak__AdminClientSecret: ${E2E_ADMIN_CLIENT_SECRET:?set E2E_ADMIN_CLIENT_SECRET}
+      Cors__AllowedOrigins__0: http://localhost:${E2E_FRONTEND_PORT:-15173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak-bootstrap:
+        condition: service_completed_successfully
+
+  schema-views:
+    image: postgres:17-alpine
+    command:
+      - psql
+      - --set=ON_ERROR_STOP=1
+      - --host=postgres
+      - --username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME}
+      - --dbname=auditnode_e2e
+      - --file=/sql/workspace-scoped-views.sql
+    environment:
+      PGPASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+    volumes:
+      - ../../../AuditNode.Backend/AuditNode.Infrastructure/Sql/20260818_workspace_scoped_views.sql:/sql/workspace-scoped-views.sql:ro
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
+  backend:
+    build:
+      context: ../../../AuditNode.Backend
+    environment: *backend-environment
+    ports:
+      - "127.0.0.1:${E2E_BACKEND_PORT:-15000}:5000"
+    depends_on:
+      schema-views:
+        condition: service_completed_successfully
+
+  backend-ready:
+    image: curlimages/curl:8.12.1
+    command: ["--fail", "--silent", "--show-error", "--retry", "30", "--retry-all-errors", "--retry-delay", "2", "http://backend:5000/health/ready"]
+    depends_on:
+      backend:
+        condition: service_started
+
+  app-bootstrap:
+    image: node:20-alpine
+    working_dir: /bootstrap
+    command: ["node", "bootstrap-app.mjs"]
+    volumes:
+      - ./bootstrap-app.mjs:/bootstrap/bootstrap-app.mjs:ro
+    environment:
+      E2E_BACKEND_INTERNAL_URL: http://backend:5000
+      E2E_SYSTEM_ADMIN_USERNAME: ${E2E_SYSTEM_ADMIN_USERNAME:?set E2E_SYSTEM_ADMIN_USERNAME}
+      E2E_SYSTEM_ADMIN_PASSWORD: ${E2E_SYSTEM_ADMIN_PASSWORD:?set E2E_SYSTEM_ADMIN_PASSWORD}
+      E2E_OWNER_USERNAME: ${E2E_OWNER_USERNAME:?set E2E_OWNER_USERNAME}
+      E2E_OWNER_PASSWORD: ${E2E_OWNER_PASSWORD:?set E2E_OWNER_PASSWORD}
+      E2E_WORKSPACE_ADMIN_USERNAME: ${E2E_WORKSPACE_ADMIN_USERNAME:?set E2E_WORKSPACE_ADMIN_USERNAME}
+      E2E_WORKSPACE_ADMIN_PASSWORD: ${E2E_WORKSPACE_ADMIN_PASSWORD:?set E2E_WORKSPACE_ADMIN_PASSWORD}
+      E2E_LABEL_AUDITOR_USERNAME: ${E2E_LABEL_AUDITOR_USERNAME:?set E2E_LABEL_AUDITOR_USERNAME}
+      E2E_LABEL_AUDITOR_PASSWORD: ${E2E_LABEL_AUDITOR_PASSWORD:?set E2E_LABEL_AUDITOR_PASSWORD}
+      E2E_FRAME_AUDITOR_USERNAME: ${E2E_FRAME_AUDITOR_USERNAME:?set E2E_FRAME_AUDITOR_USERNAME}
+      E2E_FRAME_AUDITOR_PASSWORD: ${E2E_FRAME_AUDITOR_PASSWORD:?set E2E_FRAME_AUDITOR_PASSWORD}
+      E2E_VIEWER_USERNAME: ${E2E_VIEWER_USERNAME:?set E2E_VIEWER_USERNAME}
+      E2E_VIEWER_PASSWORD: ${E2E_VIEWER_PASSWORD:?set E2E_VIEWER_PASSWORD}
+    depends_on:
+      backend-ready:
+        condition: service_completed_successfully
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0"]
+    environment:
+      VITE_API_BASE_URL: /
+      VITE_DEV_PROXY_TARGET: http://backend:5000
+    volumes:
+      - ../..:/app
+      - frontend-node-modules:/app/node_modules
+    ports:
+      - "127.0.0.1:${E2E_FRONTEND_PORT:-15173}:5173"
+    depends_on:
+      app-bootstrap:
+        condition: service_completed_successfully
+
+  frontend-ready:
+    image: curlimages/curl:8.12.1
+    command: ["--fail", "--silent", "--show-error", "--retry", "30", "--retry-all-errors", "--retry-delay", "2", "http://frontend:5173"]
+    depends_on:
+      frontend:
+        condition: service_started
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    profiles: ["test"]
+    working_dir: /app
+    command: ["sh", "-c", "npm ci && npm run test:e2e"]
+    volumes:
+      - ../..:/app
+      - playwright-node-modules:/app/node_modules
+    environment:
+      CI: "true"
+      E2E_EXTERNAL_STACK: "1"
+      E2E_FRONTEND_URL: http://frontend:5173
+      E2E_BACKEND_URL: http://backend:5000
+      E2E_KEYCLOAK_URL: http://keycloak:8080
+      E2E_SYSTEM_ADMIN_USERNAME: ${E2E_SYSTEM_ADMIN_USERNAME:?set E2E_SYSTEM_ADMIN_USERNAME}
+      E2E_SYSTEM_ADMIN_PASSWORD: ${E2E_SYSTEM_ADMIN_PASSWORD:?set E2E_SYSTEM_ADMIN_PASSWORD}
+      E2E_OWNER_USERNAME: ${E2E_OWNER_USERNAME:?set E2E_OWNER_USERNAME}
+      E2E_OWNER_PASSWORD: ${E2E_OWNER_PASSWORD:?set E2E_OWNER_PASSWORD}
+      E2E_WORKSPACE_ADMIN_USERNAME: ${E2E_WORKSPACE_ADMIN_USERNAME:?set E2E_WORKSPACE_ADMIN_USERNAME}
+      E2E_WORKSPACE_ADMIN_PASSWORD: ${E2E_WORKSPACE_ADMIN_PASSWORD:?set E2E_WORKSPACE_ADMIN_PASSWORD}
+      E2E_LABEL_AUDITOR_USERNAME: ${E2E_LABEL_AUDITOR_USERNAME:?set E2E_LABEL_AUDITOR_USERNAME}
+      E2E_LABEL_AUDITOR_PASSWORD: ${E2E_LABEL_AUDITOR_PASSWORD:?set E2E_LABEL_AUDITOR_PASSWORD}
+      E2E_FRAME_AUDITOR_USERNAME: ${E2E_FRAME_AUDITOR_USERNAME:?set E2E_FRAME_AUDITOR_USERNAME}
+      E2E_FRAME_AUDITOR_PASSWORD: ${E2E_FRAME_AUDITOR_PASSWORD:?set E2E_FRAME_AUDITOR_PASSWORD}
+      E2E_VIEWER_USERNAME: ${E2E_VIEWER_USERNAME:?set E2E_VIEWER_USERNAME}
+      E2E_VIEWER_PASSWORD: ${E2E_VIEWER_PASSWORD:?set E2E_VIEWER_PASSWORD}
+    depends_on:
+      frontend-ready:
+        condition: service_completed_successfully
+      app-bootstrap:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+  frontend-node-modules:
+  playwright-node-modules:

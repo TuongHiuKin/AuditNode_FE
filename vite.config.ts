@@ -3,6 +3,7 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
+const devProxyTarget = process.env.VITE_DEV_PROXY_TARGET
 
 function figmaAssetResolver() {
   return {
@@ -33,6 +34,16 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  server: devProxyTarget ? {
+    allowedHosts: ['frontend'],
+    proxy: {
+      '/api': {
+        target: devProxyTarget,
+        changeOrigin: true,
+      },
+    },
+  } : undefined,
 
   // Vitest configuration
   test: {

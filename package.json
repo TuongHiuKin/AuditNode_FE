@@ -9,6 +9,8 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:list": "playwright test --list",
+    "e2e:config": "docker compose -f e2e/stack/docker-compose.yml config",
     "test:e2e:headed": "playwright test --headed --project=chromium",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
