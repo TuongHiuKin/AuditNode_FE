@@ -33,7 +33,7 @@ test.describe.serial('RBAC application API fixtures', () => {
   const sessions = new Map<E2EActorName, ActorSession>();
 
   test.beforeAll(async ({ request }) => {
-    for (const name of ['owner', 'systemAdmin', 'labelAuditor', 'frameAuditor', 'viewer'] as const) {
+    for (const name of ['owner', 'systemAdmin', 'workspaceAdmin', 'labelAuditor', 'frameAuditor', 'viewer'] as const) {
       sessions.set(name, await session(request, name));
     }
   });
@@ -50,6 +50,40 @@ test.describe.serial('RBAC application API fixtures', () => {
     const workspaceId = await ownerWorkspace(request, owner.headers);
     const response = await request.get(`${backend}/api/v1/servers`, { headers: workspaceHeaders(systemAdmin.headers, workspaceId) });
     expect(response.status()).toBe(403);
+  });
+
+  test('share candidate discovery is private, bounded, and manager-only', async ({ request }) => {
+    const owner = actorSession('owner');
+    const workspaceAdmin = actorSession('workspaceAdmin');
+    const labelAuditor = actorSession('labelAuditor');
+    const workspaceId = await ownerWorkspace(request, owner.headers);
+
+    const empty = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options`, { headers: owner.headers });
+    expect(empty.ok()).toBeTruthy();
+    expect((await empty.json() as { users: unknown[] }).users).toEqual([]);
+
+    const short = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=ab`, { headers: owner.headers });
+    expect(short.status()).toBe(400);
+    const oversizedPage = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner&max=21`, { headers: owner.headers });
+    expect(oversizedPage.status()).toBe(400);
+
+    const denied = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner`, { headers: labelAuditor.headers });
+    expect(denied.status()).toBe(403);
+
+    const allowed = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner`, { headers: workspaceAdmin.headers });
+    expect(allowed.ok()).toBeTruthy();
+    expect((await allowed.json() as { users: Array<{ username: string }> }).users.length).toBeLessThanOrEqual(20);
+  });
+
+  test('share candidate discovery enforces its per-actor request budget', async ({ request }) => {
+    const rateLimitActor = actorSession('systemAdmin');
+    const owner = actorSession('owner');
+    const workspaceId = await ownerWorkspace(request, owner.headers);
+
+    const responses = await Promise.all(Array.from({ length: 35 }, () =>
+      request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=ab`, { headers: rateLimitActor.headers })));
+
+    expect(responses.map((response) => response.status())).toContain(429);
   });
 
   test('label and frame scopes project only their fixture resources', async ({ request }) => {

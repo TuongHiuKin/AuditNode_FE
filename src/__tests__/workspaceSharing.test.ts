@@ -12,6 +12,20 @@ describe("workspaceSharingApi", () => {
     await workspaceSharingApi.list(workspaceId);
     expect(apiClient.get).toHaveBeenCalledWith(`/api/v1/workspaces/${workspaceId}/shares`);
   });
+  it("maps and sends the workspace admin role used by the backend contract", async () => {
+    const share = { userId: "manager", role: "workspace_admin", scopeMode: "all", targetIds: [], version: 1 } as const;
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [share] });
+    vi.mocked(apiClient.post).mockResolvedValue({ data: share });
+
+    const listed = await workspaceSharingApi.list(workspaceId);
+    await workspaceSharingApi.grant(workspaceId, { ...share, targetIds: [] });
+
+    expect(listed).toEqual([share]);
+    expect(apiClient.post).toHaveBeenCalledWith(
+      `/api/v1/workspaces/${workspaceId}/shares`,
+      expect.objectContaining({ role: "workspace_admin" }),
+    );
+  });
   it("sends role and scope targets when granting access", async () => {
     const body = { userId: "user-2", role: "auditor", scopeMode: "labels", targetIds: ["label-1"] } as const;
     vi.mocked(apiClient.post).mockResolvedValue({ data: { ...body, version: 1 } });
@@ -25,7 +39,8 @@ describe("workspaceSharingApi", () => {
   });
   it("loads searchable share candidates and scope targets", async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { users: [], labels: [], frames: [] } });
-    await workspaceSharingApi.options(workspaceId, "alice");
-    expect(apiClient.get).toHaveBeenCalledWith(`/api/v1/workspaces/${workspaceId}/share-options`, { params: { search: "alice", first: 0, max: 20 } });
+    const controller = new AbortController();
+    await workspaceSharingApi.options(workspaceId, "alice", controller.signal);
+    expect(apiClient.get).toHaveBeenCalledWith(`/api/v1/workspaces/${workspaceId}/share-options`, { params: { search: "alice", first: 0, max: 20 }, signal: controller.signal });
   });
 });
