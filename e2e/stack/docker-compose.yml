@@ -60,7 +60,7 @@ services:
   migrations:
     build:
       context: ../../../AuditNode.Backend
-    command: ["dotnet", "AuditNode.API.dll", "--e2e-migrate-only"]
+    command: ["dotnet", "AuditNode.API.dll", "--migrate-only"]
     environment: &backend-environment
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=auditnode_e2e;Username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME};Password=${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
