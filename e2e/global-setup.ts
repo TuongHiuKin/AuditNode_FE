@@ -23,10 +23,12 @@ export default async function globalSetup(config: FullConfig) {
 
   const frontend = config.projects[0]?.use.baseURL?.toString() ?? process.env.E2E_FRONTEND_URL!;
   const backend = process.env.E2E_BACKEND_URL ?? 'http://localhost:15000';
+  const backendPeer = process.env.E2E_BACKEND_PEER_URL ?? 'http://localhost:15001';
   const keycloak = process.env.E2E_KEYCLOAK_URL ?? 'http://localhost:18080';
   await probe('Keycloak realm', `${keycloak}/realms/auditnode-e2e/.well-known/openid-configuration`);
   await probe('backend liveness', `${backend}/health/live`);
   await probe('backend readiness and migrations', `${backend}/health/ready`);
   await probe('backend OpenAPI', `${backend}/openapi/v1.json`);
+  await probe('peer backend readiness', `${backendPeer}/health/ready`);
   await probe('frontend', frontend);
 }

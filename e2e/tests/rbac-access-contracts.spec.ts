@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 import { actor, type E2EActorName } from '../fixtures/actors';
 
 const backend = process.env.E2E_BACKEND_URL ?? (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15000' : 'http://localhost:5000');
+const backendPeer = process.env.E2E_BACKEND_PEER_URL ?? (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15001' : backend);
 
 async function session(api: APIRequestContext, name: E2EActorName) {
   const credentials = actor(name);
@@ -172,5 +173,79 @@ test.describe.serial('RBAC application API fixtures', () => {
       headers: systemAdmin.headers, data: { systemAdmin: false },
     });
     expect(revoke.status()).toBe(409);
+  });
+
+  test('two backend processes cannot concurrently remove both enabled SystemAdmins', async ({ request }) => {
+    const systemAdmin = actorSession('systemAdmin');
+    const workspaceAdmin = actorSession('workspaceAdmin');
+    const prepare = async () => {
+      const restoreFirst = await request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
+        headers: systemAdmin.headers, data: { systemAdmin: true },
+      });
+      expect(restoreFirst.status()).toBe(204);
+      const enableSecond = await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
+        headers: systemAdmin.headers, data: { enabled: true },
+      });
+      expect(enableSecond.status()).toBe(204);
+      const grantSecond = await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
+        headers: systemAdmin.headers, data: { systemAdmin: true },
+      });
+      expect(grantSecond.status()).toBe(204);
+    };
+    const cleanup = async () => {
+      let restoreFirstStatus: number | undefined;
+      let enableSecondStatus: number | undefined;
+      let revokeSecondStatus: number | undefined;
+      try {
+        restoreFirstStatus = (await request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
+          headers: systemAdmin.headers, data: { systemAdmin: true },
+        })).status();
+      } finally {
+        try {
+          enableSecondStatus = (await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
+            headers: systemAdmin.headers, data: { enabled: true },
+          })).status();
+        } finally {
+          if (restoreFirstStatus === 204) {
+            revokeSecondStatus = (await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
+              headers: systemAdmin.headers, data: { systemAdmin: false },
+            })).status();
+          }
+        }
+      }
+      expect(restoreFirstStatus).toBe(204);
+      expect(enableSecondStatus).toBe(204);
+      expect(revokeSecondStatus).toBe(204);
+    };
+
+    try {
+      await prepare();
+      const [revokeFirst, disableSecond] = await Promise.all([
+        request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
+          headers: systemAdmin.headers, data: { systemAdmin: false },
+        }),
+        request.put(`${backendPeer}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
+          headers: systemAdmin.headers, data: { enabled: false },
+        }),
+      ]);
+      expect([revokeFirst.status(), disableSecond.status()].sort()).toEqual([204, 409]);
+    } finally {
+      await cleanup();
+    }
+
+    try {
+      await prepare();
+      const revocations = await Promise.all([
+        request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
+          headers: systemAdmin.headers, data: { systemAdmin: false },
+        }),
+        request.put(`${backendPeer}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
+          headers: systemAdmin.headers, data: { systemAdmin: false },
+        }),
+      ]);
+      expect(revocations.map(response => response.status()).sort()).toEqual([204, 409]);
+    } finally {
+      await cleanup();
+    }
   });
 });
