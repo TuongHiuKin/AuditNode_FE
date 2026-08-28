@@ -1,6 +1,7 @@
 import { Database, CloudUpload, Loader2 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
 import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 interface SubToolbarProps {
   onAutoMap: () => void;
@@ -18,12 +19,16 @@ export function SubToolbar({
   isPaletteOpen = false
 }: SubToolbarProps) {
   const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
+  const { selectedWorkspace } = useWorkspace();
+  const canAddNodes = canEditInventory && selectedWorkspace?.effectiveRole !== "auditor";
 
   return (
     <div className="flex items-center gap-3">
       {onTogglePalette && (
         <Button
           onClick={onTogglePalette}
+          disabled={!canAddNodes}
+          title={!canAddNodes ? "Auditors cannot add graph nodes" : undefined}
           variant={isPaletteOpen ? "active" : "outline"}
         >
           <Database size={14} className={isPaletteOpen ? "text-primary" : "text-muted-foreground"} />

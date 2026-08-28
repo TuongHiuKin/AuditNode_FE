@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto';
+
 const base = process.env.E2E_BACKEND_INTERNAL_URL;
 const required = name => process.env[name] || (() => { throw new Error(`Missing ${name}`); })();
-const frameId = '10000000-0000-0000-0000-000000000001';
-const frameServerNodeId = '10000000-0000-0000-0000-000000000002';
-const frameAppNodeId = '10000000-0000-0000-0000-000000000003';
+
+function workspaceScopedId(workspaceId, purpose) {
+  const hex = createHash('sha256').update(`${workspaceId}:${purpose}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
 
 async function call(path, { token, workspaceId, method = 'GET', body, expected = [200] } = {}) {
   const headers = { 'content-type': 'application/json' };
@@ -29,6 +33,9 @@ const owner = sessions.OWNER;
 const workspace = owner.workspaces.find(item => item.relationship === 'owner');
 if (!workspace) throw new Error('Owner personal workspace was not bootstrapped.');
 const workspaceId = workspace.id;
+const frameId = workspaceScopedId(workspaceId, 'staging-frame');
+const frameServerNodeId = workspaceScopedId(workspaceId, 'staging-server-node');
+const frameAppNodeId = workspaceScopedId(workspaceId, 'staging-app-node');
 
 let datacenters = await call('/api/v1/datacenters', { token: owner.token, workspaceId });
 let datacenter = datacenters.find(item => item.name === 'E2E Datacenter');
@@ -58,17 +65,16 @@ async function ensureApp(appCode, appName, serverId, port, labelValue) {
 const productionApp = await ensureApp('E2E-PROD', 'E2E Production App', productionServer.id, 18080, 'Production');
 const stagingApp = await ensureApp('E2E-STAGE', 'E2E Staging App', stagingServer.id, 18081, 'Staging');
 
+const destinationPortMappingId = stagingApp.servers?.[0]?.portMappingId;
+if (!destinationPortMappingId) throw new Error('Staging application deployment was not returned by the API.');
+const topologyState = await call('/api/v1/topology/state', { token: owner.token, workspaceId });
 await call('/api/v1/topology/state', { token: owner.token, workspaceId, method: 'PUT', expected: [204], body: {
+  version: topologyState.version,
   nodes: [
     { id: frameId, nodeType: 'frame', label: 'E2E Staging Frame', x: 40, y: 40, width: 600, height: 400 },
     { id: frameServerNodeId, nodeType: 'server', label: stagingServer.hostname, x: 80, y: 100, parentNodeId: frameId, referenceId: stagingServer.id },
     { id: frameAppNodeId, nodeType: 'application', label: stagingApp.appName, x: 120, y: 160, parentNodeId: frameServerNodeId, referenceId: stagingApp.servers[0].portMappingId },
   ], edges: [],
-} });
-
-const destinationPortMappingId = stagingApp.servers?.[0]?.portMappingId;
-if (!destinationPortMappingId) throw new Error('Staging application deployment was not returned by the API.');
-await call('/api/v1/dependencies/sync', { token: owner.token, workspaceId, method: 'PUT', expected: [204], body: {
   dependencies: [{ sourceAppId: productionApp.id, destAppId: stagingApp.id, destinationPortMappingId }],
 } });
 

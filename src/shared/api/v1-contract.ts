@@ -1316,9 +1316,9 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TopologyStateDto"];
-                    "text/json": components["schemas"]["TopologyStateDto"];
-                    "application/*+json": components["schemas"]["TopologyStateDto"];
+                    "application/json": components["schemas"]["SaveTopologyStateDto"];
+                    "text/json": components["schemas"]["SaveTopologyStateDto"];
+                    "application/*+json": components["schemas"]["SaveTopologyStateDto"];
                 };
             };
             responses: {
@@ -1340,9 +1340,48 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TopologyStateDto"];
-                    "text/json": components["schemas"]["TopologyStateDto"];
-                    "application/*+json": components["schemas"]["TopologyStateDto"];
+                    "application/json": components["schemas"]["SaveTopologyStateDto"];
+                    "text/json": components["schemas"]["SaveTopologyStateDto"];
+                    "application/*+json": components["schemas"]["SaveTopologyStateDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/Topology/commands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TopologyCommandBatchDto"];
+                    "text/json": components["schemas"]["TopologyCommandBatchDto"];
+                    "application/*+json": components["schemas"]["TopologyCommandBatchDto"];
                 };
             };
             responses: {
@@ -1749,6 +1788,13 @@ export interface components {
             /** @default true */
             isRestricted: boolean;
         };
+        SaveTopologyStateDto: {
+            /** Format: int64 */
+            version: null | number | string;
+            nodes: null | components["schemas"]["TopologyNodeDto"][];
+            edges: null | components["schemas"]["TopologyEdgeDto"][];
+            dependencies: null | components["schemas"]["DependencyItemDto"][];
+        };
         SearchResultDto: {
             /** Format: uuid */
             id?: string;
@@ -1803,7 +1849,39 @@ export interface components {
             email: null | string;
         };
         SyncDependenciesDto: {
-            dependencies?: components["schemas"]["DependencyItemDto"][];
+            /** Format: int64 */
+            version: null | number | string;
+            dependencies: null | components["schemas"]["DependencyItemDto"][];
+        };
+        TopologyCommandBatchDto: {
+            /** Format: int64 */
+            version: null | number | string;
+            operations: components["schemas"]["TopologyCommandDto"][];
+        };
+        TopologyCommandDto: {
+            type?: string;
+            /** Format: uuid */
+            nodeId?: null | string;
+            /** Format: uuid */
+            parentId?: null | string;
+            /** Format: uuid */
+            edgeId?: null | string;
+            /** Format: uuid */
+            sourceNodeId?: null | string;
+            /** Format: uuid */
+            targetNodeId?: null | string;
+            /** Format: double */
+            x?: null | number | string;
+            /** Format: double */
+            y?: null | number | string;
+            /** Format: double */
+            width?: null | number | string;
+            /** Format: double */
+            height?: null | number | string;
+            sourceHandle?: null | string;
+            targetHandle?: null | string;
+            edgeType?: null | string;
+            label?: null | string;
         };
         TopologyEdgeDto: {
             /** Format: uuid */
@@ -1839,6 +1917,8 @@ export interface components {
             isRestricted?: boolean;
         };
         TopologyStateDto: {
+            /** Format: int64 */
+            version?: number | string;
             nodes?: components["schemas"]["TopologyNodeDto"][];
             edges?: components["schemas"]["TopologyEdgeDto"][];
         };

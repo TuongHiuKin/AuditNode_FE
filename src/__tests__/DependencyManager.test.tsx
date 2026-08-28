@@ -19,6 +19,33 @@ vi.mock("../shared/api/client", () => ({
   },
 }));
 
+const { ownerCapabilities } = vi.hoisted(() => ({
+  ownerCapabilities: {
+    canManageShares: true,
+    canWriteInventory: true,
+    canEditGraph: true,
+    canManageDatacenters: true,
+    canManageLabels: true,
+    canImport: true,
+  },
+}));
+
+vi.mock("../shared/workspace/WorkspaceContext", () => ({
+  useWorkspace: () => ({
+    selectedWorkspaceId: "11111111-1111-4111-8111-111111111111",
+    selectedWorkspace: {
+      id: "11111111-1111-4111-8111-111111111111",
+      name: "Personal Workspace",
+      effectiveRole: "owner",
+      capabilities: ownerCapabilities,
+    },
+  }),
+}));
+
+vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({
+  useWorkspaceCapabilities: () => ownerCapabilities,
+}));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: 0 },
@@ -100,7 +127,15 @@ describe("DependencyManager Integration", () => {
   });
 
   it("toggles App Palette visibility", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url.includes("/api/v1/topology/state")) {
+        return Promise.resolve({ data: { version: 0, nodes: [], edges: [] } });
+      }
+      if (url.includes("/api/v1/topology/map")) {
+        return Promise.resolve({ data: { servers: [], connections: [] } });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(
       <QueryClientProvider client={queryClient}>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Edge, Node } from "@xyflow/react";
 import {
   buildDependencySyncRequest,
+  buildTopologyCommandBatch,
   mapDependencyGraph,
   restoreTopologyState,
   toTopologyState,
@@ -108,5 +109,49 @@ describe("Phase 7 graph contract", () => {
     ], edges: [{ id: "boundary", sourceNodeId: "visible", targetNodeId: "opaque", sourceHandle: "", targetHandle: "", edgeType: "floatingSmooth", label: "", referenceId: null }] }, { nodes: [], edges: [] });
     expect(restored.nodes.find((node) => node.id === "opaque")).toEqual(expect.objectContaining({ type: "restricted", draggable: false, connectable: false, deletable: false, data: { label: "External Resource (Restricted)", isRestricted: true } }));
     expect(restored.edges).toEqual([expect.objectContaining({ source: "visible", target: "opaque" })]);
+  });
+
+  it("builds a bounded Auditor command batch only from recorded graph events", () => {
+    const nodeId = "11111111-1111-4111-8111-111111111111";
+    const sourceId = "22222222-2222-4222-8222-222222222222";
+    const targetId = "33333333-3333-4333-8333-333333333333";
+    const edgeId = "44444444-4444-4444-8444-444444444444";
+    const nodes: Node[] = [
+      { id: nodeId, type: "serverNode", parentId: null as any, position: { x: 20, y: 30 }, style: { width: 200, height: 100 }, data: { server: { serverId: nodeId } } },
+      { id: sourceId, type: "appNode", position: { x: 0, y: 0 }, data: { app: { appId: "app-1", portMappingId: sourceId } } },
+      { id: targetId, type: "appNode", position: { x: 0, y: 0 }, data: { app: { appId: "app-2", portMappingId: targetId } } },
+    ];
+    const edges: Edge[] = [{ id: edgeId, source: sourceId, target: targetId, type: "floatingSmooth", label: "TCP" }];
+
+    const batch = buildTopologyCommandBatch(12, {
+      changedNodeIds: new Set([nodeId]),
+      deletedNodeIds: new Set(),
+      createdEdgeIds: new Set([edgeId]),
+      changedEdgeIds: new Set(),
+      deletedEdgeIds: new Set(),
+    }, nodes, edges);
+
+    expect(batch).toEqual({
+      version: 12,
+      operations: [
+        expect.objectContaining({ type: "moveNode", nodeId, x: 20, y: 30, width: 200, height: 100 }),
+        expect.objectContaining({ type: "createEdge", edgeId, sourceNodeId: sourceId, targetNodeId: targetId }),
+      ],
+    });
+  });
+
+  it("never emits commands for restricted nodes and collapses create-then-delete edge events", () => {
+    const batch = buildTopologyCommandBatch(2, {
+      changedNodeIds: new Set(["opaque", "group"]),
+      deletedNodeIds: new Set(),
+      createdEdgeIds: new Set(["temporary"]),
+      changedEdgeIds: new Set(),
+      deletedEdgeIds: new Set(["temporary"]),
+    }, [
+      { id: "opaque", type: "restricted", position: { x: 0, y: 0 }, data: { isRestricted: true } },
+      { id: "group", type: "groupNode", position: { x: 0, y: 0 }, data: { label: "container" } },
+    ], []);
+
+    expect(batch.operations).toEqual([]);
   });
 });

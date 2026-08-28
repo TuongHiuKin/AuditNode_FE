@@ -1,4 +1,5 @@
 import type { Connection, Edge, Node } from "@xyflow/react";
+import type { Schemas } from "../../shared/api/client";
 import type { AppNodeData, PaletteApp, ServerNodeData } from "./types";
 
 export interface DependencyApplicationDto {
@@ -38,6 +39,8 @@ export interface DependencyMapResponse {
   connections: DependencyConnectionDto[];
 }
 
+export type DependencySyncItem = Schemas["DependencyItemDto"];
+
 export interface TopologyNodeState {
   id: string;
   nodeType: string;
@@ -62,10 +65,39 @@ export interface TopologyEdgeState {
   referenceId: string | null;
 }
 
-export interface TopologyState {
+export type TopologyState = Omit<Schemas["TopologyStateDto"], "version" | "nodes" | "edges"> & {
+  version?: number;
   nodes: TopologyNodeState[];
   edges: TopologyEdgeState[];
+};
+
+export type SaveTopologyState = Omit<Schemas["SaveTopologyStateDto"], "version" | "nodes" | "edges" | "dependencies"> & {
+  version: number;
+  nodes: TopologyNodeState[];
+  edges: TopologyEdgeState[];
+  dependencies: DependencySyncItem[];
+};
+
+export interface PendingTopologyChanges {
+  changedNodeIds: ReadonlySet<string>;
+  deletedNodeIds: ReadonlySet<string>;
+  createdEdgeIds: ReadonlySet<string>;
+  changedEdgeIds: ReadonlySet<string>;
+  deletedEdgeIds: ReadonlySet<string>;
 }
+
+export type TopologyCommand = Omit<Schemas["TopologyCommandDto"], "type" | "x" | "y" | "width" | "height"> & {
+  type: "moveNode" | "deleteNode" | "createEdge" | "updateEdge" | "deleteEdge";
+  x?: number;
+  y?: number;
+  width?: number | null;
+  height?: number | null;
+};
+
+export type TopologyCommandBatch = Omit<Schemas["TopologyCommandBatchDto"], "version" | "operations"> & {
+  version: number;
+  operations: TopologyCommand[];
+};
 
 export type GraphAppNode = Node<AppNodeData, "appNode">;
 export type GraphServerNode = Node<ServerNodeData, "serverNode">;
@@ -238,8 +270,9 @@ function uiNodeType(type: string): string {
   return type;
 }
 
-export function toTopologyState(nodes: Node[], edges: Edge[]): TopologyState {
+export function toTopologyState(nodes: Node[], edges: Edge[], version = 0): TopologyState {
   return {
+    version,
     nodes: nodes.map((node) => {
       const app = appData(node);
       const server = node.data?.server as { serverId?: string; hostname?: string } | undefined;
@@ -267,6 +300,63 @@ export function toTopologyState(nodes: Node[], edges: Edge[]): TopologyState {
       label: typeof edge.label === "string" ? edge.label : "",
       referenceId: typeof edge.data?.dependencyId === "string" ? edge.data.dependencyId : null,
     })),
+  };
+}
+
+export function buildTopologyCommandBatch(
+  version: number,
+  pending: PendingTopologyChanges,
+  nodes: Node[],
+  edges: Edge[],
+): TopologyCommandBatch {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const edgeById = new Map(edges.map((edge) => [edge.id, edge]));
+  const operations: TopologyCommand[] = [];
+
+  [...pending.changedNodeIds].sort().forEach((nodeId) => {
+    const node = nodeById.get(nodeId);
+    if (!node || node.type === "restricted" || node.data?.isRestricted) return;
+    const state = toTopologyState([node], []).nodes[0];
+    if (state.nodeType === "frame" || state.nodeType === "group") return;
+    operations.push({
+      type: "moveNode",
+      nodeId,
+      parentId: state.parentNodeId,
+      x: state.x,
+      y: state.y,
+      width: state.width,
+      height: state.height,
+    });
+  });
+  [...pending.deletedNodeIds].sort().forEach((nodeId) => {
+    operations.push({ type: "deleteNode", nodeId });
+  });
+  [...pending.createdEdgeIds].sort().forEach((edgeId) => {
+    const edge = edgeById.get(edgeId);
+    if (edge) operations.push(edgeCommand("createEdge", edge));
+  });
+  [...pending.changedEdgeIds].filter((id) => !pending.createdEdgeIds.has(id)).sort().forEach((edgeId) => {
+    const edge = edgeById.get(edgeId);
+    if (edge) operations.push(edgeCommand("updateEdge", edge));
+  });
+  [...pending.deletedEdgeIds]
+    .filter((id) => !pending.createdEdgeIds.has(id))
+    .sort()
+    .forEach((edgeId) => operations.push({ type: "deleteEdge", edgeId }));
+
+  return { version, operations };
+}
+
+function edgeCommand(type: "createEdge" | "updateEdge", edge: Edge): TopologyCommand {
+  return {
+    type,
+    edgeId: edge.id,
+    sourceNodeId: edge.source,
+    targetNodeId: edge.target,
+    sourceHandle: edge.sourceHandle ?? "",
+    targetHandle: edge.targetHandle ?? "",
+    edgeType: edge.type ?? "default",
+    label: typeof edge.label === "string" ? edge.label : "",
   };
 }
 
@@ -336,6 +426,8 @@ export function restoreTopologyState(
       type: saved.edgeType,
       label: saved.label,
       data: { protocol: saved.label, dependencyId: saved.referenceId },
+      deletable: saved.edgeType !== "restricted",
+      reconnectable: saved.edgeType !== "restricted",
     }];
   });
   return { nodes, edges: state.edges.length > 0 ? edges : liveGraph.edges };

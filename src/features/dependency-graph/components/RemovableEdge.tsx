@@ -36,7 +36,9 @@ export function RemovableEdge({
   const onEdgeClick = (evt: React.MouseEvent) => {
     evt.stopPropagation();
     if (data?.readOnly) return;
-    setEdges((edges) => edges.filter((edge) => edge.id !== id));
+    const onDeleteEdge = (data as { onDeleteEdge?: (edgeId: string) => void } | undefined)?.onDeleteEdge;
+    if (onDeleteEdge) onDeleteEdge(id);
+    else setEdges((edges) => edges.filter((edge) => edge.id !== id));
   };
 
   return (

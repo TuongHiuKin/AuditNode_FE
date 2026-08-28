@@ -3,6 +3,7 @@ import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
 import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
@@ -12,6 +13,8 @@ interface GraphToolbarProps {
 
 export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
   const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
+  const { selectedWorkspace } = useWorkspace();
+  const canCreateStructure = canEditInventory && selectedWorkspace?.effectiveRole !== "auditor";
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -47,8 +50,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddGroup}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Group Box"}
+          disabled={!canCreateStructure}
+          title={!canCreateStructure ? "Auditors cannot create graph containers" : "Add Group Box"}
           variant="ghost"
           size="icon"
           className="border-b border-border rounded-none"
@@ -57,8 +60,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddBoundaryFrame}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Boundary Frame"}
+          disabled={!canCreateStructure}
+          title={!canCreateStructure ? "Auditors cannot create boundary frames" : "Add Boundary Frame"}
           variant="ghost"
           size="icon"
           className="border-b border-border font-bold uppercase rounded-none"
@@ -67,8 +70,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onQuickAdd}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Quick Add Infrastructure"}
+          disabled={!canCreateStructure}
+          title={!canCreateStructure ? "Auditors cannot add graph nodes" : "Quick Add Infrastructure"}
           variant="ghost"
           size="icon"
           className="rounded-none"

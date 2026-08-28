@@ -179,11 +179,12 @@ describe("useDependencyLogic", () => {
       await result.current.handleSync();
     });
 
-    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", {
+    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/topology/state", expect.objectContaining({
       dependencies: [
         { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
       ]
-    });
+    }));
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111"],
     });
@@ -213,7 +214,7 @@ describe("useDependencyLogic", () => {
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
   });
 
-  it("saves the complete graph through the canonical state endpoint idempotently", async () => {
+  it("saves the complete graph through the versioned canonical state endpoint", async () => {
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
       if (url === "/api/v1/topology/map") return Promise.resolve({ data: { servers: [], connections: [] } });
       if (url === "/api/v1/topology/state") return Promise.resolve({ data: { nodes: [], edges: [] } });
@@ -222,6 +223,8 @@ describe("useDependencyLogic", () => {
     });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith("/api/v1/topology/state", expect.anything()));
+    await act(async () => Promise.resolve());
 
     await act(async () => {
       await result.current.handleSaveNetworkState();
@@ -230,8 +233,9 @@ describe("useDependencyLogic", () => {
 
     const stateCalls = vi.mocked(apiClient.put).mock.calls.filter(([url]) => url === "/api/v1/topology/state");
     expect(stateCalls).toHaveLength(2);
-    expect(stateCalls[0][1]).toEqual(stateCalls[1][1]);
-    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", { dependencies: [] });
+    expect(stateCalls[0][1]).toEqual(expect.objectContaining({ version: 0, dependencies: [] }));
+    expect(stateCalls[1][1]).toEqual(expect.objectContaining({ version: 1, dependencies: [] }));
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
   });
 
   it("clears stale dependency identity when reconnecting an edge", async () => {

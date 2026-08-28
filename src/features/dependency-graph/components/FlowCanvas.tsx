@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType } from "react";
+import { useCallback, useMemo, type ComponentType } from "react";
 import {
   ReactFlow,
   Background,
@@ -20,6 +20,7 @@ import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
 import { RestrictedNode } from "./RestrictedNode";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -81,6 +82,18 @@ export function FlowCanvas({
   onPaneMouseUp,
   readOnly = false,
 }: FlowCanvasProps) {
+  const { selectedWorkspace } = useWorkspace();
+  const isAuditor = selectedWorkspace?.effectiveRole === "auditor";
+  const handleDeleteEdge = useCallback((edgeId: string) => {
+    onEdgesChange?.([{ id: edgeId, type: "remove" }]);
+  }, [onEdgesChange]);
+  const effectiveNodes = useMemo(() => nodes.map((node: any) => {
+    const restricted = node.type === "restricted" || node.data?.isRestricted;
+    const auditorStructure = isAuditor && (node.type === "boundaryFrame" || node.type === "groupNode");
+    return restricted || auditorStructure
+      ? { ...node, draggable: false, connectable: false, deletable: false }
+      : node;
+  }), [isAuditor, nodes]);
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
@@ -130,8 +143,8 @@ export function FlowCanvas({
       )}
 
       <ReactFlow
-        nodes={nodes}
-        edges={edges.map((edge) => ({ ...edge, data: { ...edge.data, readOnly } }))}
+        nodes={effectiveNodes}
+        edges={edges.map((edge) => ({ ...edge, data: { ...edge.data, readOnly, onDeleteEdge: handleDeleteEdge } }))}
         onNodesChange={readOnly ? undefined : onNodesChange}
         onEdgesChange={readOnly ? undefined : onEdgesChange}
         onConnect={readOnly ? undefined : onConnect}

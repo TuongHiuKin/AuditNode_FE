@@ -47,8 +47,9 @@ function DependencyManagerContent() {
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const { setHeader } = useHeader();
     const queryClient = useQueryClient();
-    const { selectedWorkspaceId } = useWorkspace();
+    const { selectedWorkspaceId, selectedWorkspace } = useWorkspace();
     const { canEditGraph } = useWorkspaceCapabilities();
+    const canCreateGraphStructure = canEditGraph && selectedWorkspace?.effectiveRole !== "auditor";
 
     const refreshData = () => {
       queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
@@ -101,7 +102,7 @@ function DependencyManagerContent() {
           availableApps={availableApps} 
           isLoading={isAppsLoading} 
           onClose={() => setIsPaletteOpen(false)}
-          readOnly={!canEditGraph}
+          readOnly={!canCreateGraphStructure}
         />
       </div>
 
@@ -143,8 +144,8 @@ function DependencyManagerContent() {
               onPaneMouseDown={onPaneMouseDown}
               onPaneMouseMove={onPaneMouseMove}
               onPaneMouseUp={onPaneMouseUp}
-              onAddGroup={addGroupBox}
-              onAddBoundaryFrame={addBoundaryFrame}
+              onAddGroup={canCreateGraphStructure ? addGroupBox : undefined}
+              onAddBoundaryFrame={canCreateGraphStructure ? addBoundaryFrame : undefined}
               onNodeDragStop={onNodeDragStop}
               readOnly={!canEditGraph}
             />

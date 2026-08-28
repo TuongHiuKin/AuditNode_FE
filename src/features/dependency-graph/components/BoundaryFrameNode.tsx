@@ -2,9 +2,12 @@ import { memo } from "react";
 import { NodeProps, NodeResizer, NodeToolbar, Position, useReactFlow } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 export const BoundaryFrameNode = memo(({ id, data, selected }: NodeProps) => {
   const { setNodes } = useReactFlow();
+  const { selectedWorkspace } = useWorkspace();
+  const canMutateFrame = selectedWorkspace?.effectiveRole !== "auditor";
 
   const handleDelete = () => {
     setNodes((nodes) => {
@@ -29,16 +32,16 @@ export const BoundaryFrameNode = memo(({ id, data, selected }: NodeProps) => {
         >
           Export
         </button>
-        <button
+        {canMutateFrame && <button
           className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest bg-destructive/10 text-destructive hover:bg-destructive/20 rounded transition-colors flex items-center gap-1"
           onClick={handleDelete}
         >
           <Trash2 size={12} />
           Xoá
-        </button>
+        </button>}
       </NodeToolbar>
 
-      <NodeResizer minWidth={300} minHeight={250} isVisible={selected} lineClassName="border-primary" />
+      <NodeResizer minWidth={300} minHeight={250} isVisible={selected && canMutateFrame} lineClassName="border-primary" />
       <div className="w-full h-full min-w-[300px] min-h-[250px] bg-primary/5 border-2 border-dashed border-primary/40 rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden backdrop-blur-sm pointer-events-none">
         <div className="custom-drag-handle bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center justify-between pointer-events-auto cursor-grab active:cursor-grabbing">
           <span className="text-[11px] font-bold text-primary tracking-widest uppercase">
