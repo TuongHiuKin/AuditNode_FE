@@ -12,6 +12,7 @@ export interface DependencyApplicationDto {
   protocol: string;
   riskLevel?: string;
   icon?: string;
+  canEdit: boolean;
 }
 
 export interface DependencyServerDto {
@@ -23,6 +24,7 @@ export interface DependencyServerDto {
   environment?: string;
   labels: Array<{ key: string; value: string }>;
   applications: DependencyApplicationDto[];
+  canEdit: boolean;
 }
 
 export interface DependencyConnectionDto {
@@ -32,6 +34,7 @@ export interface DependencyConnectionDto {
   destinationPortMappingId: string;
   destinationServerId: string;
   connectionType: string;
+  canEdit: boolean;
 }
 
 export interface DependencyMapResponse {
@@ -138,6 +141,7 @@ export function mapDependencyGraph(data: DependencyMapResponse): { nodes: GraphN
       position: { x: 100 + (serverIndex % 3) * 450, y: 100 + Math.floor(serverIndex / 3) * 350 },
       style: { width: 300, height: 200 },
       data: {
+        canEdit: server.canEdit,
         server: {
           serverId: server.serverId,
           hostname: server.hostname,
@@ -160,6 +164,7 @@ export function mapDependencyGraph(data: DependencyMapResponse): { nodes: GraphN
         parentId: serverNodeId,
         extent: "parent",
         data: {
+          canEdit: application.canEdit,
           app: {
             id: application.portMappingId,
             appId: application.appId,
@@ -195,7 +200,7 @@ export function mapDependencyGraph(data: DependencyMapResponse): { nodes: GraphN
       type: "floatingSmooth",
       animated: true,
       label: connection.connectionType,
-      data: { protocol: connection.connectionType, dependencyId: connection.id },
+      data: { protocol: connection.connectionType, dependencyId: connection.id, canEdit: connection.canEdit },
     }];
   });
 

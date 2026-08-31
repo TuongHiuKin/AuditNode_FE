@@ -10,11 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "../../../shared/api/client";
 import { SelectedItem } from "../types";
 import type { DependencyMapResponse } from "../graphContract";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
-import { getSelectedWorkspaceId, tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
 
 export function useTopologyLogic() {
-  const { selectedWorkspaceId } = useWorkspace();
+  const { view, sharedEnabled, filters } = useCatalogAccess();
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
@@ -26,8 +25,8 @@ export function useTopologyLogic() {
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
 
   const reactFlowInstance = useReactFlow();
-  const activeWorkspaceRef = useRef(selectedWorkspaceId);
-  activeWorkspaceRef.current = selectedWorkspaceId;
+  const activeScopeRef = useRef(`${view}:${filters.ownerUserId ?? "all"}`);
+  activeScopeRef.current = `${view}:${filters.ownerUserId ?? "all"}`;
 
   useEffect(() => {
     setNodes([]);
@@ -35,7 +34,7 @@ export function useTopologyLogic() {
     setSelectedItem({ type: null, id: null });
     setRightPanelData(null);
     setAppSearchQuery("");
-  }, [selectedWorkspaceId, setEdges, setNodes]);
+  }, [view, filters.ownerUserId, setEdges, setNodes]);
 
   // ── Highlighting Logic based on Search ───────────────────────────────
   useEffect(() => {
@@ -206,11 +205,11 @@ export function useTopologyLogic() {
 
   // ── Fetch graph data ──────────────────────────────────────────────────────
   const { isLoading: isGraphLoading, refetch } = useQuery({
-    queryKey: tenantQueryKey("topology-inventory-map", selectedWorkspaceId, selectedEnv, selectedDatacenter),
+    queryKey: ["catalog-graph", "topology-inventory-map", view, filters.ownerUserId ?? "all", selectedEnv, selectedDatacenter, selectedLabels],
     staleTime: 0, // Ensure data is considered stale immediately for fresh fetches
-    enabled: !!selectedWorkspaceId,
+    enabled: view === "mine" || sharedEnabled,
     queryFn: async ({ queryKey, signal }) => {
-      const [_scope, workspaceId, environment, datacenterId] = queryKey as [string, string, string, string];
+      const [, , requestView, ownerUserId, environment, datacenterId, labels] = queryKey as [string, string, string, string, string, string, string[]];
       try {
         const response = await apiClient.get<DependencyMapResponse>(
           "/api/v1/topology/map",
@@ -218,8 +217,13 @@ export function useTopologyLogic() {
             params: {
               environment: environment === "All" ? undefined : environment,
               datacenterId: datacenterId === "All" ? undefined : datacenterId,
+              ownerUserId: ownerUserId === "all" ? undefined : ownerUserId,
+              labels,
             },
             signal,
+            skipWorkspaceHeader: true,
+            catalogRequest: true,
+            catalogView: requestView as "mine" | "shared",
           }
         );
         const data = response.data;
@@ -269,7 +273,7 @@ export function useTopologyLogic() {
         });
 
         const layoutedNodes = performLayout(mappedNodes);
-        if (signal.aborted || activeWorkspaceRef.current !== workspaceId || getSelectedWorkspaceId() !== workspaceId) {
+        if (signal.aborted || activeScopeRef.current !== `${requestView}:${ownerUserId}`) {
           return { nodes: layoutedNodes, edges: mappedEdges };
         }
         setNodes(layoutedNodes);

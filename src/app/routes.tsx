@@ -14,6 +14,7 @@ const Topology = lazy(() => import("./pages/Topology")
 const DependencyManager = lazy(() => import("./pages/Dependency")
   .then((module) => ({ default: module.DependencyManager })));
 const AdminUsers = lazy(() => import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
+const PublicSharePage = lazy(() => import("../features/public-share/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
 
 function lazyRoute(element: ReactNode) {
   return (
@@ -30,6 +31,7 @@ function lazyRoute(element: ReactNode) {
 export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
   { path: "/register", Component: RegisterPage },
+  { path: "/shared", element: lazyRoute(<PublicSharePage />) },
   {
     path: "/",
     element: (

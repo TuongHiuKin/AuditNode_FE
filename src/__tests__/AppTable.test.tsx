@@ -269,6 +269,18 @@ describe("AppTable Reproduction", () => {
         appName: "Test App",
         ownerId: "OWNER-1",
         risk: "Low",
+        ownerUserId: "owner-1",
+        effectivePermission: "owner",
+        sharedLabelIds: [],
+        capabilities: {
+          canRead: true,
+          canEditProperties: true,
+          canCreate: true,
+          canDelete: true,
+          canChangeLabels: true,
+          canChangeOwner: false,
+          canManageGrants: true,
+        },
         servers: [
           {
             id: "s1",
@@ -321,6 +333,18 @@ describe("AppTable Reproduction", () => {
         appName: "Test App",
         ownerId: "OWNER-1",
         risk: "Low",
+        ownerUserId: "owner-1",
+        effectivePermission: "owner",
+        sharedLabelIds: [],
+        capabilities: {
+          canRead: true,
+          canEditProperties: true,
+          canCreate: true,
+          canDelete: true,
+          canChangeLabels: true,
+          canChangeOwner: false,
+          canManageGrants: true,
+        },
         servers: [
           {
             id: "s1",

@@ -5,6 +5,8 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDependencyLogic } from "../features/dependency-graph/hooks/useDependencyLogic";
 import apiClient from "../shared/api/client";
+import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
+import { emptyCatalogFilters } from "../shared/catalog/types";
 
 const workspaceId = "11111111-1111-4111-8111-111111111111";
 const serverId = "22222222-2222-4222-8222-222222222222";
@@ -51,12 +53,24 @@ describe("useDependencyLogic Auditor commands", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/labels") return Promise.resolve({ data: { items: [{
+        id: "99999999-9999-4999-8999-999999999999",
+        key: "scope",
+        value: "payments",
+        kind: "business",
+        isProtected: false,
+        ownerUserId: workspaceId,
+        effectivePermission: "editor",
+        sharedLabelIds: ["99999999-9999-4999-8999-999999999999"],
+        capabilities: { canRead: true, canEditProperties: true, canCreate: false, canDelete: false, canChangeLabels: false, canChangeOwner: false, canManageGrants: false },
+      }], nextCursor: null, hasNextPage: false } });
       if (url === "/api/v1/topology/map") return Promise.resolve({ data: {
         servers: [{
           id: serverId,
           serverId,
           hostname: "server",
           ipAddress: "10.0.0.1",
+          canEdit: true,
           labels: [],
           applications: [{
             id: mappingId,
@@ -66,6 +80,7 @@ describe("useDependencyLogic Auditor commands", () => {
             name: "Payments",
             port: 443,
             protocol: "HTTPS",
+            canEdit: true,
           }, {
             id: targetMappingId,
             appId: "77777777-7777-4777-8777-777777777777",
@@ -74,6 +89,7 @@ describe("useDependencyLogic Auditor commands", () => {
             name: "Ledger",
             port: 8443,
             protocol: "HTTPS",
+            canEdit: true,
           }],
         }],
         connections: [],
@@ -130,7 +146,9 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <ReactFlowProvider>{children}</ReactFlowProvider>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+          <ReactFlowProvider>{children}</ReactFlowProvider>
+        </CatalogAccessProvider>
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
@@ -145,16 +163,20 @@ describe("useDependencyLogic Auditor commands", () => {
     await act(async () => result.current.handleSaveNetworkState());
     await act(async () => result.current.handleSync());
 
-    expect(apiClient.post).toHaveBeenCalledWith("/api/v1/topology/commands", {
-      version: 7,
-      operations: [expect.objectContaining({
-        type: "moveNode",
-        nodeId: mappingId,
-        parentId: serverId,
-        x: 40,
-        y: 50,
-      })],
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/api/v1/topology/commands",
+      {
+        version: 7,
+        operations: [expect.objectContaining({
+          type: "moveNode",
+          nodeId: mappingId,
+          parentId: serverId,
+          x: 40,
+          y: 50,
+        })],
+      },
+      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "shared" }),
+    );
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/topology/state", expect.anything());
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
   });
@@ -163,7 +185,9 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <ReactFlowProvider>{children}</ReactFlowProvider>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+          <ReactFlowProvider>{children}</ReactFlowProvider>
+        </CatalogAccessProvider>
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
@@ -172,17 +196,20 @@ describe("useDependencyLogic Auditor commands", () => {
     act(() => result.current.onEdgesChange([{ type: "remove", id: edgeId }]));
     await act(async () => result.current.handleSaveNetworkState());
 
-    expect(apiClient.post).toHaveBeenCalledWith("/api/v1/topology/commands", {
-      version: 7,
-      operations: [{ type: "deleteEdge", edgeId }],
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/api/v1/topology/commands",
+      { version: 7, operations: [{ type: "deleteEdge", edgeId }] },
+      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "shared" }),
+    );
   });
 
   it("does not turn XYFlow node measurement into an Auditor mutation", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <ReactFlowProvider>{children}</ReactFlowProvider>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+          <ReactFlowProvider>{children}</ReactFlowProvider>
+        </CatalogAccessProvider>
       </QueryClientProvider>
     );
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
@@ -197,5 +224,26 @@ describe("useDependencyLogic Auditor commands", () => {
     await act(async () => result.current.handleSaveNetworkState());
 
     expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it("preserves per-resource Editor capabilities when a label layout is active", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+          <ReactFlowProvider>{children}</ReactFlowProvider>
+        </CatalogAccessProvider>
+      </QueryClientProvider>
+    );
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+    await waitFor(() => expect(result.current.canEditGraph).toBe(true));
+
+    act(() => result.current.setSelectedLabels(["scope:payments"]));
+
+    await waitFor(() => {
+      expect(result.current.nodes.some((node) => node.type === "boundaryFrame")).toBe(true);
+      expect(result.current.nodes.find((node) => node.id === mappingId)?.data.canEdit).toBe(true);
+      expect(result.current.canEditGraph).toBe(true);
+    });
   });
 });

@@ -9,6 +9,7 @@ import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exp
 import apiClient from "../../shared/api/client";
 import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
 import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
+import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
 import type { ApplicationResponse } from "../../shared/api/applicationTypes";
 import {
   buildRepeatedIdParams,
@@ -79,7 +80,10 @@ const APP_COLUMNS: ColumnOption[] = [
 
 export function InventoryLayout() {
   const { setHeader } = useHeader();
-  const { canWriteInventory: canEditInventory, canImport } = useWorkspaceCapabilities();
+  const legacyCapabilities = useWorkspaceCapabilities();
+  const { view } = useCatalogAccess();
+  const canEditInventory = view === "mine" && legacyCapabilities.canWriteInventory;
+  const canImport = view === "mine" && legacyCapabilities.canImport;
 
   const queryClient = useQueryClient();
   const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
@@ -123,6 +127,7 @@ export function InventoryLayout() {
   }, [location.pathname, isSelectionMode]);
 
   const onRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["catalog"] });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
@@ -181,7 +186,10 @@ export function InventoryLayout() {
       // Step 3: API Fetch (Bulk fetch with specific IDs and /export endpoint)
       const baseEndpoint = currentTab.type === "servers" ? "/api/v1/servers" : "/api/v1/applications";
       const response = await apiClient.get<unknown>(`${baseEndpoint}/export`, {
-        params: buildRepeatedIdParams(selectedIds),
+        params: { ...buildRepeatedIdParams(selectedIds), view },
+        skipWorkspaceHeader: true,
+        catalogRequest: true,
+        catalogView: view,
       });
       const mappedRows = currentTab.type === "servers"
         ? mapServerExportRows(unwrapExportList<ServerExportRecord>(response.data))
@@ -191,7 +199,7 @@ export function InventoryLayout() {
 
       // Step 5: File Generation
       const date = new Date().toISOString().split("T")[0];
-      const workspaceName = workspaceExportName(selectedWorkspace, selectedWorkspaceId)
+      const workspaceName = (view === "mine" ? "My_Catalog" : "Shared_Catalog")
         .replace(/[^a-zA-Z0-9_-]+/g, "_");
       const typeLabel = currentTab.type === "servers" ? "Servers" : "Applications";
       const baseFileName = `${workspaceName}_${typeLabel}_AuditExport_${date}`;

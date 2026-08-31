@@ -1,11 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SubToolbar } from "../features/dependency-graph/components/SubToolbar";
-import * as capabilityHook from "../shared/workspace/useWorkspaceCapabilities";
-
-vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({
-  useWorkspaceCapabilities: vi.fn(),
-}));
 
 describe("SubToolbar UI Action Gating", () => {
   beforeEach(() => {
@@ -13,11 +8,9 @@ describe("SubToolbar UI Action Gating", () => {
   });
 
   it("enables Auto-Map and Sync buttons when canEditInventory is true", () => {
-    vi.mocked(capabilityHook.useWorkspaceCapabilities).mockReturnValue({ canEditGraph: true } as ReturnType<typeof capabilityHook.useWorkspaceCapabilities>);
-
     const onAutoMap = vi.fn();
     const onSync = vi.fn();
-    render(<SubToolbar onAutoMap={onAutoMap} onSync={onSync} />);
+    render(<SubToolbar onAutoMap={onAutoMap} onSync={onSync} canEditGraph canAddNodes />);
 
     const autoMapBtn = screen.getByText("Auto-Map from DB").closest("button");
     const syncBtn = screen.getByText("Save Network State").closest("button");
@@ -30,11 +23,9 @@ describe("SubToolbar UI Action Gating", () => {
   });
 
   it("disables Auto-Map and Sync buttons with tooltip when user is Viewer (canEditInventory: false)", () => {
-    vi.mocked(capabilityHook.useWorkspaceCapabilities).mockReturnValue({ canEditGraph: false } as ReturnType<typeof capabilityHook.useWorkspaceCapabilities>);
-
     const onAutoMap = vi.fn();
     const onSync = vi.fn();
-    render(<SubToolbar onAutoMap={onAutoMap} onSync={onSync} />);
+    render(<SubToolbar onAutoMap={onAutoMap} onSync={onSync} canEditGraph={false} canAddNodes={false} />);
 
     const autoMapBtn = screen.getByText("Auto-Map from DB").closest("button");
     const syncBtn = screen.getByText("Save Network State").closest("button");

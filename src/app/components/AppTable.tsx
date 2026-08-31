@@ -2,18 +2,16 @@ import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { Server, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { ActionButtons } from "./ActionButtons";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { LabelBadge } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
-import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
-import { ApplicationService } from "../../services/applicationService";
 import type { ApplicationResponse } from "../../shared/api/applicationTypes";
+import { useCatalogPages } from "../../features/catalog/api/useCatalogPages";
+import type { CatalogApplication } from "../../features/catalog/api/catalogApi";
 
-type AppRow = ApplicationResponse & {
+type AppRow = ApplicationResponse & CatalogApplication & {
   description?: string;
 };
 
@@ -65,21 +63,9 @@ export function AppTable({
   const [riskFilter, setRiskFilter] = useState("All");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { selectedWorkspaceId } = useWorkspace();
-
-  const { data: apps = [], isLoading } = useQuery({
-    queryKey: tenantQueryKey("applications", selectedWorkspaceId, selectedLabelKeys),
-    queryFn: async () => {
-      const rawData = await ApplicationService.getApplications(
-        selectedLabelKeys.length === 1 ? { labelValue: selectedLabelKeys[0] } : {},
-      );
-      return rawData.map((app) => ({
-        ...app,
-        description: app.techStack,
-      }));
-    },
-    enabled: !!selectedWorkspaceId,
-  });
+  const catalogApps = useCatalogPages("applications");
+  const apps = catalogApps.items.map((app) => ({ ...app, description: app.techStack })) as AppRow[];
+  const { isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = catalogApps;
 
   const filteredApps = useMemo(() => {
     if (filterId) {
@@ -244,6 +230,7 @@ export function AppTable({
               )}
             </tbody>
           </table>
+          {hasNextPage && <div className="flex justify-center border-t border-border p-3"><button className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>{isFetchingNextPage ? "Loading…" : "Load more"}</button></div>}
         </div>
       )}
     </div>
@@ -295,6 +282,7 @@ function AppRowItem({
         <td className="px-6 py-4 font-medium text-sm text-foreground/90">
           <div>{app.appName}</div>
           {app.description && <div className="text-[10px] text-muted-foreground/60 font-normal mt-0.5">{app.description}</div>}
+          <div className="mt-1 text-[10px] text-muted-foreground">{app.effectivePermission === "owner" ? "Owned by you" : `Shared by ${app.ownerUserId} · ${app.effectivePermission}`}</div>
         </td>
         <td className="px-6 py-4 text-sm text-muted-foreground/80">{app.ownerTeam}</td>
         <td className="px-6 py-4">
@@ -309,6 +297,7 @@ function AppRowItem({
         </td>
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons 
+            capabilities={app.capabilities}
             onDepClick={() => onDepClick(app.id)}
             onEditClick={() => onEditClick(app.id!, "APP")}
             onDeleteClick={() => onDeleteClick(app.id!, app.appName || "")}

@@ -20,6 +20,15 @@ vi.mock("sonner", () => ({
 }));
 
 describe("EditEntityDrawer", () => {
+  const ownerCapabilities = {
+    canRead: true,
+    canEditProperties: true,
+    canCreate: true,
+    canDelete: true,
+    canChangeLabels: true,
+    canChangeOwner: false,
+    canManageGrants: true,
+  };
   const mockServerData = {
     id: "srv-123",
     hostname: "test-server",
@@ -28,6 +37,7 @@ describe("EditEntityDrawer", () => {
     environment: "Production",
     status: "Active",
     datacenterId: "dc-1",
+    capabilities: ownerCapabilities,
   };
 
   const mockAppData = {
@@ -40,6 +50,7 @@ describe("EditEntityDrawer", () => {
     icon: "box",
     techStack: ".NET",
     labels: [{ key: "ENV", value: "PROD" }],
+    capabilities: ownerCapabilities,
     servers: [
       { portMappingId: "mapping-1", id: "srv-999", hostname: "old-server", ipAddress: "10.0.0.9", portNumber: 8080, protocol: "HTTP" },
       { portMappingId: "mapping-2", id: "srv-888", hostname: "second-server", ipAddress: "10.0.0.8", portNumber: 8181, protocol: "HTTP" },

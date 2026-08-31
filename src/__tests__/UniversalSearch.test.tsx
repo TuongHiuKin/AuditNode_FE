@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import UniversalSearch from '../app/components/UniversalSearch';
 import apiClient from '../shared/api/client';
-import { setSelectedWorkspaceId } from '../shared/workspace/workspaceStore';
+import { CatalogAccessProvider, useCatalogAccess } from '../shared/catalog/CatalogAccessContext';
 
 // Mock the apiClient
 vi.mock('../shared/api/client', () => ({
@@ -25,14 +25,16 @@ const UniversalSearchWrapper = ({ onSelectResult }: any) => {
   );
 };
 
+const ScopeSwitch = () => {
+  const catalog = useCatalogAccess();
+  return <button onClick={() => catalog.selectView('shared')}>Shared scope</button>;
+};
+
 describe('UniversalSearch Component', () => {
-  const workspaceA = '11111111-1111-4111-8111-111111111111';
-  const workspaceB = '22222222-2222-4222-8222-222222222222';
   const mockOnSelectResult = vi.fn();
 
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset();
-    setSelectedWorkspaceId(workspaceA, { persist: false });
   });
 
   it('renders the search input', () => {
@@ -56,10 +58,12 @@ describe('UniversalSearch Component', () => {
 
     // Wait for debounce (500ms)
     await waitFor(() => {
-      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/search', {
-        params: { keyword: 'alpha' },
+      expect(apiClient.get).toHaveBeenCalledWith('/api/v1/search', expect.objectContaining({
+        params: expect.objectContaining({ q: 'alpha', view: 'mine', limit: 25 }),
         signal: expect.any(AbortSignal),
-      });
+        skipWorkspaceHeader: true,
+        catalogRequest: true,
+      }));
     }, { timeout: 1000 });
 
     // Check if dropdown is visible
@@ -116,7 +120,7 @@ describe('UniversalSearch Component', () => {
     });
   });
 
-  it('clears search and ignores a late result from the previous workspace', async () => {
+  it('clears search and ignores a late result from the previous catalog view', async () => {
     let resolveA!: (value: { data: SearchResultFixture[] }) => void;
     let resolveB!: (value: { data: SearchResultFixture[] }) => void;
     type SearchResultFixture = {
@@ -129,20 +133,20 @@ describe('UniversalSearch Component', () => {
     const requestA = new Promise<{ data: SearchResultFixture[] }>((resolve) => { resolveA = resolve; });
     const requestB = new Promise<{ data: SearchResultFixture[] }>((resolve) => { resolveB = resolve; });
     vi.mocked(apiClient.get).mockImplementation((_url, config) => {
-      const keyword = config?.params?.keyword;
+      const keyword = config?.params?.q;
       if (keyword === 'alpha') return requestA;
       if (keyword === 'beta') return requestB;
       return Promise.resolve({ data: [] });
     });
-    render(<UniversalSearchWrapper onSelectResult={mockOnSelectResult} />);
+    render(<CatalogAccessProvider><ScopeSwitch /><UniversalSearchWrapper onSelectResult={mockOnSelectResult} /></CatalogAccessProvider>);
     const input = screen.getByPlaceholderText(/search servers & apps/i) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'alpha' } });
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(1), { timeout: 1000 });
 
-    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    fireEvent.click(screen.getByText('Shared scope'));
     await waitFor(() => expect(input.value).toBe(''));
     fireEvent.change(input, { target: { value: 'beta' } });
-    await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.some(([, config]) => config?.params?.keyword === 'beta')).toBe(true), { timeout: 1000 });
+    await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.some(([, config]) => config?.params?.q === 'beta' && config?.params?.view === 'shared')).toBe(true), { timeout: 1000 });
     await act(async () => {
       resolveB({ data: [{ id: 'b', type: 'SERVER', title: 'Workspace B', subtitle: '', matchReason: '' }] });
     });

@@ -33,6 +33,7 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
   const { selectedWorkspaceId } = useWorkspace();
 
   const refreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ["catalog"] });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
     queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
@@ -97,10 +98,12 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
         entityType={editEntity.type}
         onClose={() => setEditEntity({ id: null, type: null })}
         onApplicationsUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["catalog"] });
           queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
           queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
         }}
         onServersUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ["catalog"] });
           queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
           queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
         }}

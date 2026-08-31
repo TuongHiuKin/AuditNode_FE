@@ -7,6 +7,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
 import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 import { toTopologyState } from "../features/dependency-graph/graphContract";
+import { CatalogAccessProvider, useCatalogAccess } from "../shared/catalog/CatalogAccessContext";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -48,6 +49,13 @@ describe("useDependencyLogic", () => {
   const workspaceA = "11111111-1111-4111-8111-111111111111";
   const workspaceB = "22222222-2222-4222-8222-222222222222";
   let queryClient: QueryClient;
+  let setCatalogOwner: (ownerUserId: string) => void = () => undefined;
+
+  function CaptureCatalogControls() {
+    const { setFilters } = useCatalogAccess();
+    setCatalogOwner = (ownerUserId) => setFilters({ ownerUserId });
+    return null;
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,11 +65,12 @@ describe("useDependencyLogic", () => {
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      
+      <CatalogAccessProvider>
+        <CaptureCatalogControls />
         <ReactFlowProvider>
           {children}
         </ReactFlowProvider>
-      
+      </CatalogAccessProvider>
     </QueryClientProvider>
   );
 
@@ -165,7 +174,7 @@ describe("useDependencyLogic", () => {
 
     expect(result.current.selectedEnv).toBe("Production");
     expect(invalidateSpy).toHaveBeenCalledWith({ 
-      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111", "Production", "All", []]
+      queryKey: ["catalog-graph", "dependency-map", "mine:all", "Production", "All", []]
     });
   });
 
@@ -179,14 +188,18 @@ describe("useDependencyLogic", () => {
       await result.current.handleSync();
     });
 
-    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/topology/state", expect.objectContaining({
-      dependencies: [
-        { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
-      ]
-    }));
+    expect(apiClient.put).toHaveBeenCalledWith(
+      "/api/v1/topology/state",
+      expect.objectContaining({
+        dependencies: [
+          { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
+        ]
+      }),
+      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "mine" }),
+    );
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111"],
+      queryKey: ["catalog-graph", "dependency-map"],
     });
   });
 
@@ -280,7 +293,7 @@ describe("useDependencyLogic", () => {
     });
   });
 
-  it("does not render a late workspace A graph response after switching to workspace B", async () => {
+  it("does not render a late owner A graph response after switching to owner B", async () => {
     let resolveA!: (value: { data: unknown }) => void;
     let resolveB!: (value: { data: unknown }) => void;
     const requestA = new Promise<{ data: unknown }>((resolve) => { resolveA = resolve; });
@@ -298,7 +311,7 @@ describe("useDependencyLogic", () => {
 
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
     await waitFor(() => expect(mapCalls).toBe(1));
-    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    act(() => { setCatalogOwner(workspaceB); });
     await waitFor(() => expect(mapCalls).toBe(2));
 
     await act(async () => { resolveB({ data: graph("server-b", "Workspace B") }); });

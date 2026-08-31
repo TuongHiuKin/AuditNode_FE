@@ -19,8 +19,7 @@ import apiClient, { type Schemas } from "../../../shared/api/client";
 import { type AppNodeData, PaletteApp, type ServerNodeData, SelectedItem } from "../types";
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
-import { getSelectedWorkspaceId, tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
 import { exportToExcel } from "../../../shared/utils/exportUtils";
 import { getErrorMessage } from "../../../shared/utils/errorUtils";
 import {
@@ -51,15 +50,21 @@ const emptyPendingChanges = (): PendingTopologyChanges => ({
 });
 
 export function useDependencyLogic() {
-  const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
-  const isAuditor = selectedWorkspace?.effectiveRole === "auditor";
+  const { view, sharedEnabled, filters } = useCatalogAccess();
+  const graphScopeKey = `${view}:${filters.ownerUserId ?? "all"}`;
+  const canCreateGraphStructure = view === "mine";
   const topologyVersionRef = useRef(0);
   const pendingChangesRef = useRef<PendingTopologyChanges>(emptyPendingChanges());
   const [nodes, setNodes] = useState<Node[]>([]);
+  const canEditGraph = view === "mine" || nodes.some((node) => node.data?.canEdit === true);
+  const isAuditor = view === "shared" && canEditGraph;
   const onNodesChange = useCallback(
     (changes: NodeChange<Node>[]) => {
+      const allowedChanges = view === "shared"
+        ? changes.filter((change) => "id" in change && nodes.some((node) => node.id === change.id && node.data?.canEdit === true))
+        : changes;
       if (isAuditor) {
-        changes.forEach((change) => {
+        allowedChanges.forEach((change) => {
           if (change.type === "position" || (change.type === "dimensions" && change.resizing === true)) {
             (pendingChangesRef.current.changedNodeIds as Set<string>).add(change.id);
           } else if (change.type === "remove") {
@@ -68,22 +73,25 @@ export function useDependencyLogic() {
           }
         });
       }
-      setNodes((current) => applyNodeChanges(changes, current));
+      setNodes((current) => applyNodeChanges(allowedChanges, current));
     },
-    [isAuditor]
+    [isAuditor, nodes, view]
   );
   const [edges, setEdges] = useEdgesState<Edge>([]);
   const onEdgesChange = useCallback((changes: EdgeChange<Edge>[]) => {
+    const allowedChanges = view === "shared"
+      ? changes.filter((change) => "id" in change && edges.some((edge) => edge.id === change.id && edge.data?.canEdit === true))
+      : changes;
     if (isAuditor) {
-      changes.forEach((change) => {
+      allowedChanges.forEach((change) => {
         if (change.type === "remove") {
           (pendingChangesRef.current.deletedEdgeIds as Set<string>).add(change.id);
           (pendingChangesRef.current.changedEdgeIds as Set<string>).delete(change.id);
         }
       });
     }
-    setEdges((current) => applyEdgeChanges(changes, current));
-  }, [isAuditor, setEdges]);
+    setEdges((current) => applyEdgeChanges(allowedChanges, current));
+  }, [edges, isAuditor, setEdges, view]);
   const { availableApps, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
@@ -98,10 +106,10 @@ export function useDependencyLogic() {
   const queryClient = useQueryClient();
 
   const isExplicitFetchRef = useRef(false);
-  const activeWorkspaceRef = useRef(selectedWorkspaceId);
+  const activeWorkspaceRef = useRef(graphScopeKey);
 
   useEffect(() => {
-    activeWorkspaceRef.current = selectedWorkspaceId;
+    activeWorkspaceRef.current = graphScopeKey;
     topologyVersionRef.current = 0;
     pendingChangesRef.current = emptyPendingChanges();
     setNodes([]);
@@ -111,7 +119,7 @@ export function useDependencyLogic() {
     setSelectedEnv("All");
     setSelectedDatacenter("All");
     setSelectedLabels([]);
-  }, [selectedWorkspaceId, setEdges]);
+  }, [graphScopeKey, setEdges]);
 
   const isNarrowedGraph = selectedEnv !== "All"
     || selectedDatacenter !== "All"
@@ -160,7 +168,7 @@ export function useDependencyLogic() {
         "Port": targetApp?.portNumber || edge.data?.protocol || "Any",
         "Protocol": edge.data?.protocol || "TCP",
         "Port Mapping ID": targetApp?.portMappingId || "N/A",
-        "Workspace": selectedWorkspace?.name || selectedWorkspaceId || "workspace",
+        "Catalog owner": filters.ownerUserId || (view === "mine" ? "Mine" : "Shared"),
       };
     });
 
@@ -171,7 +179,7 @@ export function useDependencyLogic() {
 
     const date = new Date().toISOString().split('T')[0];
     const cleanGroupLabel = groupLabel.replace(/\s+/g, '_');
-    const workspaceName = (selectedWorkspace?.name || selectedWorkspaceId || "workspace")
+    const workspaceName = (filters.ownerUserId || `${view}-catalog`)
       .replace(/[^a-zA-Z0-9_-]+/g, "_");
     try {
       await exportToExcel(auditData, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}`);
@@ -179,7 +187,7 @@ export function useDependencyLogic() {
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Failed to export audit matrix."));
     }
-  }, [edges, nodes, selectedWorkspace, selectedWorkspaceId]);
+  }, [edges, nodes, filters.ownerUserId, view]);
 
   const checkEmptyFrame = useCallback((type: 'groupNode' | 'boundaryFrame') => {
     const hasEmpty = nodes.some(n => {
@@ -272,6 +280,10 @@ export function useDependencyLogic() {
   // ── Sync to Database ─────────────────────────────────────────────────────
   const handleSync = useCallback(async () => {
     if (!requireCompleteGraph()) return;
+    if (!canEditGraph) {
+      toast.error("You only have Viewer access to this graph.");
+      return;
+    }
     if (isAuditor) {
       toast.info("Auditor changes must be saved as scoped graph commands.");
       return;
@@ -285,31 +297,30 @@ export function useDependencyLogic() {
         ...buildDependencySyncRequest(currentNodes, currentEdges),
         version: topologyVersionRef.current,
       };
-      await apiClient.put("/api/v1/topology/state", request);
+      await apiClient.put("/api/v1/topology/state", request, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
       topologyVersionRef.current += 1;
       
       toast.success("Network state synchronized successfully");
       
       // Reset edge animations/colors to "saved" state by refetching
-      await queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
+      await queryClient.invalidateQueries({ queryKey: ["catalog-graph", "dependency-map"] });
     } catch (error: unknown) {
       console.error("Sync failed:", error);
       toast.error(getErrorMessage(error, "Failed to synchronize network state"));
     } finally {
       setIsSyncing(false);
     }
-  }, [isAuditor, reactFlowInstance, queryClient, requireCompleteGraph, selectedWorkspaceId]);
+  }, [canEditGraph, isAuditor, reactFlowInstance, queryClient, requireCompleteGraph, view]);
 
   // ── Fetch all servers to determine mapping status ────────────────────────
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
-    queryKey: tenantQueryKey("all-servers", selectedWorkspaceId),
+    queryKey: ["catalog-graph", "all-servers", view, filters.ownerUserId ?? "all"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["ServerResponseDto"][]>("/api/v1/servers");
-      const rawResponse = response as any;
-      const data = Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      const response = await apiClient.get<{ items: Schemas["ServerResponseDto"][] }>("/api/v1/servers", { params: { view, limit: 100, ownerUserId: filters.ownerUserId || undefined }, skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+      const data = response.data.items ?? [];
       return data as Schemas["ServerResponseDto"][];
     },
-    enabled: !!selectedWorkspaceId,
+    enabled: view === "mine" || sharedEnabled,
   });
 
   const unmappedServers = allServers.filter(
@@ -443,8 +454,12 @@ export function useDependencyLogic() {
             environment: env === "All" ? undefined : env,
             datacenterId: dc === "All" ? undefined : dc,
             labels: labels.length > 0 ? labels : undefined,
+            ownerUserId: filters.ownerUserId || undefined,
           },
           signal,
+          skipWorkspaceHeader: true,
+          catalogRequest: true,
+          catalogView: view,
         }
       );
       const data = response.data;
@@ -456,7 +471,7 @@ export function useDependencyLogic() {
       // Restore canonical state only when inventory labels are not filtering the graph.
       if (!labels || labels.length === 0) {
         try {
-          const framesResponse = await apiClient.get<TopologyState>("/api/v1/topology/state", { signal });
+          const framesResponse = await apiClient.get<TopologyState>("/api/v1/topology/state", { signal, params: { ownerUserId: filters.ownerUserId || undefined }, skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
           const candidateState = framesResponse.data;
           if (!Array.isArray(candidateState.nodes) || !Array.isArray(candidateState.edges)) {
             throw new Error("Invalid topology state response.");
@@ -546,6 +561,7 @@ export function useDependencyLogic() {
               extent: "parent",
               style: { width: 300, height: 200 },
               data: {
+                canEdit: srv.canEdit,
                 server: {
                   serverId: serverNodeId,
                   hostname: srv.hostname,
@@ -570,6 +586,7 @@ export function useDependencyLogic() {
                 parentId: serverNodeId,
                 extent: "parent",
                 data: {
+                  canEdit: app.canEdit,
                   app: {
                     id: deploymentId,
                     appId: app.appId || app.id,
@@ -599,7 +616,7 @@ export function useDependencyLogic() {
             animated: true,
             markerEnd: edgeMarker,
             style: edgeStyle,
-            data: { protocol: "TCP" },
+            data: { protocol: "TCP", canEdit: conn.canEdit },
           });
         });
       } else {
@@ -624,6 +641,7 @@ export function useDependencyLogic() {
             },
             style: { width: 300, height: 200 },
             data: {
+              canEdit: srv.canEdit,
               server: {
                 serverId: srv.serverId,
                 hostname: srv.hostname,
@@ -646,6 +664,7 @@ export function useDependencyLogic() {
               parentId: serverNodeId,
               extent: "parent",
               data: {
+                canEdit: app.canEdit,
                 app: {
                   id: app.portMappingId,
                   appId: app.appId,
@@ -684,21 +703,34 @@ export function useDependencyLogic() {
       }));
       const liveGraph = { nodes: mappedNodes, edges: exactEdges };
       const restored = savedTopologyState ? restoreTopologyState(savedTopologyState, liveGraph) : liveGraph;
-      return { ...restored, version: savedTopologyState?.version ?? 0 };
+      const editableNodeIds = new Set(restored.nodes
+        .filter((node) => node.data?.canEdit === true)
+        .map((node) => node.id));
+      return {
+        ...restored,
+        edges: restored.edges.map((edge) => ({
+          ...edge,
+          data: {
+            ...edge.data,
+            canEdit: view === "mine" || (editableNodeIds.has(edge.source) && editableNodeIds.has(edge.target)),
+          },
+        })),
+        version: savedTopologyState?.version ?? 0,
+      };
     } catch (err) {
       console.error("Failed to fetch dependency map", err);
       throw err;
     }
-  }, []);
+  }, [filters.ownerUserId, view]);
 
   // ── Fetch graph data with useQuery ────────────────────────────────────────
   const { isLoading: isGraphLoading } = useQuery({
-    queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, selectedEnv, selectedDatacenter, selectedLabels),
+    queryKey: ["catalog-graph", "dependency-map", graphScopeKey, selectedEnv, selectedDatacenter, selectedLabels],
     queryFn: async ({ queryKey, signal }) => {
-      const [_key, workspaceId, env, dc, labels] = queryKey as [string, string, string, string, string[]];
+      const [, , requestScope, env, dc, labels] = queryKey as [string, string, string, string, string, string[]];
       const result = await fetchAndMapGraph(env, dc, labels, signal);
 
-      if (signal.aborted || activeWorkspaceRef.current !== workspaceId || getSelectedWorkspaceId() !== workspaceId) {
+      if (signal.aborted || activeWorkspaceRef.current !== requestScope) {
         return result;
       }
       setNodes(result.nodes);
@@ -708,7 +740,7 @@ export function useDependencyLogic() {
 
       return result;
     },
-    enabled: !!selectedWorkspaceId,
+    enabled: view === "mine" || sharedEnabled,
   });
 
   // Explicitly derived loading flag that clears once data is present or queries finish
@@ -719,6 +751,11 @@ export function useDependencyLogic() {
   // ── Connect two nodes ──────────────────────────────────────────────────────
   const onConnect = useCallback(
     (params: Connection) => {
+      if (view === "shared" && [params.source, params.target].some((id) =>
+        !nodes.some((node) => node.id === id && node.data?.canEdit === true))) {
+        toast.error("Both applications must be inside your Editor grant.");
+        return;
+      }
       const validationError = validateConnection(params, nodes, edges);
       if (validationError) {
         toast.error(validationError);
@@ -730,17 +767,22 @@ export function useDependencyLogic() {
         markerEnd: edgeMarker,
         style: edgeStyle,
         label: "TCP",
-        data: { protocol: "TCP" },
+        data: { protocol: "TCP", canEdit: true },
       };
       if (isAuditor) (pendingChangesRef.current.createdEdgeIds as Set<string>).add(newEdge.id);
       setEdges((eds) => addEdge(newEdge, eds));
     },
-    [edges, isAuditor, nodes, setEdges],
+    [edges, isAuditor, nodes, setEdges, view],
   );
 
   // ── Reconnect an edge ──────────────────────────────────────────────────────
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
+      if (view === "shared" && (oldEdge.data?.canEdit !== true || [newConnection.source, newConnection.target].some((id) =>
+        !nodes.some((node) => node.id === id && node.data?.canEdit === true)))) {
+        toast.error("This connection is outside your Editor grant.");
+        return;
+      }
       const validationError = validateConnection(
         newConnection,
         nodes,
@@ -761,7 +803,7 @@ export function useDependencyLogic() {
       }));
       if (isAuditor) (pendingChangesRef.current.changedEdgeIds as Set<string>).add(oldEdge.id);
     },
-    [edges, isAuditor, nodes, setEdges]
+    [edges, isAuditor, nodes, setEdges, view]
   );
 
   // ── Drag-over canvas ───────────────────────────────────────────────────────
@@ -907,16 +949,20 @@ export function useDependencyLogic() {
     // We explicitly invalidate the query with the specific key we want to fetch
     // This ensures React Query starts the fetch for the correct environment immediately
     await queryClient.invalidateQueries({ 
-      queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, targetEnv, selectedDatacenter, selectedLabels)
+      queryKey: ["catalog-graph", "dependency-map", graphScopeKey, targetEnv, selectedDatacenter, selectedLabels]
     });
 
     setTimeout(() => {
       reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
       isExplicitFetchRef.current = false;
     }, 500);
-  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter, selectedLabels, selectedWorkspaceId]);
+  }, [queryClient, reactFlowInstance, selectedEnv, selectedDatacenter, selectedLabels, graphScopeKey]);
   const handleSaveNetworkState = useCallback(async () => {
     if (!requireCompleteGraph()) return;
+    if (!canEditGraph) {
+      toast.error("You only have Viewer access to this graph.");
+      return;
+    }
     setIsSyncing(true);
     try {
       if (isAuditor) {
@@ -930,11 +976,11 @@ export function useDependencyLogic() {
           toast.info("No scoped graph changes to save.");
           return;
         }
-        const response = await apiClient.post<{ version: number }>("/api/v1/topology/commands", batch);
+        const response = await apiClient.post<{ version: number }>("/api/v1/topology/commands", batch, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
         topologyVersionRef.current = response.data.version;
         pendingChangesRef.current = emptyPendingChanges();
         await queryClient.invalidateQueries({
-          queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, selectedEnv, selectedDatacenter, selectedLabels),
+          queryKey: ["catalog-graph", "dependency-map", graphScopeKey, selectedEnv, selectedDatacenter, selectedLabels],
         });
       } else {
         const request: SaveTopologyState = {
@@ -942,7 +988,7 @@ export function useDependencyLogic() {
           ...buildDependencySyncRequest(nodes, edges),
           version: topologyVersionRef.current,
         };
-        await apiClient.put("/api/v1/topology/state", request);
+        await apiClient.put("/api/v1/topology/state", request, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
         topologyVersionRef.current += 1;
       }
       toast.success("Network state saved successfully!");
@@ -951,7 +997,7 @@ export function useDependencyLogic() {
       if (error?.response?.status === 409) {
         pendingChangesRef.current = emptyPendingChanges();
         await queryClient.invalidateQueries({
-          queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId, selectedEnv, selectedDatacenter, selectedLabels),
+          queryKey: ["catalog-graph", "dependency-map", graphScopeKey, selectedEnv, selectedDatacenter, selectedLabels],
         });
         toast.error("The graph changed. Latest state was reloaded; please retry your edit.");
       } else {
@@ -960,7 +1006,7 @@ export function useDependencyLogic() {
     } finally {
       setIsSyncing(false);
     }
-  }, [edges, isAuditor, nodes, queryClient, requireCompleteGraph, selectedDatacenter, selectedEnv, selectedLabels, selectedWorkspaceId]);
+  }, [canEditGraph, edges, isAuditor, nodes, queryClient, requireCompleteGraph, selectedDatacenter, selectedEnv, selectedLabels, graphScopeKey, view]);
 
   return {
     nodes,
@@ -1002,6 +1048,8 @@ export function useDependencyLogic() {
     addGroupBox,
     addBoundaryFrame,
     onNodeDragStop,
+    canEditGraph,
+    canCreateGraphStructure,
   };
 }
 

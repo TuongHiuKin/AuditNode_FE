@@ -13,7 +13,6 @@ import { RegisterModal } from "../components/RegisterModal";
 import { useHeader } from "../hooks/useHeader";
 import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
 import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
-import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 
 function DependencyManagerContent() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,15 +40,15 @@ function DependencyManagerContent() {
     addGroupBox,
     addBoundaryFrame,
     onNodeDragStop,
+    canEditGraph,
+    canCreateGraphStructure,
     } = useDependencyLogic();
 
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const { setHeader } = useHeader();
     const queryClient = useQueryClient();
-    const { selectedWorkspaceId, selectedWorkspace } = useWorkspace();
-    const { canEditGraph } = useWorkspaceCapabilities();
-    const canCreateGraphStructure = canEditGraph && selectedWorkspace?.effectiveRole !== "auditor";
+    const { selectedWorkspaceId } = useWorkspace();
 
     const refreshData = () => {
       queryClient.invalidateQueries({ queryKey: tenantQueryKey("dependency-map", selectedWorkspaceId) });
@@ -125,6 +124,8 @@ function DependencyManagerContent() {
             isSyncing={isSyncing}
             onTogglePalette={() => setIsPaletteOpen(!isPaletteOpen)}
             isPaletteOpen={isPaletteOpen}
+            canEditGraph={canEditGraph}
+            canAddNodes={canCreateGraphStructure}
           />
         </div>
 
@@ -148,6 +149,7 @@ function DependencyManagerContent() {
               onAddBoundaryFrame={canCreateGraphStructure ? addBoundaryFrame : undefined}
               onNodeDragStop={onNodeDragStop}
               readOnly={!canEditGraph}
+              canEditStructure={canCreateGraphStructure}
             />
           </div>
 

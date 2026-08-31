@@ -1,14 +1,16 @@
 import { Edit2, Network, Trash2 } from "lucide-react";
-import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
+import type { CatalogCapabilities } from "../../shared/catalog/types";
 
 interface ActionButtonsProps {
   onDepClick?: () => void;
   onEditClick?: () => void;
   onDeleteClick?: () => void;
+  capabilities?: Pick<CatalogCapabilities, "canEditProperties" | "canDelete">;
 }
 
-export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: ActionButtonsProps) {
-  const { canWriteInventory: canEditInventory } = useWorkspaceCapabilities();
+export function ActionButtons({ onDepClick, onEditClick, onDeleteClick, capabilities }: ActionButtonsProps) {
+  const canEditInventory = capabilities?.canEditProperties === true;
+  const canDelete = capabilities?.canDelete === true;
 
   return (
     <div className="flex items-center justify-end gap-1">
@@ -40,15 +42,15 @@ export function ActionButtons({ onDepClick, onEditClick, onDeleteClick }: Action
       <button
         onClick={(e) => {
           e.stopPropagation();
-          if (canEditInventory) onDeleteClick?.();
+          if (canDelete) onDeleteClick?.();
         }}
-        disabled={!canEditInventory}
+        disabled={!canDelete}
         className={`p-1.5 rounded-md transition-colors ${
-          canEditInventory
+          canDelete
             ? "text-muted-foreground hover:text-danger hover:bg-danger/10"
             : "text-muted-foreground/40 cursor-not-allowed"
         }`}
-        title={!canEditInventory ? "Bạn không có quyền thao tác" : "Delete"}
+        title={!canDelete ? "Bạn không có quyền xóa tài nguyên này" : "Delete"}
       >
         <Trash2 size={16} />
       </button>

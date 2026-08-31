@@ -162,6 +162,7 @@ export interface paths {
                 query?: {
                     environment?: string;
                     datacenterId?: string;
+                    view?: string;
                 };
                 header?: never;
                 path?: never;
@@ -198,6 +199,7 @@ export interface paths {
                 query?: {
                     environment?: string;
                     datacenterId?: string;
+                    view?: string;
                 };
                 header?: never;
                 path?: never;
@@ -234,6 +236,10 @@ export interface paths {
                 query?: {
                     labelKey?: string;
                     labelValue?: string;
+                    ownerUserId?: string;
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
                 };
                 header?: never;
                 path?: never;
@@ -247,9 +253,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["ApplicationResponseDto"][];
-                        "application/json": components["schemas"]["ApplicationResponseDto"][];
-                        "text/json": components["schemas"]["ApplicationResponseDto"][];
+                        "text/plain": components["schemas"]["CursorPageDtoOfApplicationResponseDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfApplicationResponseDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfApplicationResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -300,6 +317,7 @@ export interface paths {
             parameters: {
                 query?: {
                     ids?: string[];
+                    view?: string;
                 };
                 header?: never;
                 path?: never;
@@ -578,7 +596,12 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
+                    ownerUserId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -591,9 +614,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["DatacenterDto"][];
-                        "application/json": components["schemas"]["DatacenterDto"][];
-                        "text/json": components["schemas"]["DatacenterDto"][];
+                        "text/plain": components["schemas"]["CursorPageDtoOfDatacenterDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfDatacenterDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfDatacenterDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -906,7 +940,14 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    q?: string;
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
                     keyword?: string;
+                    ownerUserId?: string;
+                    labelKey?: string;
+                    labelValue?: string;
                 };
                 header?: never;
                 path?: never;
@@ -920,9 +961,397 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["SearchResultDto"][];
-                        "application/json": components["schemas"]["SearchResultDto"][];
-                        "text/json": components["schemas"]["SearchResultDto"][];
+                        "text/plain": components["schemas"]["CursorPageDtoOfSearchResultDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfSearchResultDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfSearchResultDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels/{labelId}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    labelId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"][];
+                        "application/json": components["schemas"]["LabelGrantDto"][];
+                        "text/json": components["schemas"]["LabelGrantDto"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    labelId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateLabelGrantDto"];
+                    "text/json": components["schemas"]["CreateLabelGrantDto"];
+                    "application/*+json": components["schemas"]["CreateLabelGrantDto"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"];
+                        "application/json": components["schemas"]["LabelGrantDto"];
+                        "text/json": components["schemas"]["LabelGrantDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels/{labelId}/grants/{grantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    labelId: string;
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateLabelGrantDto"];
+                    "text/json": components["schemas"]["UpdateLabelGrantDto"];
+                    "application/*+json": components["schemas"]["UpdateLabelGrantDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"];
+                        "application/json": components["schemas"]["LabelGrantDto"];
+                        "text/json": components["schemas"]["LabelGrantDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: {
+                    version?: number | string;
+                };
+                header?: never;
+                path: {
+                    labelId: string;
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels/{labelId}/share-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    search?: string;
+                    first?: number | string;
+                    max?: number | string;
+                };
+                header?: never;
+                path: {
+                    labelId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelShareOptionsDto"];
+                        "application/json": components["schemas"]["LabelShareOptionsDto"];
+                        "text/json": components["schemas"]["LabelShareOptionsDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
+                    ownerUserId?: string;
+                    labelKey?: string;
+                    labelValue?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -944,7 +1373,14 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
+                    ownerUserId?: string;
+                    labelKey?: string;
+                    labelValue?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -957,9 +1393,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["LabelDto"][];
-                        "application/json": components["schemas"]["LabelDto"][];
-                        "text/json": components["schemas"]["LabelDto"][];
+                        "text/plain": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfCatalogLabelDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -981,7 +1428,14 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    view?: string;
+                    limit?: number | string;
+                    cursor?: string;
+                    ownerUserId?: string;
+                    labelKey?: string;
+                    labelValue?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -994,9 +1448,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["ServerResponseDto"][];
-                        "application/json": components["schemas"]["ServerResponseDto"][];
-                        "text/json": components["schemas"]["ServerResponseDto"][];
+                        "text/plain": components["schemas"]["CursorPageDtoOfServerResponseDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfServerResponseDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfServerResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1130,6 +1595,7 @@ export interface paths {
             parameters: {
                 query?: {
                     ids?: string[];
+                    view?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1158,6 +1624,341 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/labels/{labelId}/share-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    labelId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ShareLinkMetadataDto"][];
+                        "application/json": components["schemas"]["ShareLinkMetadataDto"][];
+                        "text/json": components["schemas"]["ShareLinkMetadataDto"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    labelId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateShareLinkDto"];
+                    "text/json": components["schemas"]["CreateShareLinkDto"];
+                    "application/*+json": components["schemas"]["CreateShareLinkDto"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CreateShareLinkResponseDto"];
+                        "application/json": components["schemas"]["CreateShareLinkResponseDto"];
+                        "text/json": components["schemas"]["CreateShareLinkResponseDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels/{labelId}/share-links/{grantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: {
+                    version?: number | string;
+                };
+                header?: never;
+                path: {
+                    labelId: string;
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/share-links/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ResolveShareLinkDto"];
+                    "text/json": components["schemas"]["ResolveShareLinkDto"];
+                    "application/*+json": components["schemas"]["ResolveShareLinkDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ShareTokenResolutionDto"];
+                        "application/json": components["schemas"]["ShareTokenResolutionDto"];
+                        "text/json": components["schemas"]["ShareTokenResolutionDto"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/share-links/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BrowseShareLinkDto"];
+                    "text/json": components["schemas"]["BrowseShareLinkDto"];
+                    "application/*+json": components["schemas"]["BrowseShareLinkDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["CursorPageDtoOfShareCatalogItemDto"];
+                        "application/json": components["schemas"]["CursorPageDtoOfShareCatalogItemDto"];
+                        "text/json": components["schemas"]["CursorPageDtoOfShareCatalogItemDto"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/Topology/tree": {
         parameters: {
             query?: never;
@@ -1172,6 +1973,7 @@ export interface paths {
                     skip?: number | string;
                     take?: number | string;
                     labels?: string[];
+                    ownerUserId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1213,6 +2015,7 @@ export interface paths {
                     environment?: string;
                     datacenterId?: string;
                     labels?: string[];
+                    ownerUserId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1250,7 +2053,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    ownerUserId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1287,7 +2092,9 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    ownerUserId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1633,6 +2440,7 @@ export interface components {
             /** Format: int32 */
             port?: number | string;
             protocol?: string;
+            canEdit?: boolean;
         };
         ApplicationOnServerDto: {
             /** Format: uuid */
@@ -1657,12 +2465,35 @@ export interface components {
             techStack?: string;
             servers?: components["schemas"]["ServerOnApplicationDto"][];
             labels?: components["schemas"]["LabelDto"][];
+            ownerUserId?: string;
+            effectivePermission?: components["schemas"]["LabelEffectivePermission"];
+            sharedLabelIds?: string[];
+            capabilities?: components["schemas"]["LabelAccessCapabilities"];
         };
         ApplicationStatusDto: {
             /** Format: uuid */
             id?: string;
             appName?: string;
             isMapped?: boolean;
+        };
+        BrowseShareLinkDto: {
+            token: string;
+            resourceType: string;
+            /** Format: int32 */
+            limit?: null | number | string;
+            cursor?: null | string;
+        };
+        CatalogLabelDto: {
+            /** Format: uuid */
+            id?: string;
+            key?: string;
+            value?: string;
+            kind?: string;
+            isProtected?: boolean;
+            ownerUserId?: string;
+            effectivePermission?: components["schemas"]["LabelEffectivePermission"];
+            sharedLabelIds?: string[];
+            capabilities?: components["schemas"]["LabelAccessCapabilities"];
         };
         ConnectionDto: {
             /** Format: uuid */
@@ -1677,6 +2508,7 @@ export interface components {
             destinationServerId?: string;
             connectionType?: string;
             isRestricted?: boolean;
+            canEdit?: boolean;
         };
         CreateApplicationDeploymentDto: {
             /** Format: uuid */
@@ -1704,6 +2536,12 @@ export interface components {
             email: string;
             password: string;
         };
+        CreateLabelGrantDto: {
+            granteeUserId: string;
+            permission: string;
+            /** Format: date-time */
+            expiresAt: null | string;
+        };
         CreateServerDto: {
             /** Format: uuid */
             datacenterId?: string;
@@ -1715,11 +2553,60 @@ export interface components {
             status?: string;
             labels?: components["schemas"]["LabelDto"][];
         };
+        CreateShareLinkDto: {
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        CreateShareLinkResponseDto: {
+            /** Format: uuid */
+            grantId: string;
+            token: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: int64 */
+            version: number | string;
+            sharesAllOwnerResources: boolean;
+            warningCode: null | string;
+        };
+        CursorPageDtoOfApplicationResponseDto: {
+            items: components["schemas"]["ApplicationResponseDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
+        CursorPageDtoOfCatalogLabelDto: {
+            items: components["schemas"]["CatalogLabelDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
+        CursorPageDtoOfDatacenterDto: {
+            items: components["schemas"]["DatacenterDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
+        CursorPageDtoOfSearchResultDto: {
+            items: components["schemas"]["SearchResultDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
+        CursorPageDtoOfServerResponseDto: {
+            items: components["schemas"]["ServerResponseDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
+        CursorPageDtoOfShareCatalogItemDto: {
+            items: components["schemas"]["ShareCatalogItemDto"][];
+            nextCursor: null | string;
+            hasNextPage: boolean;
+        };
         DatacenterDto: {
             /** Format: uuid */
             id?: string;
             name?: string;
             location?: string;
+            ownerUserId?: string;
+            effectivePermission?: components["schemas"]["LabelEffectivePermission"];
+            sharedLabelIds?: string[];
+            capabilities?: components["schemas"]["LabelAccessCapabilities"];
         };
         DependencyItemDto: {
             /** Format: uuid */
@@ -1759,9 +2646,47 @@ export interface components {
         };
         /** Format: binary */
         IFormFile: string;
+        LabelAccessCapabilities: {
+            canRead: boolean;
+            canEditProperties: boolean;
+            canCreate: boolean;
+            canDelete: boolean;
+            canChangeLabels: boolean;
+            canChangeOwner: boolean;
+            canManageGrants: boolean;
+        };
         LabelDto: {
             key?: string;
             value?: string;
+        };
+        /** @enum {unknown} */
+        LabelEffectivePermission: "viewer" | "editor" | "owner";
+        LabelGrantDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            labelId: string;
+            granteeUserId: string;
+            permission: string;
+            /** Format: date-time */
+            expiresAt: null | string;
+            /** Format: date-time */
+            revokedAt: null | string;
+            /** Format: int64 */
+            version: number | string;
+            /** @default false */
+            sharesAllOwnerResources: boolean;
+            warningCode?: null | string;
+        };
+        LabelShareOptionsDto: {
+            users: components["schemas"]["LabelShareOptionUserDto"][];
+            sharesAllOwnerResources: boolean;
+            warningCode: null | string;
+        };
+        LabelShareOptionUserDto: {
+            id: string;
+            username: string;
+            email: null | string;
         };
         LoginRequestDto: {
             username: string;
@@ -1775,10 +2700,21 @@ export interface components {
             /** Format: int32 */
             portNumber?: number | string;
         };
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number | string;
+            detail?: null | string;
+            instance?: null | string;
+        };
         RegisterRequestDto: {
             username: string;
             email: string;
             password: string;
+        };
+        ResolveShareLinkDto: {
+            token: string;
         };
         RestrictedDependencyNodeDto: {
             /** Format: uuid */
@@ -1802,6 +2738,10 @@ export interface components {
             title?: string;
             subtitle?: string;
             matchReason?: string;
+            ownerUserId?: string;
+            effectivePermission?: components["schemas"]["LabelEffectivePermission"];
+            sharedLabelIds?: string[];
+            capabilities?: components["schemas"]["LabelAccessCapabilities"];
         };
         ServerNodeDto: {
             /** Format: uuid */
@@ -1812,6 +2752,7 @@ export interface components {
             ipAddress?: string;
             labels?: components["schemas"]["LabelDto"][];
             applications?: components["schemas"]["ApplicationNodeDto"][];
+            canEdit?: boolean;
         };
         ServerOnApplicationDto: {
             /** Format: uuid */
@@ -1837,6 +2778,29 @@ export interface components {
             status?: string;
             applications?: components["schemas"]["ApplicationOnServerDto"][];
             labels?: components["schemas"]["LabelDto"][];
+            ownerUserId?: string;
+            effectivePermission?: components["schemas"]["LabelEffectivePermission"];
+            sharedLabelIds?: string[];
+            capabilities?: components["schemas"]["LabelAccessCapabilities"];
+        };
+        ShareCatalogItemDto: {
+            type?: string;
+            server?: null | components["schemas"]["ServerResponseDto"];
+            application?: null | components["schemas"]["ApplicationResponseDto"];
+        };
+        ShareLinkMetadataDto: {
+            /** Format: uuid */
+            grantId: string;
+            /** Format: uuid */
+            labelId: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            revokedAt: null | string;
+            /** Format: int64 */
+            version: number | string;
+            sharesAllOwnerResources: boolean;
+            warningCode: null | string;
         };
         ShareOptionTargetDto: {
             /** Format: uuid */
@@ -1847,6 +2811,17 @@ export interface components {
             id: string;
             username: string;
             email: null | string;
+        };
+        ShareTokenResolutionDto: {
+            /** Format: uuid */
+            labelId: string;
+            ownerUserId: string;
+            permission: string;
+            /** Format: uuid */
+            grantId: string;
+            /** @default false */
+            sharesAllOwnerResources: boolean;
+            warningCode?: null | string;
         };
         SyncDependenciesDto: {
             /** Format: int64 */
@@ -1945,6 +2920,13 @@ export interface components {
         };
         UpdateIdentityStatus: {
             enabled: boolean;
+        };
+        UpdateLabelGrantDto: {
+            permission: string;
+            /** Format: date-time */
+            expiresAt: null | string;
+            /** Format: int64 */
+            version: number | string;
         };
         UpdateServerDto: {
             ipAddress?: string;

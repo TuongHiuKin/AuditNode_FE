@@ -1,7 +1,5 @@
 import { Database, CloudUpload, Loader2 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
-import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 interface SubToolbarProps {
   onAutoMap: () => void;
@@ -9,6 +7,8 @@ interface SubToolbarProps {
   isSyncing?: boolean;
   onTogglePalette?: () => void;
   isPaletteOpen?: boolean;
+  canEditGraph: boolean;
+  canAddNodes: boolean;
 }
 
 export function SubToolbar({ 
@@ -16,11 +16,10 @@ export function SubToolbar({
   onSync,
   isSyncing = false,
   onTogglePalette,
-  isPaletteOpen = false
+  isPaletteOpen = false,
+  canEditGraph,
+  canAddNodes,
 }: SubToolbarProps) {
-  const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
-  const { selectedWorkspace } = useWorkspace();
-  const canAddNodes = canEditInventory && selectedWorkspace?.effectiveRole !== "auditor";
 
   return (
     <div className="flex items-center gap-3">
@@ -38,9 +37,9 @@ export function SubToolbar({
 
       <Button 
         onClick={onAutoMap} 
-        disabled={!canEditInventory} 
+        disabled={!canEditGraph}
         variant="outline"
-        title={!canEditInventory ? "Bạn không có quyền thao tác" : undefined}
+        title={!canEditGraph ? "Bạn không có quyền thao tác" : undefined}
       >
         <Database size={14} className="group-hover:animate-pulse text-muted-foreground" />
         Auto-Map from DB
@@ -48,9 +47,9 @@ export function SubToolbar({
 
       <Button 
         onClick={onSync} 
-        disabled={isSyncing || !canEditInventory} 
+        disabled={isSyncing || !canEditGraph}
         variant="primary"
-        title={!canEditInventory ? "Bạn không có quyền thao tác" : undefined}
+        title={!canEditGraph ? "Bạn không có quyền thao tác" : undefined}
       >
         {isSyncing ? (
           <Loader2 size={16} className="animate-spin" />

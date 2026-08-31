@@ -20,7 +20,6 @@ import { GraphToolbar } from "./GraphToolbar";
 import { RemovableEdge } from "./RemovableEdge";
 import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
 import { RestrictedNode } from "./RestrictedNode";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -58,6 +57,7 @@ interface FlowCanvasProps {
   onPaneMouseMove?: (event: React.MouseEvent) => void;
   onPaneMouseUp?: () => void;
   readOnly?: boolean;
+  canEditStructure?: boolean;
 }
 
 export function FlowCanvas({
@@ -81,19 +81,19 @@ export function FlowCanvas({
   onPaneMouseMove,
   onPaneMouseUp,
   readOnly = false,
+  canEditStructure = false,
 }: FlowCanvasProps) {
-  const { selectedWorkspace } = useWorkspace();
-  const isAuditor = selectedWorkspace?.effectiveRole === "auditor";
   const handleDeleteEdge = useCallback((edgeId: string) => {
     onEdgesChange?.([{ id: edgeId, type: "remove" }]);
   }, [onEdgesChange]);
   const effectiveNodes = useMemo(() => nodes.map((node: any) => {
     const restricted = node.type === "restricted" || node.data?.isRestricted;
-    const auditorStructure = isAuditor && (node.type === "boundaryFrame" || node.type === "groupNode");
-    return restricted || auditorStructure
+    const protectedStructure = !canEditStructure && (node.type === "boundaryFrame" || node.type === "groupNode");
+    const protectedResource = node.data?.canEdit === false;
+    return restricted || protectedStructure || protectedResource
       ? { ...node, draggable: false, connectable: false, deletable: false }
       : node;
-  }), [isAuditor, nodes]);
+  }), [canEditStructure, nodes]);
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,
     serverNode: ServerGroupNode,
@@ -144,15 +144,15 @@ export function FlowCanvas({
 
       <ReactFlow
         nodes={effectiveNodes}
-        edges={edges.map((edge) => ({ ...edge, data: { ...edge.data, readOnly, onDeleteEdge: handleDeleteEdge } }))}
+        edges={edges.map((edge) => ({ ...edge, data: { ...edge.data, readOnly: readOnly || edge.data?.canEdit === false, onDeleteEdge: handleDeleteEdge } }))}
         onNodesChange={readOnly ? undefined : onNodesChange}
         onEdgesChange={readOnly ? undefined : onEdgesChange}
         onConnect={readOnly ? undefined : onConnect}
         onReconnect={readOnly ? undefined : onReconnect}
         isValidConnection={(connection) => connection.source !== connection.target}
         onSelectionChange={onSelectionChange}
-        onDrop={readOnly ? undefined : onDrop}
-        onDragOver={readOnly ? undefined : onDragOver}
+        onDrop={!canEditStructure ? undefined : onDrop}
+        onDragOver={!canEditStructure ? undefined : onDragOver}
         onNodeDragStop={readOnly ? undefined : onNodeDragStop}
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
@@ -173,7 +173,7 @@ export function FlowCanvas({
         selectionOnDrag={false}
       >
         <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} onAddBoundaryFrame={onAddBoundaryFrame} />
+        <GraphToolbar onQuickAdd={onQuickAdd} onAddGroup={onAddGroup} onAddBoundaryFrame={onAddBoundaryFrame} canEditStructure={canEditStructure} />
         <MiniMap
           nodeColor={(n) => (n.type === "serverNode" ? "var(--color-surface)" : "var(--color-primary)")}
           maskColor="var(--color-background)"

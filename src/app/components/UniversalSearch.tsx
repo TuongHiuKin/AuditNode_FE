@@ -3,8 +3,8 @@ import { Search, Loader2 } from 'lucide-react';
 import apiClient from '../../shared/api/client';
 import { Badge } from './ui/badge';
 import { cn } from './ui/utils';
-import { useWorkspace } from '../../shared/workspace/WorkspaceContext';
-import { getSelectedWorkspaceId } from '../../shared/workspace/workspaceStore';
+import { useCatalogAccess } from '../../shared/catalog/CatalogAccessContext';
+import type { CatalogPage } from '../../shared/catalog/types';
 
 export type SearchResultType = 'SERVER' | 'APP';
 
@@ -37,7 +37,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
   className,
   inputClassName,
 }) => {
-  const { selectedWorkspaceId } = useWorkspace();
+  const catalog = useCatalogAccess();
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,7 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
     setIsLoading(false);
     setIsOpen(false);
     onChangeRef.current('');
-  }, [selectedWorkspaceId]);
+  }, [catalog.filters.labelKey, catalog.filters.labelValue, catalog.filters.ownerUserId, catalog.principalId, catalog.view]);
 
   // 1. Debounce logic (500ms delay)
   useEffect(() => {
@@ -66,10 +66,9 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
   // 2. API Integration
   useEffect(() => {
     const controller = new AbortController();
-    const workspaceId = selectedWorkspaceId;
     const searchKeyword = debouncedKeyword;
 
-    if (!workspaceId || !searchKeyword.trim()) {
+    if (!searchKeyword.trim()) {
       setResults([]);
       setIsOpen(false);
       return () => controller.abort();
@@ -78,26 +77,37 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
     setIsLoading(true);
     async function fetchResults() {
       try {
-        const response = await apiClient.get<SearchResult[]>(`/api/v1/search`, {
-          params: { keyword: searchKeyword },
+        const response = await apiClient.get<CatalogPage<SearchResult> | SearchResult[]>(`/api/v1/search`, {
+          params: {
+            q: searchKeyword,
+            view: catalog.view,
+            limit: 25,
+            ownerUserId: catalog.filters.ownerUserId || undefined,
+            labelKey: catalog.filters.labelKey || undefined,
+            labelValue: catalog.filters.labelValue || undefined,
+          },
           signal: controller.signal,
+          skipWorkspaceHeader: true,
+          catalogRequest: true,
+          catalogView: catalog.view,
         });
-        if (controller.signal.aborted || getSelectedWorkspaceId() !== workspaceId) return;
-        setResults(response.data);
-        setIsOpen(response.data.length > 0);
+        if (controller.signal.aborted) return;
+        const items = Array.isArray(response.data) ? response.data : response.data.items;
+        setResults(items);
+        setIsOpen(items.length > 0);
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error('Search API error:', error);
         setResults([]);
       } finally {
-        if (!controller.signal.aborted && getSelectedWorkspaceId() === workspaceId) {
+        if (!controller.signal.aborted) {
           setIsLoading(false);
         }
       }
     }
     void fetchResults();
     return () => controller.abort();
-  }, [debouncedKeyword, selectedWorkspaceId]);
+  }, [catalog.filters.labelKey, catalog.filters.labelValue, catalog.filters.ownerUserId, catalog.view, debouncedKeyword]);
 
   // 3. Close dropdown when clicking outside
   useEffect(() => {

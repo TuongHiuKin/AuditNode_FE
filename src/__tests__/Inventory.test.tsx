@@ -53,6 +53,18 @@ describe("Inventory Page Integration", () => {
       appCode: "APP-001",
       appName: "Test Application",
       risk: "Low",
+      ownerUserId: "owner-1",
+      effectivePermission: "owner",
+      sharedLabelIds: [],
+      capabilities: {
+        canRead: true,
+        canEditProperties: true,
+        canCreate: true,
+        canDelete: true,
+        canChangeLabels: true,
+        canChangeOwner: false,
+        canManageGrants: true,
+      },
       servers: [
         { id: "srv-1", hostname: "server-01", ipAddress: "192.168.1.1", portNumber: 80, protocol: "http" }
       ]

@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Filter, Check, ChevronDown, Search } from "lucide-react";
-import { LabelData } from "./LabelBadge";
-import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { useLabels } from "../../hooks/queries/useLabels";
+import { useCatalogPages } from "../../features/catalog/api/useCatalogPages";
+import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
 
 interface LabelFilterDropdownProps {
   selectedKeys: string[];
@@ -10,25 +9,26 @@ interface LabelFilterDropdownProps {
 }
 
 export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropdownProps) {
-  const { selectedWorkspaceId } = useWorkspace();
-  const { data: availableLabels = [] } = useLabels();
+  const access = useCatalogAccess();
+  const labelsQuery = useCatalogPages("labels", { ignoreLabelFilter: true });
+  const availableLabels = labelsQuery.items;
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
   const selectedKeysRef = useRef(selectedKeys);
-  const previousWorkspaceRef = useRef(selectedWorkspaceId);
+  const previousScopeRef = useRef(`${access.principalId}:${access.view}:${access.filters.ownerUserId ?? "all"}`);
   onChangeRef.current = onChange;
   selectedKeysRef.current = selectedKeys;
 
   useEffect(() => {
-    const workspaceId = selectedWorkspaceId;
-    const workspaceChanged = previousWorkspaceRef.current !== workspaceId;
-    previousWorkspaceRef.current = workspaceId;
+    const scope = `${access.principalId}:${access.view}:${access.filters.ownerUserId ?? "all"}`;
+    const scopeChanged = previousScopeRef.current !== scope;
+    previousScopeRef.current = scope;
     setSearchTerm("");
     setIsOpen(false);
-    if (workspaceChanged && selectedKeysRef.current.length > 0) onChangeRef.current([]);
-  }, [selectedWorkspaceId]);
+    if (scopeChanged && selectedKeysRef.current.length > 0) onChangeRef.current([]);
+  }, [access.filters.ownerUserId, access.principalId, access.view]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -121,6 +121,11 @@ export function LabelFilterDropdown({ selectedKeys, onChange }: LabelFilterDropd
                   </button>
                 );
               })
+            )}
+            {labelsQuery.hasNextPage && (
+              <button type="button" onClick={() => void labelsQuery.fetchNextPage()} disabled={labelsQuery.isFetchingNextPage} className="mt-1 rounded-lg border border-border px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50">
+                {labelsQuery.isFetchingNextPage ? "Loading…" : "Load more labels"}
+              </button>
             )}
           </div>
         </div>

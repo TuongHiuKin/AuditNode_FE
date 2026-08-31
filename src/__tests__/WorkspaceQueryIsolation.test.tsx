@@ -3,38 +3,54 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useServers } from "../hooks/queries/useServers";
-import { ServerService } from "../services/serverService";
-import { clearWorkspaceSelection, setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
+import apiClient from "../shared/api/client";
+import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
+import type { CatalogView } from "../shared/catalog/types";
 
-vi.mock("../services/serverService", () => ({
-  ServerService: { getServers: vi.fn().mockResolvedValue([]) },
+vi.mock("../shared/api/client", () => ({
+  default: { get: vi.fn() },
 }));
 
-const workspaceId = "11111111-1111-4111-8111-111111111111";
-
-describe("tenant query isolation", () => {
+describe("catalog query isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    clearWorkspaceSelection();
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { items: [], nextCursor: null, hasNextPage: false },
+    });
   });
 
-  it("does not fetch tenant data before a workspace is selected", () => {
-    const queryClient = new QueryClient();
-    renderHook(() => useServers(), { wrapper: wrapper(queryClient) });
-    expect(ServerService.getServers).not.toHaveBeenCalled();
-  });
-
-  it("includes the selected workspace ID in the tenant query key", async () => {
-    setSelectedWorkspaceId(workspaceId);
+  it("loads Mine without requiring a selected workspace or workspace header", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    renderHook(() => useServers(), { wrapper: wrapper(queryClient) });
-    await waitFor(() => expect(ServerService.getServers).toHaveBeenCalled());
-    expect(queryClient.getQueryCache().find({ queryKey: ["servers", workspaceId] })).toBeDefined();
+    renderHook(() => useServers(), { wrapper: wrapper(queryClient, "mine") });
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
+    expect(apiClient.get).toHaveBeenCalledWith("/api/v1/servers", expect.objectContaining({
+      params: expect.objectContaining({ view: "mine" }),
+      skipWorkspaceHeader: true,
+    }));
+    expect(queryClient.getQueryCache().find({
+      queryKey: ["catalog", "anonymous", "servers", "mine", "all-owners", "all-label-keys", "all-label-values"],
+    })).toBeDefined();
+  });
+
+  it("keeps Shared in a separate cache key", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderHook(() => useServers(), { wrapper: wrapper(queryClient, "shared") });
+
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
+    expect(queryClient.getQueryCache().find({
+      queryKey: ["catalog", "anonymous", "servers", "shared", "all-owners", "all-label-keys", "all-label-values"],
+    })).toBeDefined();
+    expect(queryClient.getQueryCache().find({
+      queryKey: ["catalog", "anonymous", "servers", "mine", "all-owners", "all-label-keys", "all-label-values"],
+    })).toBeUndefined();
   });
 });
 
-function wrapper(queryClient: QueryClient) {
+function wrapper(queryClient: QueryClient, initialView: CatalogView) {
   return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <CatalogAccessProvider initialView={initialView}>{children}</CatalogAccessProvider>
+    </QueryClientProvider>
   );
 }

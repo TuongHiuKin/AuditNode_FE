@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { ActionButtons } from "./ActionButtons";
-import { Schemas } from "../../shared/api/client";
+import type { CatalogServer } from "../../features/catalog/api/catalogApi";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
@@ -12,7 +12,7 @@ import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCap
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
-type ServerRow = Schemas["ServerResponseDto"];
+type ServerRow = CatalogServer;
 
 const ENV_OPTIONS = ["All", "Production", "Staging", "Development"];
 
@@ -77,7 +77,7 @@ export function ServerTable({
   const navigate = useNavigate();
   const { canManageDatacenters: canManageSystem } = useWorkspaceCapabilities();
 
-  const { data: servers = [], isLoading } = useServers();
+  const { data: servers = [], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useServers();
   const { data: datacenters = [] } = useDatacenters();
   
   const LAST_DC_KEY = "auditnode_last_datacenter";
@@ -279,6 +279,7 @@ export function ServerTable({
                 )}
               </tbody>
             </table>
+            {hasNextPage && <div className="flex justify-center border-t border-border p-3"><button className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>{isFetchingNextPage ? "Loading…" : "Load more"}</button></div>}
           </div>
         )}
       </div>
@@ -330,6 +331,7 @@ function ServerRowItem({
         <td className="px-6 py-4">
           <div className="font-semibold text-foreground">{server.hostname}</div>
           <div className="text-[11px] text-muted-foreground capitalize">{(server as any).provider || server.environment || "Unknown"}</div>
+          <div className="mt-1 text-[10px] text-muted-foreground">{server.effectivePermission === "owner" ? "Owned by you" : `Shared by ${server.ownerUserId} · ${server.effectivePermission}`}</div>
         </td>
         <td className="px-6 py-4 text-muted-foreground">{server.osType}</td>
         
@@ -366,6 +368,7 @@ function ServerRowItem({
 
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons
+            capabilities={server.capabilities}
             onDepClick={() => onDepClick(server.id || "", server.environment)}
             onEditClick={() => onEditClick(server.id || "", "SERVER")}
             onDeleteClick={() => onDeleteClick(server.id || "", server.hostname || "Server")}

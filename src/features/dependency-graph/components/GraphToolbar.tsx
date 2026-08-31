@@ -2,19 +2,15 @@ import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
-import { useWorkspaceCapabilities } from "../../../shared/workspace/useWorkspaceCapabilities";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
   onAddBoundaryFrame?: () => void;
+  canEditStructure?: boolean;
 }
 
-export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
-  const { canEditGraph: canEditInventory } = useWorkspaceCapabilities();
-  const { selectedWorkspace } = useWorkspace();
-  const canCreateStructure = canEditInventory && selectedWorkspace?.effectiveRole !== "auditor";
+export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame, canEditStructure = false }: GraphToolbarProps) {
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -50,8 +46,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddGroup}
-          disabled={!canCreateStructure}
-          title={!canCreateStructure ? "Auditors cannot create graph containers" : "Add Group Box"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot create graph containers in this catalog view" : "Add Group Box"}
           variant="ghost"
           size="icon"
           className="border-b border-border rounded-none"
@@ -60,8 +56,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddBoundaryFrame}
-          disabled={!canCreateStructure}
-          title={!canCreateStructure ? "Auditors cannot create boundary frames" : "Add Boundary Frame"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot create boundary frames in this catalog view" : "Add Boundary Frame"}
           variant="ghost"
           size="icon"
           className="border-b border-border font-bold uppercase rounded-none"
@@ -70,8 +66,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onQuickAdd}
-          disabled={!canCreateStructure}
-          title={!canCreateStructure ? "Auditors cannot add graph nodes" : "Quick Add Infrastructure"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot add graph nodes in this catalog view" : "Quick Add Infrastructure"}
           variant="ghost"
           size="icon"
           className="rounded-none"

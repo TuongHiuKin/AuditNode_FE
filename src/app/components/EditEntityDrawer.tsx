@@ -54,6 +54,7 @@ export function EditEntityDrawer({
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [serverSearchTerm, setServerSearchTerm] = useState("");
   const [labels, setLabels] = useState<ApplicationLabel[]>([]);
+  const [canChangeLabels, setCanChangeLabels] = useState(false);
   const [labelInput, setLabelInput] = useState({ key: '', value: '' });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { register, handleSubmit, reset, setValue, watch } = useForm<EntityFormData>();
@@ -143,6 +144,7 @@ export function EditEntityDrawer({
       reset();
       setFetchError(null);
       setLabels([]);
+      setCanChangeLabels(false);
       setLabelInput({ key: '', value: '' });
     }
   }, [entityId, entityType, isOpen]);
@@ -160,6 +162,7 @@ export function EditEntityDrawer({
     try {
       if (entityType === "SERVER") {
         const data = await ServerService.getServer(entityId!);
+        setCanChangeLabels((data as typeof data & { capabilities?: { canChangeLabels?: boolean } }).capabilities?.canChangeLabels === true);
         setLabels((data.labels || []).flatMap((label) =>
           label.key && label.value ? [{ key: label.key, value: label.value }] : [],
         ));
@@ -171,6 +174,7 @@ export function EditEntityDrawer({
         setValue("datacenterId", data.datacenterId);
       } else {
         const data = await ApplicationService.getApplication(entityId!);
+        setCanChangeLabels((data as typeof data & { capabilities?: { canChangeLabels?: boolean } }).capabilities?.canChangeLabels === true);
         setLabels(data.labels || []);
         setValue("appName", data.appName);
         setValue("appCode", data.appCode);
@@ -211,7 +215,7 @@ export function EditEntityDrawer({
       const pendingKey = labelInput.key.trim();
       const pendingValue = labelInput.value.trim();
       
-      if (pendingKey && pendingValue) {
+      if (canChangeLabels && pendingKey && pendingValue) {
         // Prevent duplicate if user clicks save without clicking Add
         const isDuplicate = finalLabels.some(
           l => l.key.toLowerCase() === pendingKey.toLowerCase() && l.value.toLowerCase() === pendingValue.toLowerCase()
@@ -234,7 +238,7 @@ export function EditEntityDrawer({
           environment: formData.environment,
           status: formData.status,
           datacenterId: watch("datacenterId"),
-          labels: finalLabels,
+          labels: canChangeLabels ? finalLabels : null,
         });
       } else {
         const payload: UpdateApplicationRequest = {
@@ -243,7 +247,7 @@ export function EditEntityDrawer({
           risk: formData.risk || "",
           icon: formData.icon || "",
           techStack: formData.techStack || "",
-          labels: finalLabels,
+          labels: canChangeLabels ? finalLabels : null,
         };
         if (selectedMappingId) {
           payload.portMappingId = selectedMappingId;
@@ -498,6 +502,7 @@ export function EditEntityDrawer({
                     placeholder="Key (e.g. Env)"
                     className="flex-1 w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
                     value={labelInput.key}
+                    disabled={!canChangeLabels}
                     onChange={(e) => setLabelInput({ ...labelInput, key: e.target.value })}
                   />
                   <input
@@ -505,6 +510,7 @@ export function EditEntityDrawer({
                     placeholder="Value (e.g. Prod)"
                     className="flex-1 w-full bg-surface border border-border rounded-lg p-2.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
                     value={labelInput.value}
+                    disabled={!canChangeLabels}
                     onChange={(e) => setLabelInput({ ...labelInput, value: e.target.value })}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -516,6 +522,7 @@ export function EditEntityDrawer({
                   <button
                     type="button"
                     onClick={handleAddLabel}
+                    disabled={!canChangeLabels}
                     className="bg-background border border-border hover:bg-surface-hover text-foreground text-sm font-medium px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
                   >
                     Add
@@ -531,6 +538,7 @@ export function EditEntityDrawer({
                         <button
                           type="button"
                           onClick={() => handleRemoveLabel(idx)}
+                          disabled={!canChangeLabels}
                           className="text-muted-foreground hover:text-foreground outline-none transition-colors"
                         >
                           <X size={14} />

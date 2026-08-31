@@ -16,9 +16,10 @@ const map = {
       serverId: "server-1",
       hostname: "server-one",
       ipAddress: "10.0.0.1",
+      canEdit: true,
       labels: [{ key: "tier", value: "api" }],
       applications: [
-        { id: "mapping-1", appId: "app-1", serverId: "server-1", portMappingId: "mapping-1", name: "Shared App", port: 8080, protocol: "HTTP" },
+        { id: "mapping-1", appId: "app-1", serverId: "server-1", portMappingId: "mapping-1", name: "Shared App", port: 8080, protocol: "HTTP", canEdit: true },
       ],
     },
     {
@@ -26,15 +27,16 @@ const map = {
       serverId: "server-2",
       hostname: "server-two",
       ipAddress: "10.0.0.2",
+      canEdit: false,
       labels: [{ key: "tier", value: "worker" }],
       applications: [
-        { id: "mapping-2", appId: "app-1", serverId: "server-2", portMappingId: "mapping-2", name: "Shared App", port: 9090, protocol: "TCP" },
-        { id: "mapping-3", appId: "app-2", serverId: "server-2", portMappingId: "mapping-3", name: "Target App", port: 443, protocol: "HTTPS" },
+        { id: "mapping-2", appId: "app-1", serverId: "server-2", portMappingId: "mapping-2", name: "Shared App", port: 9090, protocol: "TCP", canEdit: false },
+        { id: "mapping-3", appId: "app-2", serverId: "server-2", portMappingId: "mapping-3", name: "Target App", port: 443, protocol: "HTTPS", canEdit: false },
       ],
     },
   ],
   connections: [
-    { id: "dependency-1", sourceAppId: "app-1", targetAppId: "app-2", destinationPortMappingId: "mapping-3", destinationServerId: "server-2", connectionType: "HTTP" },
+    { id: "dependency-1", sourceAppId: "app-1", targetAppId: "app-2", destinationPortMappingId: "mapping-3", destinationServerId: "server-2", connectionType: "HTTP", canEdit: false },
   ],
 };
 
