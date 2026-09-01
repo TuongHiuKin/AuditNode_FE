@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { router } from "./routes";
 import { AuthProvider, useAuth } from "../shared/auth/AuthContext";
 import { registerSessionCacheClearer } from "../shared/auth/authStore";
-import { WorkspaceProvider } from "../shared/workspace/WorkspaceContext";
 import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
 
 const queryClient = new QueryClient({
@@ -36,9 +35,7 @@ function AuthenticatedApplication() {
   const principalId = status === "authenticated" && user ? user.id : "anonymous";
   return (
     <CatalogAccessProvider key={principalId} principalId={principalId}>
-      <WorkspaceProvider>
-        <RouterProvider router={router} />
-      </WorkspaceProvider>
+      <RouterProvider router={router} />
     </CatalogAccessProvider>
   );
 }

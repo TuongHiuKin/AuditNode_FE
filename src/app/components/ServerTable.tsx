@@ -8,7 +8,7 @@ import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { useDatacenters } from "../../hooks/queries/useDatacenters";
-import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
+import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
@@ -75,7 +75,8 @@ export function ServerTable({
   const [datacenterFilter, setDatacenterFilter] = useState("ALL");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { canManageDatacenters: canManageSystem } = useWorkspaceCapabilities();
+  const { view } = useCatalogAccess();
+  const canManageSystem = view === "mine";
 
   const { data: servers = [], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useServers();
   const { data: datacenters = [] } = useDatacenters();

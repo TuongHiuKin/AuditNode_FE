@@ -36,7 +36,7 @@ describe("RegisterModal", () => {
     queryClient = createTestQueryClient();
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
       if (url === "/api/v1/datacenters") {
-        return Promise.resolve({ data: mockDatacenters });
+        return Promise.resolve({ data: { items: mockDatacenters, nextCursor: null, hasNextPage: false } });
       }
       if (url === "/api/v1/servers") {
         return Promise.resolve({ data: mockServers });

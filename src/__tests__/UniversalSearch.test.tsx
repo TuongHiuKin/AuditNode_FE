@@ -61,7 +61,6 @@ describe('UniversalSearch Component', () => {
       expect(apiClient.get).toHaveBeenCalledWith('/api/v1/search', expect.objectContaining({
         params: expect.objectContaining({ q: 'alpha', view: 'mine', limit: 25 }),
         signal: expect.any(AbortSignal),
-        skipWorkspaceHeader: true,
         catalogRequest: true,
       }));
     }, { timeout: 1000 });
@@ -148,15 +147,15 @@ describe('UniversalSearch Component', () => {
     fireEvent.change(input, { target: { value: 'beta' } });
     await waitFor(() => expect(vi.mocked(apiClient.get).mock.calls.some(([, config]) => config?.params?.q === 'beta' && config?.params?.view === 'shared')).toBe(true), { timeout: 1000 });
     await act(async () => {
-      resolveB({ data: [{ id: 'b', type: 'SERVER', title: 'Workspace B', subtitle: '', matchReason: '' }] });
+      resolveB({ data: [{ id: 'b', type: 'SERVER', title: 'Catalog B', subtitle: '', matchReason: '' }] });
     });
-    await waitFor(() => expect(screen.getByText('Workspace B')).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Catalog B')).toBeDefined());
     await act(async () => {
-      resolveA({ data: [{ id: 'a', type: 'SERVER', title: 'Workspace A', subtitle: '', matchReason: '' }] });
+      resolveA({ data: [{ id: 'a', type: 'SERVER', title: 'Catalog A', subtitle: '', matchReason: '' }] });
     });
 
-    expect(screen.queryByText('Workspace A')).toBeNull();
-    expect(screen.getByText('Workspace B')).toBeDefined();
+    expect(screen.queryByText('Catalog A')).toBeNull();
+    expect(screen.getByText('Catalog B')).toBeDefined();
     expect(vi.mocked(apiClient.get).mock.calls.every(([, config]) => config?.signal instanceof AbortSignal)).toBe(true);
   });
 });

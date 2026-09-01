@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { Schemas } from "../../shared/api/client";
-import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 import { API_ENDPOINTS } from "../../config/endpoints";
 import { ServerService } from "../../services/serverService";
 import { ApplicationService } from "../../services/applicationService";
@@ -21,29 +19,27 @@ export interface RegisterModalProps {
 }
 
 export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = "infra" }: RegisterModalProps) {
-  const { selectedWorkspaceId } = useWorkspace();
   const [formMode, setFormMode] = useState<"infra" | "app" | "datacenter">(defaultMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ── Fetch Datacenters ──────────────────────────────────────────────────────────────────
   const { data: datacenters = [] } = useQuery({
-    queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
+    queryKey: ["catalog", "register", "datacenters", "mine"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["DatacenterDto"][]>("/api/v1/datacenters");
-      return Array.isArray(response.data) ? response.data : [];
+      const response = await apiClient.get<Schemas["CursorPageDtoOfDatacenterDto"]>("/api/v1/datacenters", {
+        params: { view: "mine", limit: 100 },
+        catalogRequest: true,
+        catalogView: "mine",
+      });
+      return response.data.items ?? [];
     },
-    enabled: !!selectedWorkspaceId,
   });
 
   // ── Fetch Servers (Dynamic Fetch) ────────────────────────────────────────────────────────
   const [availableServers, setAvailableServers] = useState<Schemas["ServerResponseDto"][]>([]);
 
   useEffect(() => {
-    if (!selectedWorkspaceId) {
-      setAvailableServers([]);
-      return;
-    }
     const fetchServers = async () => {
       try {
         setAvailableServers(await ServerService.getServers());
@@ -51,8 +47,8 @@ export function RegisterModal({ onClose, onSuccess, servers = [], defaultMode = 
         console.error("Failed to fetch servers:", err);
       }
     };
-    fetchServers();
-  }, [selectedWorkspaceId]);
+    void fetchServers();
+  }, []);
 
   // Form State
   const [infraData, setInfraData] = useState<{

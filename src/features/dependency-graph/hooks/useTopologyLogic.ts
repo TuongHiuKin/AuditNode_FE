@@ -221,7 +221,6 @@ export function useTopologyLogic() {
               labels,
             },
             signal,
-            skipWorkspaceHeader: true,
             catalogRequest: true,
             catalogView: requestView as "mine" | "shared",
           }

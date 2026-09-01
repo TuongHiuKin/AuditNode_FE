@@ -18,7 +18,7 @@ export interface CreateGrantRequest { granteeUserId: string; permission: GrantPe
 export interface CreatedShareLink { grantId: string; token: string; expiresAt: string; version: number; sharesAllOwnerResources: boolean; warningCode?: string | null; }
 export interface ShareLinkMetadata { grantId: string; labelId: string; expiresAt: string; revokedAt: string | null; version: number; sharesAllOwnerResources: boolean; warningCode?: string | null; }
 
-const catalogConfig = { skipWorkspaceHeader: true, catalogRequest: true as const };
+const catalogConfig = { catalogRequest: true as const };
 
 export async function listUserGrants(labelId: string) {
   return (await apiClient.get<LabelGrant[]>(`/api/v1/labels/${labelId}/grants`, catalogConfig)).data;

@@ -8,24 +8,12 @@ import apiClient from "../shared/api/client";
 import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
 import { emptyCatalogFilters } from "../shared/catalog/types";
 
-const workspaceId = "11111111-1111-4111-8111-111111111111";
+const ownerUserId = "11111111-1111-4111-8111-111111111111";
 const serverId = "22222222-2222-4222-8222-222222222222";
 const mappingId = "33333333-3333-4333-8333-333333333333";
 const targetMappingId = "55555555-5555-4555-8555-555555555555";
 const edgeId = "66666666-6666-4666-8666-666666666666";
 const frameId = "88888888-8888-4888-8888-888888888888";
-
-vi.mock("../shared/workspace/WorkspaceContext", () => ({
-  useWorkspace: () => ({
-    selectedWorkspaceId: workspaceId,
-    selectedWorkspace: {
-      id: workspaceId,
-      name: "Shared",
-      effectiveRole: "auditor",
-      capabilities: { canEditGraph: true },
-    },
-  }),
-}));
 
 vi.mock("../shared/api/client", () => ({
   default: {
@@ -59,7 +47,7 @@ describe("useDependencyLogic Auditor commands", () => {
         value: "payments",
         kind: "business",
         isProtected: false,
-        ownerUserId: workspaceId,
+        ownerUserId,
         effectivePermission: "editor",
         sharedLabelIds: ["99999999-9999-4999-8999-999999999999"],
         capabilities: { canRead: true, canEditProperties: true, canCreate: false, canDelete: false, canChangeLabels: false, canChangeOwner: false, canManageGrants: false },
@@ -146,7 +134,7 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId }}>
           <ReactFlowProvider>{children}</ReactFlowProvider>
         </CatalogAccessProvider>
       </QueryClientProvider>
@@ -175,7 +163,7 @@ describe("useDependencyLogic Auditor commands", () => {
           y: 50,
         })],
       },
-      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "shared" }),
+      expect.objectContaining({ catalogView: "shared" }),
     );
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/topology/state", expect.anything());
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
@@ -185,7 +173,7 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId }}>
           <ReactFlowProvider>{children}</ReactFlowProvider>
         </CatalogAccessProvider>
       </QueryClientProvider>
@@ -199,7 +187,7 @@ describe("useDependencyLogic Auditor commands", () => {
     expect(apiClient.post).toHaveBeenCalledWith(
       "/api/v1/topology/commands",
       { version: 7, operations: [{ type: "deleteEdge", edgeId }] },
-      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "shared" }),
+      expect.objectContaining({ catalogView: "shared" }),
     );
   });
 
@@ -207,7 +195,7 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId }}>
           <ReactFlowProvider>{children}</ReactFlowProvider>
         </CatalogAccessProvider>
       </QueryClientProvider>
@@ -230,7 +218,7 @@ describe("useDependencyLogic Auditor commands", () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <QueryClientProvider client={queryClient}>
-        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId: workspaceId }}>
+        <CatalogAccessProvider initialView="shared" initialFilters={{ ...emptyCatalogFilters, ownerUserId }}>
           <ReactFlowProvider>{children}</ReactFlowProvider>
         </CatalogAccessProvider>
       </QueryClientProvider>

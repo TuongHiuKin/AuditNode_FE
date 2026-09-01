@@ -19,14 +19,14 @@ describe("catalog query isolation", () => {
     });
   });
 
-  it("loads Mine without requiring a selected workspace or workspace header", async () => {
+  it("loads Mine through the global catalog contract", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     renderHook(() => useServers(), { wrapper: wrapper(queryClient, "mine") });
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
     expect(apiClient.get).toHaveBeenCalledWith("/api/v1/servers", expect.objectContaining({
       params: expect.objectContaining({ view: "mine" }),
-      skipWorkspaceHeader: true,
+      catalogRequest: true,
     }));
     expect(queryClient.getQueryCache().find({
       queryKey: ["catalog", "anonymous", "servers", "mine", "all-owners", "all-label-keys", "all-label-values"],

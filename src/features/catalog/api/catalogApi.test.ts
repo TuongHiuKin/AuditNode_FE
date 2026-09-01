@@ -3,7 +3,7 @@ import apiClient from "../../../shared/api/client";
 import { fetchCatalogPage } from "./catalogApi";
 
 describe("catalogApi", () => {
-  it("sends the opaque cursor and marks catalog reads workspace-independent", async () => {
+  it("sends the opaque cursor and marks catalog reads for shared-cache invalidation", async () => {
     const get = vi.spyOn(apiClient, "get").mockResolvedValue({
       data: { items: [], nextCursor: null, hasNextPage: false },
     });
@@ -15,7 +15,6 @@ describe("catalogApi", () => {
     });
 
     expect(get).toHaveBeenCalledWith("/api/v1/applications", expect.objectContaining({
-      skipWorkspaceHeader: true,
       catalogRequest: true,
       params: expect.objectContaining({ view: "shared", cursor: "opaque", ownerUserId: "owner-a", labelKey: "team", labelValue: "payments" }),
     }));

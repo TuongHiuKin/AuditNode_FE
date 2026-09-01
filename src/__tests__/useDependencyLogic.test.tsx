@@ -5,7 +5,6 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
-import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 import { toTopologyState } from "../features/dependency-graph/graphContract";
 import { CatalogAccessProvider, useCatalogAccess } from "../shared/catalog/CatalogAccessContext";
 
@@ -46,8 +45,7 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe("useDependencyLogic", () => {
-  const workspaceA = "11111111-1111-4111-8111-111111111111";
-  const workspaceB = "22222222-2222-4222-8222-222222222222";
+  const ownerB = "22222222-2222-4222-8222-222222222222";
   let queryClient: QueryClient;
   let setCatalogOwner: (ownerUserId: string) => void = () => undefined;
 
@@ -59,7 +57,6 @@ describe("useDependencyLogic", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setSelectedWorkspaceId(workspaceA, { persist: false });
     queryClient = createTestQueryClient();
   });
 
@@ -195,7 +192,7 @@ describe("useDependencyLogic", () => {
           { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
         ]
       }),
-      expect.objectContaining({ skipWorkspaceHeader: true, catalogView: "mine" }),
+      expect.objectContaining({ catalogView: "mine" }),
     );
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
     expect(invalidateSpy).toHaveBeenCalledWith({
@@ -311,12 +308,12 @@ describe("useDependencyLogic", () => {
 
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
     await waitFor(() => expect(mapCalls).toBe(1));
-    act(() => { setCatalogOwner(workspaceB); });
+    act(() => { setCatalogOwner(ownerB); });
     await waitFor(() => expect(mapCalls).toBe(2));
 
-    await act(async () => { resolveB({ data: graph("server-b", "Workspace B") }); });
+    await act(async () => { resolveB({ data: graph("server-b", "Catalog B") }); });
     await waitFor(() => expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true));
-    await act(async () => { resolveA({ data: graph("server-a", "Workspace A") }); });
+    await act(async () => { resolveA({ data: graph("server-a", "Catalog A") }); });
 
     expect(result.current.nodes.some((node) => node.id === "server-a")).toBe(false);
     expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true);

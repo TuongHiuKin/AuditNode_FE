@@ -1,5 +1,3 @@
-import { clearWorkspaceSelection } from "../workspace/workspaceStore";
-
 export type AuthStatus = "initializing" | "authenticated" | "anonymous";
 
 export interface CurrentUser {
@@ -56,7 +54,6 @@ export function registerSessionCacheClearer(clearer: () => void) {
 
 export function clearClientSession() {
   updateSnapshot({ status: "anonymous", accessToken: null, user: null, roles: [] });
-  clearWorkspaceSelection();
   localStorage.removeItem("auditnode_last_datacenter");
   sessionStorage.removeItem("dependencyGraphState");
   clearQueryCache();

@@ -20,7 +20,7 @@ function lazyRoute(element: ReactNode) {
   return (
     <Suspense fallback={(
       <div className="flex h-full items-center justify-center bg-background text-sm text-muted-foreground" role="status">
-        Loading workspace view…
+        Loading catalog view…
       </div>
     )}>
       {element}

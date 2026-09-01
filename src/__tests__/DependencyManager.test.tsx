@@ -19,33 +19,6 @@ vi.mock("../shared/api/client", () => ({
   },
 }));
 
-const { ownerCapabilities } = vi.hoisted(() => ({
-  ownerCapabilities: {
-    canManageShares: true,
-    canWriteInventory: true,
-    canEditGraph: true,
-    canManageDatacenters: true,
-    canManageLabels: true,
-    canImport: true,
-  },
-}));
-
-vi.mock("../shared/workspace/WorkspaceContext", () => ({
-  useWorkspace: () => ({
-    selectedWorkspaceId: "11111111-1111-4111-8111-111111111111",
-    selectedWorkspace: {
-      id: "11111111-1111-4111-8111-111111111111",
-      name: "Personal Workspace",
-      effectiveRole: "owner",
-      capabilities: ownerCapabilities,
-    },
-  }),
-}));
-
-vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({
-  useWorkspaceCapabilities: () => ownerCapabilities,
-}));
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: 0 },

@@ -2,7 +2,6 @@ import React, { memo, useState } from 'react';
 import { Handle, Position, NodeResizer, NodeProps, useReactFlow } from '@xyflow/react';
 import { Briefcase, MoreVertical, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useWorkspace } from '../../../shared/workspace/WorkspaceContext';
 
 export type GroupNodeData = {
   label: string;
@@ -13,8 +12,7 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
   const [showMenu, setShowMenu] = useState(false);
   const label = data.label || "Infrastructure Cluster";
   const { setNodes } = useReactFlow();
-  const { selectedWorkspace } = useWorkspace();
-  const canMutateGroup = selectedWorkspace?.effectiveRole !== "auditor";
+  const canMutateGroup = data?.canEditStructure === true;
 
   const handleDelete = () => {
     setShowMenu(false);

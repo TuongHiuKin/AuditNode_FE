@@ -23,7 +23,7 @@ function consumeShareToken() {
 async function browse(token: string, resourceType: "servers" | "applications", cursor: string | null) {
   return (await apiClient.post<CatalogPage<ShareItem>>("/api/v1/share-links/browse", {
     token, resourceType, limit: 25, cursor,
-  }, { skipWorkspaceHeader: true, skipAuthRefresh: true })).data;
+  }, { skipAuthRefresh: true })).data;
 }
 
 export function PublicSharePage() {
@@ -33,7 +33,7 @@ export function PublicSharePage() {
     enabled: !!token,
     retry: false,
     gcTime: 0,
-    queryFn: async () => (await apiClient.post<Resolution>("/api/v1/share-links/resolve", { token }, { skipWorkspaceHeader: true, skipAuthRefresh: true })).data,
+    queryFn: async () => (await apiClient.post<Resolution>("/api/v1/share-links/resolve", { token }, { skipAuthRefresh: true })).data,
   });
   const servers = useInfiniteQuery({
     queryKey: ["public-share", requestId, "servers", resolution.data?.labelId], enabled: !!token && !!resolution.data,

@@ -4,11 +4,8 @@ import { Server, Grid, Download, ChevronDown, FileText, Upload, X, ArrowRight, P
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useHeader } from "../hooks/useHeader";
-import { useWorkspaceCapabilities } from "../../shared/workspace/useWorkspaceCapabilities";
 import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
 import apiClient from "../../shared/api/client";
-import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
 import type { ApplicationResponse } from "../../shared/api/applicationTypes";
 import {
@@ -17,7 +14,6 @@ import {
   mapServerExportRows,
   selectExportColumns,
   unwrapExportList,
-  workspaceExportName,
   type ServerExportRecord,
 } from "../../shared/utils/inventoryExport";
 import { getErrorMessage } from "../../shared/utils/errorUtils";
@@ -80,13 +76,11 @@ const APP_COLUMNS: ColumnOption[] = [
 
 export function InventoryLayout() {
   const { setHeader } = useHeader();
-  const legacyCapabilities = useWorkspaceCapabilities();
   const { view } = useCatalogAccess();
-  const canEditInventory = view === "mine" && legacyCapabilities.canWriteInventory;
-  const canImport = view === "mine" && legacyCapabilities.canImport;
+  const canEditInventory = view === "mine";
+  const canImport = view === "mine";
 
   const queryClient = useQueryClient();
-  const { selectedWorkspace, selectedWorkspaceId } = useWorkspace();
   const location = useLocation();
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -128,9 +122,6 @@ export function InventoryLayout() {
 
   const onRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["catalog"] });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const onSelectRow = (id: string) => {
@@ -187,7 +178,6 @@ export function InventoryLayout() {
       const baseEndpoint = currentTab.type === "servers" ? "/api/v1/servers" : "/api/v1/applications";
       const response = await apiClient.get<unknown>(`${baseEndpoint}/export`, {
         params: { ...buildRepeatedIdParams(selectedIds), view },
-        skipWorkspaceHeader: true,
         catalogRequest: true,
         catalogView: view,
       });
@@ -199,10 +189,10 @@ export function InventoryLayout() {
 
       // Step 5: File Generation
       const date = new Date().toISOString().split("T")[0];
-      const workspaceName = (view === "mine" ? "My_Catalog" : "Shared_Catalog")
+      const catalogName = (view === "mine" ? "My_Catalog" : "Shared_Catalog")
         .replace(/[^a-zA-Z0-9_-]+/g, "_");
       const typeLabel = currentTab.type === "servers" ? "Servers" : "Applications";
-      const baseFileName = `${workspaceName}_${typeLabel}_AuditExport_${date}`;
+      const baseFileName = `${catalogName}_${typeLabel}_AuditExport_${date}`;
       
       if (exportFormat === "excel") {
         await exportToExcel(exportData, baseFileName);

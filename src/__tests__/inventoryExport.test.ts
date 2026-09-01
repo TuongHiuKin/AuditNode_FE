@@ -3,7 +3,6 @@ import {
   buildRepeatedIdParams,
   mapApplicationExportRows,
   mapServerExportRows,
-  workspaceExportName,
 } from "../shared/utils/inventoryExport";
 
 describe("inventory export contract", () => {
@@ -42,10 +41,5 @@ describe("inventory export contract", () => {
       expect.objectContaining({ portMappingId: "mapping-1", portNumber: 8443, protocol: "HTTPS", labels: "domain=finance" }),
       expect.objectContaining({ portMappingId: "mapping-2", portNumber: 9443, protocol: "HTTPS", labels: "domain=finance" }),
     ]);
-  });
-
-  it("uses current workspace name with ID fallback and never Global", () => {
-    expect(workspaceExportName({ id: "workspace-1", name: "Production" }, "workspace-1")).toBe("Production");
-    expect(workspaceExportName(null, "workspace-1")).toBe("workspace-1");
   });
 });

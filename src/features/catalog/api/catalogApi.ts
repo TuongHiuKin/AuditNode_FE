@@ -31,7 +31,6 @@ export async function fetchCatalogPage<T extends CatalogResource>(resource: T, r
         labelValue: request.labelValue || undefined,
       } : {}),
     },
-    skipWorkspaceHeader: true,
     catalogRequest: true,
     catalogView: request.view,
   });

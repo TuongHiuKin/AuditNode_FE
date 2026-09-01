@@ -3,8 +3,7 @@ import apiClient, { Schemas } from "../../../shared/api/client";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
 import { LabelFilterDropdown } from "../../../app/components/LabelFilterDropdown";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
 
 interface FilterBarProps {
   selectedEnv: string;
@@ -37,15 +36,18 @@ export function FilterBar({
   onSelectResult,
   showLabelPicker = true,
 }: FilterBarProps) {
-  const { selectedWorkspaceId } = useWorkspace();
+  const { view, filters } = useCatalogAccess();
   // Fetch real datacenters from the API
   const { data: datacenterData = [] } = useQuery({
-    queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
+    queryKey: ["catalog", "graph-filter", "datacenters", view, filters.ownerUserId ?? "all-owners"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["DatacenterDto"][]>("/api/v1/datacenters");
-      return Array.isArray(response.data) ? response.data : [];
+      const response = await apiClient.get<Schemas["CursorPageDtoOfDatacenterDto"]>("/api/v1/datacenters", {
+        params: { view, limit: 100, ownerUserId: filters.ownerUserId || undefined },
+        catalogRequest: true,
+        catalogView: view,
+      });
+      return response.data.items ?? [];
     },
-    enabled: !!selectedWorkspaceId,
   });
 
   const datacenterOptions = [

@@ -88,11 +88,15 @@ export function FlowCanvas({
   }, [onEdgesChange]);
   const effectiveNodes = useMemo(() => nodes.map((node: any) => {
     const restricted = node.type === "restricted" || node.data?.isRestricted;
-    const protectedStructure = !canEditStructure && (node.type === "boundaryFrame" || node.type === "groupNode");
+    const isStructure = node.type === "boundaryFrame" || node.type === "groupNode";
+    const protectedStructure = !canEditStructure && isStructure;
     const protectedResource = node.data?.canEdit === false;
-    return restricted || protectedStructure || protectedResource
-      ? { ...node, draggable: false, connectable: false, deletable: false }
+    const effectiveNode = isStructure
+      ? { ...node, data: { ...node.data, canEditStructure } }
       : node;
+    return restricted || protectedStructure || protectedResource
+      ? { ...effectiveNode, draggable: false, connectable: false, deletable: false }
+      : effectiveNode;
   }), [canEditStructure, nodes]);
   const nodeTypes: NodeTypes = useMemo(() => ({
     appNode: AppNode,

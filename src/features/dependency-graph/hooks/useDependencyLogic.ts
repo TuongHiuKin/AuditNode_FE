@@ -106,10 +106,10 @@ export function useDependencyLogic() {
   const queryClient = useQueryClient();
 
   const isExplicitFetchRef = useRef(false);
-  const activeWorkspaceRef = useRef(graphScopeKey);
+  const activeGraphScopeRef = useRef(graphScopeKey);
 
   useEffect(() => {
-    activeWorkspaceRef.current = graphScopeKey;
+    activeGraphScopeRef.current = graphScopeKey;
     topologyVersionRef.current = 0;
     pendingChangesRef.current = emptyPendingChanges();
     setNodes([]);
@@ -179,10 +179,10 @@ export function useDependencyLogic() {
 
     const date = new Date().toISOString().split('T')[0];
     const cleanGroupLabel = groupLabel.replace(/\s+/g, '_');
-    const workspaceName = (filters.ownerUserId || `${view}-catalog`)
+    const catalogName = (filters.ownerUserId || `${view}-catalog`)
       .replace(/[^a-zA-Z0-9_-]+/g, "_");
     try {
-      await exportToExcel(auditData, `${workspaceName}_${cleanGroupLabel}_AuditMatrix_${date}`);
+      await exportToExcel(auditData, `${catalogName}_${cleanGroupLabel}_AuditMatrix_${date}`);
       toast.success(`Exported ${auditData.length} connections for ${groupLabel}`);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Failed to export audit matrix."));
@@ -297,7 +297,7 @@ export function useDependencyLogic() {
         ...buildDependencySyncRequest(currentNodes, currentEdges),
         version: topologyVersionRef.current,
       };
-      await apiClient.put("/api/v1/topology/state", request, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+      await apiClient.put("/api/v1/topology/state", request, { catalogRequest: true, catalogView: view });
       topologyVersionRef.current += 1;
       
       toast.success("Network state synchronized successfully");
@@ -316,7 +316,7 @@ export function useDependencyLogic() {
   const { data: allServers = [] } = useQuery<Schemas["ServerResponseDto"][]>({
     queryKey: ["catalog-graph", "all-servers", view, filters.ownerUserId ?? "all"],
     queryFn: async () => {
-      const response = await apiClient.get<{ items: Schemas["ServerResponseDto"][] }>("/api/v1/servers", { params: { view, limit: 100, ownerUserId: filters.ownerUserId || undefined }, skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+      const response = await apiClient.get<{ items: Schemas["ServerResponseDto"][] }>("/api/v1/servers", { params: { view, limit: 100, ownerUserId: filters.ownerUserId || undefined }, catalogRequest: true, catalogView: view });
       const data = response.data.items ?? [];
       return data as Schemas["ServerResponseDto"][];
     },
@@ -457,7 +457,6 @@ export function useDependencyLogic() {
             ownerUserId: filters.ownerUserId || undefined,
           },
           signal,
-          skipWorkspaceHeader: true,
           catalogRequest: true,
           catalogView: view,
         }
@@ -471,7 +470,7 @@ export function useDependencyLogic() {
       // Restore canonical state only when inventory labels are not filtering the graph.
       if (!labels || labels.length === 0) {
         try {
-          const framesResponse = await apiClient.get<TopologyState>("/api/v1/topology/state", { signal, params: { ownerUserId: filters.ownerUserId || undefined }, skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+          const framesResponse = await apiClient.get<TopologyState>("/api/v1/topology/state", { signal, params: { ownerUserId: filters.ownerUserId || undefined }, catalogRequest: true, catalogView: view });
           const candidateState = framesResponse.data;
           if (!Array.isArray(candidateState.nodes) || !Array.isArray(candidateState.edges)) {
             throw new Error("Invalid topology state response.");
@@ -730,7 +729,7 @@ export function useDependencyLogic() {
       const [, , requestScope, env, dc, labels] = queryKey as [string, string, string, string, string, string[]];
       const result = await fetchAndMapGraph(env, dc, labels, signal);
 
-      if (signal.aborted || activeWorkspaceRef.current !== requestScope) {
+      if (signal.aborted || activeGraphScopeRef.current !== requestScope) {
         return result;
       }
       setNodes(result.nodes);
@@ -976,7 +975,7 @@ export function useDependencyLogic() {
           toast.info("No scoped graph changes to save.");
           return;
         }
-        const response = await apiClient.post<{ version: number }>("/api/v1/topology/commands", batch, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+        const response = await apiClient.post<{ version: number }>("/api/v1/topology/commands", batch, { catalogRequest: true, catalogView: view });
         topologyVersionRef.current = response.data.version;
         pendingChangesRef.current = emptyPendingChanges();
         await queryClient.invalidateQueries({
@@ -988,7 +987,7 @@ export function useDependencyLogic() {
           ...buildDependencySyncRequest(nodes, edges),
           version: topologyVersionRef.current,
         };
-        await apiClient.put("/api/v1/topology/state", request, { skipWorkspaceHeader: true, catalogRequest: true, catalogView: view });
+        await apiClient.put("/api/v1/topology/state", request, { catalogRequest: true, catalogView: view });
         topologyVersionRef.current += 1;
       }
       toast.success("Network state saved successfully!");

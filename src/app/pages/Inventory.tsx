@@ -6,8 +6,6 @@ import { EditEntityDrawer } from "../components/EditEntityDrawer";
 import { MigrationDrawer } from "../components/MigrationDrawer";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { useInventoryContext } from "./InventoryLayout";
-import { useWorkspace } from "../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../shared/workspace/workspaceStore";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
   const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl, onOpenCreateDc } = useInventoryContext();
@@ -30,13 +28,8 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
   });
 
   const queryClient = useQueryClient();
-  const { selectedWorkspaceId } = useWorkspace();
-
   const refreshData = () => {
     queryClient.invalidateQueries({ queryKey: ["catalog"] });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
-    queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
   };
 
   const handleSelectResult = (id: string, _type: 'SERVER' | 'APP') => {
@@ -99,13 +92,9 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
         onClose={() => setEditEntity({ id: null, type: null })}
         onApplicationsUpdated={() => {
           queryClient.invalidateQueries({ queryKey: ["catalog"] });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
         }}
         onServersUpdated={() => {
           queryClient.invalidateQueries({ queryKey: ["catalog"] });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
         }}
       />
 
@@ -113,12 +102,10 @@ export function Inventory({ type }: { type: "servers" | "applications" }) {
         applicationId={migrateAppId}
         onClose={() => setMigrateAppId(null)}
         onApplicationsUpdated={() => {
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("applications", selectedWorkspaceId) });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: ["catalog"] });
         }}
         onServersUpdated={() => {
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("servers", selectedWorkspaceId) });
-          queryClient.invalidateQueries({ queryKey: tenantQueryKey("labels", selectedWorkspaceId) });
+          queryClient.invalidateQueries({ queryKey: ["catalog"] });
         }}
       />
 

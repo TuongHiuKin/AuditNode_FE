@@ -87,7 +87,6 @@ const UniversalSearch: React.FC<UniversalSearchProps> = ({
             labelValue: catalog.filters.labelValue || undefined,
           },
           signal: controller.signal,
-          skipWorkspaceHeader: true,
           catalogRequest: true,
           catalogView: catalog.view,
         });

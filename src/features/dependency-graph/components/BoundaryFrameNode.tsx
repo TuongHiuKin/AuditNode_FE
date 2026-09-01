@@ -2,12 +2,10 @@ import { memo } from "react";
 import { NodeProps, NodeResizer, NodeToolbar, Position, useReactFlow } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
 
 export const BoundaryFrameNode = memo(({ id, data, selected }: NodeProps) => {
   const { setNodes } = useReactFlow();
-  const { selectedWorkspace } = useWorkspace();
-  const canMutateFrame = selectedWorkspace?.effectiveRole !== "auditor";
+  const canMutateFrame = data?.canEditStructure === true;
 
   const handleDelete = () => {
     setNodes((nodes) => {

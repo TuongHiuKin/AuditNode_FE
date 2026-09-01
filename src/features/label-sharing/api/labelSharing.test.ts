@@ -9,7 +9,7 @@ describe("label sharing API", () => {
     expect(post).toHaveBeenCalledWith(
       "/api/v1/labels/label-1/grants",
       expect.objectContaining({ granteeUserId: "user-2", permission: "editor" }),
-      expect.objectContaining({ skipWorkspaceHeader: true }),
+      expect.objectContaining({ catalogRequest: true }),
     );
   });
 
@@ -19,7 +19,7 @@ describe("label sharing API", () => {
     expect(post).toHaveBeenCalledWith(
       "/api/v1/labels/label-1/share-links",
       { expiresAt: "2030-01-01T00:00:00.000Z" },
-      expect.objectContaining({ skipWorkspaceHeader: true }),
+      expect.objectContaining({ catalogRequest: true }),
     );
   });
 
@@ -28,7 +28,7 @@ describe("label sharing API", () => {
     await listAnonymousViewerLinks("label-1");
     expect(get).toHaveBeenCalledWith(
       "/api/v1/labels/label-1/share-links",
-      expect.objectContaining({ skipWorkspaceHeader: true }),
+      expect.objectContaining({ catalogRequest: true }),
     );
   });
 });

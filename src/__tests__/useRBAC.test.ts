@@ -14,7 +14,7 @@ describe("useRBAC Hook", () => {
     });
   });
 
-  it("does not treat workspace roles as system roles", () => {
+  it("does not treat label-grant roles as system roles", () => {
     setRoles(["Auditor"]);
     const { result } = renderHook(() => useRBAC());
     expect(result.current).toMatchObject({

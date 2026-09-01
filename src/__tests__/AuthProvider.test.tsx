@@ -66,12 +66,11 @@ describe("AuthProvider", () => {
     expect(apiClient.get).not.toHaveBeenCalled();
   });
 
-  it("clears auth, workspace, graph state, and query cache when backend logout fails", async () => {
+  it("clears auth, graph state, and query cache when backend logout fails", async () => {
     vi.mocked(apiClient.post).mockResolvedValue({ data: { accessToken: "memory-token", expiresIn: 300 } });
     vi.mocked(apiClient.get).mockResolvedValue({ data: { id: "id", username: "user", roles: [] } });
     const clearCache = vi.fn();
     registerSessionCacheClearer(clearCache);
-    localStorage.setItem("workspaceId", "workspace-id");
     sessionStorage.setItem("dependencyGraphState", "cached-graph");
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("authenticated"));
@@ -80,7 +79,6 @@ describe("AuthProvider", () => {
     await userEvent.click(screen.getByRole("button", { name: "Logout now" }));
 
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("anonymous"));
-    expect(localStorage.getItem("workspaceId")).toBeNull();
     expect(sessionStorage.getItem("dependencyGraphState")).toBeNull();
     expect(clearCache).toHaveBeenCalled();
   });

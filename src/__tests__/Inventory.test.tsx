@@ -4,7 +4,6 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Inventory } from "../app/pages/Inventory";
 import apiClient from "../shared/api/client";
-vi.mock("../shared/workspace/useWorkspaceCapabilities", () => ({ useWorkspaceCapabilities: () => ({ canWriteInventory: true }) }));
 
 // Mock dependencies
 vi.mock("../shared/api/client", () => ({
