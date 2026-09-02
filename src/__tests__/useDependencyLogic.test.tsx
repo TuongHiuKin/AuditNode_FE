@@ -7,6 +7,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
 import { toTopologyState } from "../features/dependency-graph/graphContract";
 import { CatalogAccessProvider, useCatalogAccess } from "../shared/catalog/CatalogAccessContext";
+import { invalidateSharedCatalog } from "../shared/catalog/catalogCache";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -70,6 +71,34 @@ describe("useDependencyLogic", () => {
       </CatalogAccessProvider>
     </QueryClientProvider>
   );
+
+  const sharedWrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <CatalogAccessProvider principalId="shared-viewer" initialView="shared">
+        <ReactFlowProvider>{children}</ReactFlowProvider>
+      </CatalogAccessProvider>
+    </QueryClientProvider>
+  );
+
+  it("removes Shared graph cache and rendered nodes when access is invalidated", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") {
+        return Promise.resolve({ data: {
+          servers: [{ id: "shared-server", serverId: "shared-server", hostname: "shared", ipAddress: "10.0.0.8", applications: [] }],
+          connections: [],
+        } });
+      }
+      if (url === "/api/v1/applications" || url === "/api/v1/servers") return Promise.resolve({ data: [] });
+      return Promise.reject(new Error(`Unknown URL: ${url}`));
+    });
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper: sharedWrapper });
+    await waitFor(() => expect(result.current.nodes.length).toBeGreaterThan(0));
+
+    act(() => invalidateSharedCatalog());
+
+    await waitFor(() => expect(result.current.nodes).toHaveLength(0));
+    expect(queryClient.getQueriesData({ queryKey: ["catalog-graph"] })).toHaveLength(0);
+  });
 
   it("fetches and maps initial data correctly", async () => {
     const mockDependencyMap = {

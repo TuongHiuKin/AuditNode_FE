@@ -31,7 +31,10 @@ export function useCatalogPages<T extends CatalogResource>(
   });
 
   useEffect(() => registerSharedCatalogInvalidator(() => {
-    void queryClient.invalidateQueries({ queryKey: ["catalog", access.principalId, resource, "shared"] });
+    const sharedKey = ["catalog", access.principalId, resource, "shared"] as const;
+    void queryClient.cancelQueries({ queryKey: sharedKey }).then(() => {
+      queryClient.removeQueries({ queryKey: sharedKey });
+    });
   }), [access.principalId, queryClient, resource]);
 
   const items = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data]);

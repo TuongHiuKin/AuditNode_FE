@@ -88,11 +88,9 @@ services:
       - --host=postgres
       - --username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME}
       - --dbname=auditnode_e2e
-      - --file=/sql/workspace-scoped-views.sql
+      - --command=SELECT 1 FROM v_topology_map LIMIT 0; SELECT 1 FROM v_dependency_graph LIMIT 0;
     environment:
       PGPASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
-    volumes:
-      - ../../../AuditNode.Backend/AuditNode.Infrastructure/Sql/20260818_workspace_scoped_views.sql:/sql/workspace-scoped-views.sql:ro
     depends_on:
       migrations:
         condition: service_completed_successfully

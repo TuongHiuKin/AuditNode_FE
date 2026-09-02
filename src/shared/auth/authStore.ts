@@ -15,6 +15,8 @@ export interface AuthSnapshot {
 }
 
 const listeners = new Set<() => void>();
+const ACTIVE_VIEWER_LINK_SESSION_KEY = "auditnode.activeViewerLink";
+const PUBLIC_SHARE_TOKEN_SESSION_KEY = "auditnode.shareToken";
 let clearQueryCache: () => void = () => undefined;
 let snapshot: AuthSnapshot = {
   status: "initializing",
@@ -32,6 +34,7 @@ export function subscribeToAuth(listener: () => void) {
 }
 
 export function beginAuthInitialization() {
+  clearSensitiveSessionArtifacts();
   updateSnapshot({ status: "initializing", accessToken: null, user: null, roles: [] });
 }
 
@@ -40,6 +43,7 @@ export function setAccessToken(accessToken: string) {
 }
 
 export function setAuthenticatedSession(accessToken: string, user: CurrentUser) {
+  clearSensitiveSessionArtifacts();
   updateSnapshot({
     status: "authenticated",
     accessToken,
@@ -55,8 +59,14 @@ export function registerSessionCacheClearer(clearer: () => void) {
 export function clearClientSession() {
   updateSnapshot({ status: "anonymous", accessToken: null, user: null, roles: [] });
   localStorage.removeItem("auditnode_last_datacenter");
-  sessionStorage.removeItem("dependencyGraphState");
+  clearSensitiveSessionArtifacts();
   clearQueryCache();
+}
+
+function clearSensitiveSessionArtifacts() {
+  sessionStorage.removeItem("dependencyGraphState");
+  sessionStorage.removeItem(ACTIVE_VIEWER_LINK_SESSION_KEY);
+  sessionStorage.removeItem(PUBLIC_SHARE_TOKEN_SESSION_KEY);
 }
 
 function updateSnapshot(next: AuthSnapshot) {

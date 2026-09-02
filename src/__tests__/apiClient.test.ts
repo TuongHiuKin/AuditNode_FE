@@ -28,6 +28,16 @@ describe("apiClient auth interceptors", () => {
     expect(result.headers.get("Authorization")).not.toContain("legacy-token");
   });
 
+  it("clears a one-time Viewer share link when the authenticated principal changes", () => {
+    sessionStorage.setItem("auditnode.activeViewerLink", "owner-a-link");
+    sessionStorage.setItem("auditnode.shareToken", "anonymous-bearer-token");
+
+    setAuthenticatedSession("owner-b-token", { id: "owner-b", username: "owner-b", roles: [] });
+
+    expect(sessionStorage.getItem("auditnode.activeViewerLink")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.shareToken")).toBeNull();
+  });
+
   it("never sends the retired workspace header", async () => {
     localStorage.setItem("workspaceId", "legacy-workspace-id");
     const result = await requestInterceptorHandler({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig);
@@ -67,6 +77,8 @@ describe("apiClient auth interceptors", () => {
   it("clears auth, graph session, and query cache after terminal refresh failure", async () => {
     setAuthenticatedSession("expired-token", { id: "id", username: "user", roles: [] });
     sessionStorage.setItem("dependencyGraphState", "cached-graph");
+    sessionStorage.setItem("auditnode.activeViewerLink", "sensitive-link");
+    sessionStorage.setItem("auditnode.shareToken", "anonymous-bearer-token");
     const clearCache = vi.fn();
     registerSessionCacheClearer(clearCache);
     vi.spyOn(apiClient, "post").mockRejectedValue(new Error("refresh failed"));
@@ -75,6 +87,8 @@ describe("apiClient auth interceptors", () => {
     await expect(responseInterceptorErrorHandler(error)).rejects.toBe(error);
 
     expect(sessionStorage.getItem("dependencyGraphState")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.activeViewerLink")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.shareToken")).toBeNull();
     expect(clearCache).toHaveBeenCalledTimes(1);
   });
 });

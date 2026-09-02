@@ -1,17 +1,9 @@
-import { createHash } from 'node:crypto';
-
 const base = process.env.E2E_BACKEND_INTERNAL_URL;
 const required = name => process.env[name] || (() => { throw new Error(`Missing ${name}`); })();
 
-function workspaceScopedId(workspaceId, purpose) {
-  const hex = createHash('sha256').update(`${workspaceId}:${purpose}`).digest('hex');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
-}
-
-async function call(path, { token, workspaceId, method = 'GET', body, expected = [200] } = {}) {
+async function call(path, { token, method = 'GET', body, expected = [200] } = {}) {
   const headers = { 'content-type': 'application/json' };
   if (token) headers.authorization = `Bearer ${token}`;
-  if (workspaceId) headers['x-workspace-id'] = workspaceId;
   const response = await fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   if (!expected.includes(response.status)) throw new Error(`${method} ${path} returned ${response.status}: ${await response.text()}`);
   if (response.status === 204) return undefined;
@@ -23,86 +15,94 @@ async function session(prefix) {
   const password = required(`E2E_${prefix}_PASSWORD`);
   const login = await call('/api/v1/auth/login', { method: 'POST', body: { username, password } });
   const me = await call('/api/v1/auth/me', { token: login.accessToken });
-  const workspaces = await call('/api/v1/workspaces', { token: login.accessToken });
-  return { token: login.accessToken, userId: me.id, workspaces };
+  return { token: login.accessToken, userId: me.id };
 }
 
 const sessions = {};
 for (const prefix of ['SYSTEM_ADMIN', 'OWNER', 'WORKSPACE_ADMIN', 'LABEL_AUDITOR', 'FRAME_AUDITOR', 'VIEWER']) sessions[prefix] = await session(prefix);
 const owner = sessions.OWNER;
-const workspace = owner.workspaces.find(item => item.relationship === 'owner');
-if (!workspace) throw new Error('Owner personal workspace was not bootstrapped.');
-const workspaceId = workspace.id;
-const frameId = workspaceScopedId(workspaceId, 'staging-frame');
-const frameServerNodeId = workspaceScopedId(workspaceId, 'staging-server-node');
-const frameAppNodeId = workspaceScopedId(workspaceId, 'staging-app-node');
 
-let datacenters = await call('/api/v1/datacenters', { token: owner.token, workspaceId });
-let datacenter = datacenters.find(item => item.name === 'E2E Datacenter');
-if (!datacenter) datacenter = await call('/api/v1/datacenters', { token: owner.token, workspaceId, method: 'POST', body: { name: 'E2E Datacenter', location: 'E2E' } });
-
-let servers = await call('/api/v1/servers', { token: owner.token, workspaceId });
-async function ensureServer(hostname, ipAddress, labelValue) {
-  let server = servers.find(item => item.hostname === hostname);
-  if (!server) server = await call('/api/v1/servers', { token: owner.token, workspaceId, method: 'POST', expected: [201], body: {
-    datacenterId: datacenter.id, ipAddress, hostname, osType: 'Linux', environment: labelValue,
-    datacenter: datacenter.name, status: 'Online', labels: [{ key: 'environment', value: labelValue }],
-  } });
-  return server;
+async function page(path, token) {
+  const result = await call(path, { token });
+  if (!Array.isArray(result.items)) throw new Error(`${path} did not return a cursor page.`);
+  return result.items;
 }
-const productionServer = await ensureServer('e2e-production', '10.250.0.10', 'Production');
-const stagingServer = await ensureServer('e2e-staging', '10.250.0.11', 'Staging');
 
-let applications = await call('/api/v1/applications', { token: owner.token, workspaceId });
-async function ensureApp(appCode, appName, serverId, port, labelValue) {
-  let app = applications.find(item => item.appCode === appCode);
-  if (!app) app = await call('/api/v1/applications', { token: owner.token, workspaceId, method: 'POST', expected: [201], body: {
-    appCode, appName, ownerTeam: 'E2E', risk: 'Low', techStack: 'E2E', labels: [{ key: 'environment', value: labelValue }],
-    deployment: { serverId, portNumber: port, protocol: 'TCP' },
-  } });
-  return app;
+async function ensureDatacenter(sessionValue, name) {
+  const datacenters = await page('/api/v1/datacenters?view=mine&limit=100', sessionValue.token);
+  return datacenters.find(item => item.name === name) ?? call('/api/v1/datacenters', {
+    token: sessionValue.token,
+    method: 'POST',
+    body: { name, location: 'E2E' },
+  });
 }
-const productionApp = await ensureApp('E2E-PROD', 'E2E Production App', productionServer.id, 18080, 'Production');
-const stagingApp = await ensureApp('E2E-STAGE', 'E2E Staging App', stagingServer.id, 18081, 'Staging');
 
-const destinationPortMappingId = stagingApp.servers?.[0]?.portMappingId;
-if (!destinationPortMappingId) throw new Error('Staging application deployment was not returned by the API.');
-const topologyState = await call('/api/v1/topology/state', { token: owner.token, workspaceId });
-await call('/api/v1/topology/state', { token: owner.token, workspaceId, method: 'PUT', expected: [204], body: {
-  version: topologyState.version,
-  nodes: [
-    { id: frameId, nodeType: 'frame', label: 'E2E Staging Frame', x: 40, y: 40, width: 600, height: 400 },
-    { id: frameServerNodeId, nodeType: 'server', label: stagingServer.hostname, x: 80, y: 100, parentNodeId: frameId, referenceId: stagingServer.id },
-    { id: frameAppNodeId, nodeType: 'application', label: stagingApp.appName, x: 120, y: 160, parentNodeId: frameServerNodeId, referenceId: stagingApp.servers[0].portMappingId },
-  ], edges: [],
-  dependencies: [{ sourceAppId: productionApp.id, destAppId: stagingApp.id, destinationPortMappingId }],
-} });
+async function ensureServer(sessionValue, datacenter, hostname, ipAddress, scopeValue) {
+  const servers = await page('/api/v1/servers?view=mine&limit=100', sessionValue.token);
+  return servers.find(item => item.hostname === hostname) ?? call('/api/v1/servers', {
+    token: sessionValue.token,
+    method: 'POST',
+    expected: [201],
+    body: {
+      datacenterId: datacenter.id,
+      ipAddress,
+      hostname,
+      osType: 'Linux',
+      environment: 'Development',
+      datacenter: datacenter.name,
+      status: 'Online',
+      labels: [{ key: 'scope', value: scopeValue }],
+    },
+  });
+}
 
-const options = await call(`/api/v1/workspaces/${workspaceId}/share-options?max=20`, { token: owner.token });
-const productionLabel = options.labels.find(item => item.displayName === 'environment:Production');
-if (!productionLabel) throw new Error('Production label was not exposed as a share target.');
+async function findOwnedLabel(sessionValue, key, value) {
+  const labels = await page(`/api/v1/labels?view=mine&limit=100&labelKey=${encodeURIComponent(key)}&labelValue=${encodeURIComponent(value)}`, sessionValue.token);
+  const label = labels.find(item => item.key === key && item.value === value && item.ownerUserId === sessionValue.userId);
+  if (!label) throw new Error(`Owned label ${key}:${value} was not created.`);
+  return label;
+}
 
-const desiredShares = [
-  [sessions.WORKSPACE_ADMIN.userId, 'workspace_admin', 'all', []],
-  [sessions.LABEL_AUDITOR.userId, 'auditor', 'labels', [productionLabel.id]],
-  [sessions.FRAME_AUDITOR.userId, 'auditor', 'frames', [frameId]],
-  [sessions.VIEWER.userId, 'viewer', 'labels', [productionLabel.id]],
-];
-const existingShares = await call(`/api/v1/workspaces/${workspaceId}/shares`, { token: owner.token });
-for (const [userId, role, scopeMode, targetIds] of desiredShares) {
-  const existing = existingShares.find(item => item.userId === userId);
-  if (existing && existing.role === role && existing.scopeMode === scopeMode &&
-      JSON.stringify(existing.targetIds ?? []) === JSON.stringify(targetIds)) continue;
-  const payload = { userId, role, scopeMode, targetIds, version: existing?.version ?? 0 };
-  const sharePath = `/api/v1/workspaces/${workspaceId}/shares${existing ? `/${encodeURIComponent(userId)}` : ''}`;
-  try {
-    await call(sharePath, { token: owner.token, method: existing ? 'PUT' : 'POST', expected: existing ? [200] : [201], body: payload });
-  } catch (error) {
-    if (!existing || !String(error).includes('409')) throw error;
-    const latest = (await call(`/api/v1/workspaces/${workspaceId}/shares`, { token: owner.token })).find(item => item.userId === userId);
-    if (!latest) throw error;
-    await call(sharePath, { token: owner.token, method: 'PUT', expected: [200], body: { ...payload, version: latest.version } });
+async function ensureGrant(labelId, granteeUserId, permission) {
+  const path = `/api/v1/labels/${labelId}/grants`;
+  const grants = await call(path, { token: owner.token });
+  const active = grants.find(item => item.granteeUserId === granteeUserId && item.revokedAt === null);
+  if (!active) {
+    return call(path, {
+      token: owner.token,
+      method: 'POST',
+      expected: [201],
+      body: { granteeUserId, permission, expiresAt: null },
+    });
   }
+  if (active.permission === permission && active.expiresAt === null) return active;
+  return call(`${path}/${active.id}`, {
+    token: owner.token,
+    method: 'PUT',
+    body: { permission, expiresAt: null, version: active.version },
+  });
 }
 
-console.log(JSON.stringify({ workspaceId, productionServerId: productionServer.id, stagingServerId: stagingServer.id, frameId }));
+const ownerDatacenter = await ensureDatacenter(owner, 'E2E Owner Datacenter');
+const sharedServer = await ensureServer(owner, ownerDatacenter, 'e2e-shared-primary', '10.250.0.10', 'shared');
+const sharedServerTwo = await ensureServer(owner, ownerDatacenter, 'e2e-shared-secondary', '10.250.0.11', 'shared');
+const privateServer = await ensureServer(owner, ownerDatacenter, 'e2e-private', '10.250.0.12', 'private');
+const sharedLabel = await findOwnedLabel(owner, 'scope', 'shared');
+
+await ensureGrant(sharedLabel.id, sessions.LABEL_AUDITOR.userId, 'editor');
+await ensureGrant(sharedLabel.id, sessions.VIEWER.userId, 'viewer');
+
+const secondOwner = sessions.FRAME_AUDITOR;
+const secondDatacenter = await ensureDatacenter(secondOwner, 'E2E Second Owner Datacenter');
+const sameNameServer = await ensureServer(secondOwner, secondDatacenter, 'e2e-second-owner-shared', '10.251.0.10', 'shared');
+const secondOwnerLabel = await findOwnedLabel(secondOwner, 'scope', 'shared');
+
+console.log(JSON.stringify({
+  ownerUserId: owner.userId,
+  sharedLabelId: sharedLabel.id,
+  sharedServerIds: [sharedServer.id, sharedServerTwo.id],
+  privateServerId: privateServer.id,
+  secondOwnerUserId: secondOwner.userId,
+  secondOwnerLabelId: secondOwnerLabel.id,
+  secondOwnerServerId: sameNameServer.id,
+}));

@@ -1,251 +1,385 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import { actor, type E2EActorName } from '../fixtures/actors';
 
-const backend = process.env.E2E_BACKEND_URL ?? (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15000' : 'http://localhost:5000');
-const backendPeer = process.env.E2E_BACKEND_PEER_URL ?? (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15001' : backend);
+const backend = process.env.E2E_BACKEND_URL ??
+  (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15000' : 'http://localhost:5000');
 
-async function session(api: APIRequestContext, name: E2EActorName) {
-  const credentials = actor(name);
-  const login = await api.post(`${backend}/api/v1/auth/login`, { data: credentials });
-  expect(login.ok(), `${name} login`).toBeTruthy();
-  const { accessToken } = await login.json() as { accessToken: string };
+type Session = { headers: Record<string, string>; user: { id: string } };
+type CatalogPage<T> = { items: T[]; nextCursor: string | null; hasNextPage: boolean };
+type Label = { id: string; key: string; value: string; ownerUserId: string; kind: string; isProtected: boolean };
+type Grant = {
+  id: string;
+  granteeUserId: string;
+  permission: string;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  version: number;
+  sharesAllOwnerResources?: boolean;
+  warningCode?: string | null;
+};
+type Server = {
+  id: string;
+  datacenterId: string;
+  ipAddress: string;
+  hostname: string;
+  osType: string;
+  environment: string;
+  status: string;
+  labels: Array<{ key: string; value: string }>;
+  ownerUserId: string;
+  effectivePermission: string;
+};
+
+async function login(api: APIRequestContext, name: E2EActorName): Promise<Session> {
+  const response = await api.post(`${backend}/api/v1/auth/login`, { data: actor(name) });
+  expect(response.ok(), `${name} login`).toBeTruthy();
+  const { accessToken } = await response.json() as { accessToken: string };
   const headers = { authorization: `Bearer ${accessToken}` };
   const me = await api.get(`${backend}/api/v1/auth/me`, { headers });
   expect(me.ok(), `${name} identity`).toBeTruthy();
   return { headers, user: await me.json() as { id: string } };
 }
 
-type ActorSession = Awaited<ReturnType<typeof session>>;
-
-async function ownerWorkspace(api: APIRequestContext, headers: Record<string, string>) {
-  const response = await api.get(`${backend}/api/v1/workspaces`, { headers });
-  expect(response.ok()).toBeTruthy();
-  const workspaces = await response.json() as Array<{ id: string; relationship: string }>;
-  const workspace = workspaces.find(item => item.relationship === 'owner');
-  expect(workspace).toBeDefined();
-  return workspace!.id;
+async function page<T>(api: APIRequestContext, path: string, session: Session) {
+  const response = await api.get(`${backend}${path}`, { headers: session.headers });
+  expect(response.ok(), `GET ${path}`).toBeTruthy();
+  return response.json() as Promise<CatalogPage<T>>;
 }
 
-function workspaceHeaders(headers: Record<string, string>, workspaceId: string) {
-  return { ...headers, 'x-workspace-id': workspaceId };
+function updatePayload(server: Server, overrides: Partial<Server> = {}) {
+  return {
+    ipAddress: overrides.ipAddress ?? server.ipAddress,
+    hostname: overrides.hostname ?? server.hostname,
+    osType: overrides.osType ?? server.osType,
+    environment: overrides.environment ?? server.environment,
+    status: overrides.status ?? server.status,
+    datacenterId: overrides.datacenterId ?? server.datacenterId,
+    ...(overrides.labels === undefined ? {} : { labels: overrides.labels }),
+  };
 }
 
-test.describe.serial('RBAC application API fixtures', () => {
-  const sessions = new Map<E2EActorName, ActorSession>();
+test.describe.serial('Global Catalog authorization contracts', () => {
+  let owner: Session;
+  let editor: Session;
+  let viewer: Session;
+  let systemAdmin: Session;
+  let secondOwner: Session;
+  let managedUser: Session;
+  let sharedServer: Server;
+  let privateServer: Server;
+  let sharedLabel: Label;
 
   test.beforeAll(async ({ request }) => {
-    for (const name of ['owner', 'systemAdmin', 'workspaceAdmin', 'labelAuditor', 'frameAuditor', 'viewer'] as const) {
-      sessions.set(name, await session(request, name));
-    }
+    [owner, editor, viewer, systemAdmin, secondOwner, managedUser] = await Promise.all([
+      login(request, 'owner'),
+      login(request, 'editor'),
+      login(request, 'viewer'),
+      login(request, 'systemAdmin'),
+      login(request, 'secondOwner'),
+      login(request, 'managedUser'),
+    ]);
+    const ownerServers = await page<Server>(request, '/api/v1/servers?view=mine&limit=100', owner);
+    sharedServer = ownerServers.items.find(item => item.hostname === 'e2e-shared-primary')!;
+    privateServer = ownerServers.items.find(item => item.hostname === 'e2e-private')!;
+    expect(sharedServer, 'shared fixture server').toBeDefined();
+    expect(privateServer, 'private fixture server').toBeDefined();
+    const ownerLabels = await page<Label>(request, '/api/v1/labels?view=mine&limit=100&labelKey=scope&labelValue=shared', owner);
+    sharedLabel = ownerLabels.items.find(item => item.ownerUserId === owner.user.id && item.key === 'scope' && item.value === 'shared')!;
+    expect(sharedLabel, 'shared fixture label').toBeDefined();
   });
 
-  const actorSession = (name: E2EActorName) => {
-    const value = sessions.get(name);
-    if (!value) throw new Error(`Missing cached E2E session for ${name}.`);
-    return value;
-  };
+  test('Mine and Shared stay isolated and SystemAdmin is not a catalog superuser', async ({ request }) => {
+    const [ownerMine, viewerMine, viewerShared, systemAdminShared, adminUsers] = await Promise.all([
+      page<Server>(request, '/api/v1/servers?view=mine&limit=100', owner),
+      page<Server>(request, '/api/v1/servers?view=mine&limit=100', viewer),
+      page<Server>(request, '/api/v1/servers?view=shared&limit=100', viewer),
+      page<Server>(request, '/api/v1/servers?view=shared&limit=100', systemAdmin),
+      request.get(`${backend}/api/v1/admin/users`, { headers: systemAdmin.headers }),
+    ]);
 
-  test('private workspace denies a non-member SystemAdmin', async ({ request }) => {
-    const owner = actorSession('owner');
-    const systemAdmin = actorSession('systemAdmin');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
-    const response = await request.get(`${backend}/api/v1/servers`, { headers: workspaceHeaders(systemAdmin.headers, workspaceId) });
-    expect(response.status()).toBe(403);
+    expect(ownerMine.items.map(item => item.id)).toEqual(expect.arrayContaining([sharedServer.id, privateServer.id]));
+    expect(viewerMine.items.some(item => item.ownerUserId === owner.user.id)).toBe(false);
+    expect(viewerShared.items.some(item => item.id === sharedServer.id)).toBe(true);
+    expect(viewerShared.items.some(item => item.id === privateServer.id)).toBe(false);
+    expect(systemAdminShared.items.some(item => item.ownerUserId === owner.user.id)).toBe(false);
+    expect((await request.get(`${backend}/api/v1/servers/${sharedServer.id}`, { headers: systemAdmin.headers })).status()).toBe(404);
+    expect(adminUsers.status()).toBe(200);
   });
 
-  test('share candidate discovery is private, bounded, and manager-only', async ({ request }) => {
-    const owner = actorSession('owner');
-    const workspaceAdmin = actorSession('workspaceAdmin');
-    const labelAuditor = actorSession('labelAuditor');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
-
-    const empty = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options`, { headers: owner.headers });
-    expect(empty.ok()).toBeTruthy();
-    expect((await empty.json() as { users: unknown[] }).users).toEqual([]);
-
-    const short = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=ab`, { headers: owner.headers });
-    expect(short.status()).toBe(400);
-    const oversizedPage = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner&max=21`, { headers: owner.headers });
-    expect(oversizedPage.status()).toBe(400);
-
-    const denied = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner`, { headers: labelAuditor.headers });
-    expect(denied.status()).toBe(403);
-
-    const allowed = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=owner`, { headers: workspaceAdmin.headers });
-    expect(allowed.ok()).toBeTruthy();
-    expect((await allowed.json() as { users: Array<{ username: string }> }).users.length).toBeLessThanOrEqual(20);
+  test('same-named labels remain owner-specific', async ({ request }) => {
+    const [firstLabels, secondLabels] = await Promise.all([
+      page<Label>(request, '/api/v1/labels?view=mine&limit=100&labelKey=scope&labelValue=shared', owner),
+      page<Label>(request, '/api/v1/labels?view=mine&limit=100&labelKey=scope&labelValue=shared', secondOwner),
+    ]);
+    const first = firstLabels.items.find(item => item.ownerUserId === owner.user.id)!;
+    const second = secondLabels.items.find(item => item.ownerUserId === secondOwner.user.id)!;
+    expect(first.id).not.toBe(second.id);
+    expect([first.key, first.value]).toEqual([second.key, second.value]);
   });
 
-  test('share candidate discovery enforces its per-actor request budget', async ({ request }) => {
-    const rateLimitActor = actorSession('systemAdmin');
-    const owner = actorSession('owner');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
+  test('authorization is applied before cursor pagination and pages do not duplicate resources', async ({ request }) => {
+    const first = await page<Server>(request, '/api/v1/servers?view=shared&limit=1', viewer);
+    expect(first.items).toHaveLength(1);
+    expect(first.items[0].ownerUserId).toBe(owner.user.id);
+    expect(first.hasNextPage).toBe(true);
+    expect(first.nextCursor).toBeTruthy();
 
-    const responses = await Promise.all(Array.from({ length: 35 }, () =>
-      request.get(`${backend}/api/v1/workspaces/${workspaceId}/share-options?search=ab`, { headers: rateLimitActor.headers })));
-
-    expect(responses.map((response) => response.status())).toContain(429);
+    const next = await page<Server>(request, `/api/v1/servers?view=shared&limit=1&cursor=${encodeURIComponent(first.nextCursor!)}`, viewer);
+    expect(next.items).toHaveLength(1);
+    expect(next.items[0].ownerUserId).toBe(owner.user.id);
+    expect(next.items[0].id).not.toBe(first.items[0].id);
   });
 
-  test('label and frame scopes project only their fixture resources', async ({ request }) => {
-    const owner = actorSession('owner');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
-    const labelAuditor = actorSession('labelAuditor');
-    const labelServers = await request.get(`${backend}/api/v1/servers`, { headers: workspaceHeaders(labelAuditor.headers, workspaceId) });
-    expect(labelServers.ok()).toBeTruthy();
-    const labelHostnames = (await labelServers.json() as Array<{ hostname: string }>).map(item => item.hostname);
-    expect(labelHostnames).toContain('e2e-production');
-    expect(labelHostnames).not.toContain('e2e-staging');
+  test('Editor can edit a shared resource but cannot mutate labels; Viewer cannot write', async ({ request }) => {
+    const detail = await request.get(`${backend}/api/v1/servers/${sharedServer.id}`, { headers: editor.headers });
+    expect(detail.status()).toBe(200);
+    const current = await detail.json() as Server;
+    const temporaryStatus = current.status === 'Maintenance' ? 'Online' : 'Maintenance';
 
-    const frameAuditor = actorSession('frameAuditor');
-    const frameServers = await request.get(`${backend}/api/v1/servers`, { headers: workspaceHeaders(frameAuditor.headers, workspaceId) });
-    expect(frameServers.ok()).toBeTruthy();
-    const frameHostnames = (await frameServers.json() as Array<{ hostname: string }>).map(item => item.hostname);
-    expect(frameHostnames).toContain('e2e-staging');
-    expect(frameHostnames).not.toContain('e2e-production');
-  });
-
-  test('label-scoped Viewer receives a restricted dependency projection', async ({ request }) => {
-    const owner = actorSession('owner');
-    const viewer = actorSession('viewer');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
-    const response = await request.get(`${backend}/api/v1/topology/map`, { headers: workspaceHeaders(viewer.headers, workspaceId) });
-    expect(response.ok()).toBeTruthy();
-    const map = await response.json() as { servers: Array<{ hostname: string }>; restrictedNodes: Array<{ isRestricted: boolean }> };
-    expect(map.servers.map(item => item.hostname)).toContain('e2e-production');
-    expect(map.servers.map(item => item.hostname)).not.toContain('e2e-staging');
-    expect(map.restrictedNodes.length).toBeGreaterThan(0);
-    expect(map.restrictedNodes.every(item => item.isRestricted)).toBeTruthy();
-  });
-
-  test('revoke takes effect immediately and fixture access can be restored', async ({ request }) => {
-    const owner = actorSession('owner');
-    const viewer = actorSession('viewer');
-    const workspaceId = await ownerWorkspace(request, owner.headers);
-    const sharesResponse = await request.get(`${backend}/api/v1/workspaces/${workspaceId}/shares`, { headers: owner.headers });
-    const shares = await sharesResponse.json() as Array<{ userId: string; role: string; scopeMode: string; targetIds: string[]; version: number }>;
-    const share = shares.find(item => item.userId === viewer.user.id)!;
-    expect(share).toBeDefined();
-    const revoke = await request.delete(`${backend}/api/v1/workspaces/${workspaceId}/shares/${viewer.user.id}?version=${share.version}`, { headers: owner.headers });
-    expect(revoke.status()).toBe(204);
     try {
-      const denied = await request.get(`${backend}/api/v1/servers`, { headers: workspaceHeaders(viewer.headers, workspaceId) });
-      expect(denied.status()).toBe(403);
-    } finally {
-      const restore = await request.post(`${backend}/api/v1/workspaces/${workspaceId}/shares`, {
-        headers: owner.headers, data: { userId: share.userId, role: share.role, scopeMode: share.scopeMode, targetIds: share.targetIds },
+      const edit = await request.put(`${backend}/api/v1/servers/${current.id}`, {
+        headers: editor.headers,
+        data: updatePayload(current, { status: temporaryStatus }),
       });
-      expect(restore.status()).toBe(201);
+      expect(edit.status()).toBe(204);
+      const changed = await request.get(`${backend}/api/v1/servers/${current.id}`, { headers: editor.headers });
+      expect((await changed.json() as Server).status).toBe(temporaryStatus);
+
+      const relabel = await request.put(`${backend}/api/v1/servers/${current.id}`, {
+        headers: editor.headers,
+        data: updatePayload(current, { labels: current.labels }),
+      });
+      expect(relabel.status()).toBe(403);
+
+      const viewerWrite = await request.put(`${backend}/api/v1/servers/${current.id}`, {
+        headers: viewer.headers,
+        data: updatePayload(current, { status: temporaryStatus }),
+      });
+      expect(viewerWrite.status()).toBe(403);
+    } finally {
+      const restore = await request.put(`${backend}/api/v1/servers/${current.id}`, {
+        headers: editor.headers,
+        data: updatePayload(current),
+      });
+      expect(restore.status()).toBe(204);
     }
   });
 
-  test('SystemAdmin can list identities but cannot revoke the final SystemAdmin role', async ({ request }) => {
-    const systemAdmin = actorSession('systemAdmin');
-    const list = await request.get(`${backend}/api/v1/admin/users?first=0&max=20`, { headers: systemAdmin.headers });
-    expect(list.ok()).toBeTruthy();
-    const users = await list.json() as Array<{ id: string; username: string; enabled: boolean }>;
-    const managedCredentials = actor('workspaceAdmin');
-    const managedUser = users.find(item => item.username === managedCredentials.username)!;
-    expect(managedUser).toBeDefined();
+  test('real topology full-save is owner-only and an Editor loses command access immediately after revoke', async ({ request }) => {
+    const ownerStateResponse = await request.get(`${backend}/api/v1/topology/state`, { headers: owner.headers });
+    expect(ownerStateResponse.status()).toBe(200);
+    const ownerState = await ownerStateResponse.json() as { version: number; nodes: unknown[]; edges: unknown[] };
+    expect(ownerState.nodes).toEqual([]);
+    expect(ownerState.edges).toEqual([]);
 
-    const duplicateCreate = await request.post(`${backend}/api/v1/admin/users`, {
-      headers: systemAdmin.headers,
-      data: { username: managedCredentials.username, email: 'existing-e2e-workspace-admin@example.invalid', password: managedCredentials.password },
+    const nodeId = crypto.randomUUID();
+    const save = await request.put(`${backend}/api/v1/topology/state`, {
+      headers: owner.headers,
+      data: {
+        version: ownerState.version,
+        nodes: [{ id: nodeId, nodeType: 'server', label: sharedServer.hostname, x: 10, y: 20, referenceId: sharedServer.id }],
+        edges: [],
+        dependencies: [],
+      },
     });
-    expect(duplicateCreate.status()).toBe(409);
+    expect(save.status()).toBe(204);
 
-    const disable = await request.put(`${backend}/api/v1/admin/users/${managedUser.id}/status`, {
-      headers: systemAdmin.headers, data: { enabled: false },
-    });
-    expect(disable.status()).toBe(204);
+    const grantPath = `/api/v1/labels/${sharedLabel.id}/grants`;
+    const grantsResponse = await request.get(`${backend}${grantPath}`, { headers: owner.headers });
+    expect(grantsResponse.status()).toBe(200);
+    const editorGrant = (await grantsResponse.json() as Grant[])
+      .find(item => item.granteeUserId === editor.user.id && item.revokedAt === null)!;
+    expect(editorGrant.permission).toBe('editor');
+    let grantRevoked = false;
+
     try {
-      const afterDisable = await request.get(`${backend}/api/v1/admin/users?search=${encodeURIComponent(managedCredentials.username)}&first=0&max=20`, { headers: systemAdmin.headers });
-      const disabledUsers = await afterDisable.json() as Array<{ id: string; enabled: boolean }>;
-      expect(disabledUsers.find(item => item.id === managedUser.id)?.enabled).toBe(false);
+      const foreignStateResponse = await request.get(`${backend}/api/v1/topology/state`, { headers: secondOwner.headers });
+      expect(foreignStateResponse.status()).toBe(200);
+      const foreignState = await foreignStateResponse.json() as { version: number };
+      const crossOwnerSave = await request.put(`${backend}/api/v1/topology/state`, {
+        headers: secondOwner.headers,
+        data: {
+          version: foreignState.version,
+          nodes: [{ id: nodeId, nodeType: 'group', label: 'foreign-reuse', x: 0, y: 0 }],
+          edges: [],
+          dependencies: [],
+        },
+      });
+      expect(crossOwnerSave.status()).toBe(403);
+
+      const sharedStateResponse = await request.get(
+        `${backend}/api/v1/topology/state?ownerUserId=${encodeURIComponent(owner.user.id)}`,
+        { headers: editor.headers },
+      );
+      expect(sharedStateResponse.status()).toBe(200);
+      const sharedState = await sharedStateResponse.json() as { version: number; nodes: Array<{ id: string }> };
+      expect(sharedState.nodes.some(item => item.id === nodeId)).toBe(true);
+
+      const move = await request.post(`${backend}/api/v1/topology/commands`, {
+        headers: editor.headers,
+        data: { version: sharedState.version, operations: [{ type: 'moveNode', nodeId, x: 30, y: 40 }] },
+      });
+      expect(move.status()).toBe(200);
+      const movedVersion = (await move.json() as { version: number }).version;
+
+      const revoke = await request.delete(
+        `${backend}${grantPath}/${editorGrant.id}?version=${editorGrant.version}`,
+        { headers: owner.headers },
+      );
+      expect(revoke.status()).toBe(204);
+      grantRevoked = true;
+
+      const deniedMove = await request.post(`${backend}/api/v1/topology/commands`, {
+        headers: editor.headers,
+        data: { version: movedVersion, operations: [{ type: 'moveNode', nodeId, x: 50, y: 60 }] },
+      });
+      expect(deniedMove.status()).toBe(403);
     } finally {
-      const enable = await request.put(`${backend}/api/v1/admin/users/${managedUser.id}/status`, {
-        headers: systemAdmin.headers, data: { enabled: true },
-      });
-      expect(enable.status()).toBe(204);
-    }
-
-    const revoke = await request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
-      headers: systemAdmin.headers, data: { systemAdmin: false },
-    });
-    expect(revoke.status()).toBe(409);
-  });
-
-  test('two backend processes cannot concurrently remove both enabled SystemAdmins', async ({ request }) => {
-    const systemAdmin = actorSession('systemAdmin');
-    const workspaceAdmin = actorSession('workspaceAdmin');
-    const prepare = async () => {
-      const restoreFirst = await request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
-        headers: systemAdmin.headers, data: { systemAdmin: true },
-      });
-      expect(restoreFirst.status()).toBe(204);
-      const enableSecond = await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
-        headers: systemAdmin.headers, data: { enabled: true },
-      });
-      expect(enableSecond.status()).toBe(204);
-      const grantSecond = await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
-        headers: systemAdmin.headers, data: { systemAdmin: true },
-      });
-      expect(grantSecond.status()).toBe(204);
-    };
-    const cleanup = async () => {
-      let restoreFirstStatus: number | undefined;
-      let enableSecondStatus: number | undefined;
-      let revokeSecondStatus: number | undefined;
-      try {
-        restoreFirstStatus = (await request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
-          headers: systemAdmin.headers, data: { systemAdmin: true },
-        })).status();
-      } finally {
-        try {
-          enableSecondStatus = (await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
-            headers: systemAdmin.headers, data: { enabled: true },
-          })).status();
-        } finally {
-          if (restoreFirstStatus === 204) {
-            revokeSecondStatus = (await request.put(`${backend}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
-              headers: systemAdmin.headers, data: { systemAdmin: false },
-            })).status();
-          }
-        }
+      if (grantRevoked) {
+        const restoreGrant = await request.post(`${backend}${grantPath}`, {
+          headers: owner.headers,
+          data: { granteeUserId: editor.user.id, permission: 'editor', expiresAt: null },
+        });
+        expect(restoreGrant.status()).toBe(201);
       }
-      expect(restoreFirstStatus).toBe(204);
-      expect(enableSecondStatus).toBe(204);
-      expect(revokeSecondStatus).toBe(204);
-    };
+
+      const latestStateResponse = await request.get(`${backend}/api/v1/topology/state`, { headers: owner.headers });
+      expect(latestStateResponse.status()).toBe(200);
+      const latestState = await latestStateResponse.json() as { version: number };
+      const cleanup = await request.put(`${backend}/api/v1/topology/state`, {
+        headers: owner.headers,
+        data: { version: latestState.version, nodes: [], edges: [], dependencies: [] },
+      });
+      expect(cleanup.status()).toBe(204);
+    }
+  });
+
+  test('protected Owner Label is runtime-created and a confirmed grant shares the complete owner catalog', async ({ request }) => {
+    const labels = await page<Label>(request, '/api/v1/labels?view=mine&limit=100', owner);
+    const ownerLabel = labels.items.find(item => item.kind === 'owner');
+    expect(ownerLabel).toBeDefined();
+    expect(ownerLabel!.isProtected).toBe(true);
+    expect(ownerLabel!.ownerUserId).toBe(owner.user.id);
+
+    const grantPath = `/api/v1/labels/${ownerLabel!.id}/grants`;
+    const createdResponse = await request.post(`${backend}${grantPath}`, {
+      headers: owner.headers,
+      data: { granteeUserId: managedUser.user.id, permission: 'viewer', expiresAt: null },
+    });
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json() as Grant;
+    expect(created.sharesAllOwnerResources).toBe(true);
+    expect(created.warningCode).toBe('owner_label_shares_all_owner_resources');
 
     try {
-      await prepare();
-      const [revokeFirst, disableSecond] = await Promise.all([
-        request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
-          headers: systemAdmin.headers, data: { systemAdmin: false },
-        }),
-        request.put(`${backendPeer}/api/v1/admin/users/${workspaceAdmin.user.id}/status`, {
-          headers: systemAdmin.headers, data: { enabled: false },
-        }),
-      ]);
-      expect([revokeFirst.status(), disableSecond.status()].sort()).toEqual([204, 409]);
+      const shared = await page<Server>(request, '/api/v1/servers?view=shared&limit=100', managedUser);
+      expect(shared.items.map(item => item.id)).toEqual(expect.arrayContaining([sharedServer.id, privateServer.id]));
+      expect(shared.items.filter(item => item.ownerUserId === owner.user.id)).toHaveLength(3);
     } finally {
-      await cleanup();
+      const revoke = await request.delete(
+        `${backend}${grantPath}/${created.id}?version=${created.version}`,
+        { headers: owner.headers },
+      );
+      expect(revoke.status()).toBe(204);
     }
+  });
+
+  test('grant upgrade and revoke take effect immediately, then the fixture is restored', async ({ request }) => {
+    const path = `/api/v1/labels/${sharedLabel.id}/grants`;
+    const listed = await request.get(`${backend}${path}`, { headers: owner.headers });
+    expect(listed.status()).toBe(200);
+    const active = (await listed.json() as Grant[]).find(item => item.granteeUserId === viewer.user.id && item.revokedAt === null)!;
+    expect(active.permission).toBe('viewer');
 
     try {
-      await prepare();
-      const revocations = await Promise.all([
-        request.put(`${backend}/api/v1/admin/users/${systemAdmin.user.id}/roles`, {
-          headers: systemAdmin.headers, data: { systemAdmin: false },
-        }),
-        request.put(`${backendPeer}/api/v1/admin/users/${workspaceAdmin.user.id}/roles`, {
-          headers: systemAdmin.headers, data: { systemAdmin: false },
-        }),
-      ]);
-      expect(revocations.map(response => response.status()).sort()).toEqual([204, 409]);
+      const upgrade = await request.put(`${backend}${path}/${active.id}`, {
+        headers: owner.headers,
+        data: { permission: 'editor', expiresAt: null, version: active.version },
+      });
+      expect(upgrade.status()).toBe(200);
+      const upgraded = await upgrade.json() as Grant;
+      const shared = await page<Server>(request, '/api/v1/servers?view=shared&limit=100', viewer);
+      expect(shared.items.find(item => item.id === sharedServer.id)?.effectivePermission).toBe('editor');
+
+      const revoke = await request.delete(`${backend}${path}/${upgraded.id}?version=${upgraded.version}`, { headers: owner.headers });
+      expect(revoke.status()).toBe(204);
+      expect((await request.get(`${backend}/api/v1/servers/${sharedServer.id}`, { headers: viewer.headers })).status()).toBe(404);
+      const denied = await page<Server>(request, '/api/v1/servers?view=shared&limit=100', viewer);
+      expect(denied.items.some(item => item.ownerUserId === owner.user.id)).toBe(false);
     } finally {
-      await cleanup();
+      const latest = await request.get(`${backend}${path}`, { headers: owner.headers });
+      expect(latest.status()).toBe(200);
+      const current = (await latest.json() as Grant[]).find(item => item.granteeUserId === viewer.user.id && item.revokedAt === null);
+      if (!current) {
+        const restore = await request.post(`${backend}${path}`, {
+          headers: owner.headers,
+          data: { granteeUserId: viewer.user.id, permission: 'viewer', expiresAt: null },
+        });
+        expect(restore.status()).toBe(201);
+      } else if (current.permission !== 'viewer' || current.expiresAt !== null) {
+        const restore = await request.put(`${backend}${path}/${current.id}`, {
+          headers: owner.headers,
+          data: { permission: 'viewer', expiresAt: null, version: current.version },
+        });
+        expect(restore.status()).toBe(200);
+      }
     }
+  });
+
+  test('anonymous Viewer link browses only its label and becomes unavailable after revoke', async ({ request }) => {
+    const linksPath = `/api/v1/labels/${sharedLabel.id}/share-links`;
+    const createdResponse = await request.post(`${backend}${linksPath}`, {
+      headers: owner.headers,
+      data: { expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() },
+    });
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json() as { grantId: string; token: string; version: number };
+    expect(created.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+
+    let revoked = false;
+    try {
+      const resolution = await request.post(`${backend}/api/v1/share-links/resolve`, { data: { token: created.token } });
+      expect(resolution.status()).toBe(200);
+      expect((await resolution.json() as { permission: string }).permission).toBe('viewer');
+
+      const browse = await request.post(`${backend}/api/v1/share-links/browse`, {
+        data: { token: created.token, resourceType: 'servers', limit: 100 },
+      });
+      expect(browse.status()).toBe(200);
+      const anonymousPage = await browse.json() as CatalogPage<{ server: Server }>;
+      expect(anonymousPage.items.some(item => item.server.id === sharedServer.id)).toBe(true);
+      expect(anonymousPage.items.some(item => item.server.id === privateServer.id)).toBe(false);
+
+      const metadata = await request.get(`${backend}${linksPath}`, { headers: owner.headers });
+      expect(metadata.status()).toBe(200);
+      expect(JSON.stringify(await metadata.json())).not.toContain(created.token);
+      expect((await request.put(`${backend}/api/v1/servers/${sharedServer.id}`, { data: updatePayload(sharedServer) })).status()).toBe(401);
+
+      const revoke = await request.delete(`${backend}${linksPath}/${created.grantId}?version=${created.version}`, { headers: owner.headers });
+      expect(revoke.status()).toBe(204);
+      revoked = true;
+      expect((await request.post(`${backend}/api/v1/share-links/resolve`, { data: { token: created.token } })).status()).toBe(404);
+    } finally {
+      if (!revoked) {
+        const revoke = await request.delete(`${backend}${linksPath}/${created.grantId}?version=${created.version}`, { headers: owner.headers });
+        expect([204, 404, 409]).toContain(revoke.status());
+      }
+    }
+  });
+
+  test('anonymous Viewer link fails closed after expiry', async ({ request }) => {
+    const linksPath = `/api/v1/labels/${sharedLabel.id}/share-links`;
+    const createdResponse = await request.post(`${backend}${linksPath}`, {
+      headers: owner.headers,
+      data: { expiresAt: new Date(Date.now() + 3_000).toISOString() },
+    });
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json() as { token: string };
+
+    expect((await request.post(`${backend}/api/v1/share-links/resolve`, { data: { token: created.token } })).status()).toBe(200);
+    await expect.poll(
+      async () => (await request.post(`${backend}/api/v1/share-links/resolve`, { data: { token: created.token } })).status(),
+      { timeout: 8_000, intervals: [500, 500, 1_000] },
+    ).toBe(404);
   });
 });

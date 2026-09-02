@@ -15,7 +15,7 @@ const { access_token: token } = await tokenResponse.json();
 const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
 
 await request('/admin/realms', { method: 'POST', headers, body: JSON.stringify({ realm: 'auditnode-e2e', enabled: true }) });
-for (const role of ['SystemAdmin', 'Owner', 'WorkspaceAdmin', 'Auditor', 'Viewer']) {
+for (const role of ['SystemAdmin']) {
   await request(`/admin/realms/auditnode-e2e/roles`, { method: 'POST', headers, body: JSON.stringify({ name: role }) });
 }
 
@@ -38,11 +38,11 @@ await request(`/admin/realms/auditnode-e2e/users/${serviceUsers.id}/role-mapping
 
 const actors = [
   ['E2E_SYSTEM_ADMIN_USERNAME', 'E2E_SYSTEM_ADMIN_PASSWORD', 'SystemAdmin'],
-  ['E2E_OWNER_USERNAME', 'E2E_OWNER_PASSWORD', 'Owner'],
-  ['E2E_WORKSPACE_ADMIN_USERNAME', 'E2E_WORKSPACE_ADMIN_PASSWORD', 'WorkspaceAdmin'],
-  ['E2E_LABEL_AUDITOR_USERNAME', 'E2E_LABEL_AUDITOR_PASSWORD', 'Auditor'],
-  ['E2E_FRAME_AUDITOR_USERNAME', 'E2E_FRAME_AUDITOR_PASSWORD', 'Auditor'],
-  ['E2E_VIEWER_USERNAME', 'E2E_VIEWER_PASSWORD', 'Viewer'],
+  ['E2E_OWNER_USERNAME', 'E2E_OWNER_PASSWORD', null],
+  ['E2E_WORKSPACE_ADMIN_USERNAME', 'E2E_WORKSPACE_ADMIN_PASSWORD', null],
+  ['E2E_LABEL_AUDITOR_USERNAME', 'E2E_LABEL_AUDITOR_PASSWORD', null],
+  ['E2E_FRAME_AUDITOR_USERNAME', 'E2E_FRAME_AUDITOR_PASSWORD', null],
+  ['E2E_VIEWER_USERNAME', 'E2E_VIEWER_PASSWORD', null],
 ];
 for (const [usernameKey, passwordKey, roleName] of actors) {
   const username = required(usernameKey);
@@ -54,10 +54,12 @@ for (const [usernameKey, passwordKey, roleName] of actors) {
     await request(`/admin/realms/auditnode-e2e/users/${users[0].id}`, { method: 'PUT', headers, body: JSON.stringify({ ...users[0], username, email: `${username}@example.test`, firstName: 'E2E', lastName: 'Test', enabled: true, emailVerified: true, requiredActions: [] }) });
   }
   await request(`/admin/realms/auditnode-e2e/users/${users[0].id}/reset-password`, { method: 'PUT', headers, body: JSON.stringify({ type: 'password', value: required(passwordKey), temporary: false }) });
-  const role = await (await request(`/admin/realms/auditnode-e2e/roles/${roleName}`, { headers }, [200])).json();
   const mappedRoles = await (await request(`/admin/realms/auditnode-e2e/users/${users[0].id}/role-mappings/realm`, { headers }, [200])).json();
   const managedRoleNames = new Set(['SystemAdmin', 'Owner', 'WorkspaceAdmin', 'Auditor', 'Viewer']);
   const staleRoles = mappedRoles.filter(item => managedRoleNames.has(item.name) && item.name !== roleName);
   if (staleRoles.length) await request(`/admin/realms/auditnode-e2e/users/${users[0].id}/role-mappings/realm`, { method: 'DELETE', headers, body: JSON.stringify(staleRoles) });
-  await request(`/admin/realms/auditnode-e2e/users/${users[0].id}/role-mappings/realm`, { method: 'POST', headers, body: JSON.stringify([role]) });
+  if (roleName) {
+    const role = await (await request(`/admin/realms/auditnode-e2e/roles/${roleName}`, { headers }, [200])).json();
+    await request(`/admin/realms/auditnode-e2e/users/${users[0].id}/role-mappings/realm`, { method: 'POST', headers, body: JSON.stringify([role]) });
+  }
 }

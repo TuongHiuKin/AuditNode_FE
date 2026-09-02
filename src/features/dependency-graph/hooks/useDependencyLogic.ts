@@ -20,6 +20,7 @@ import { type AppNodeData, PaletteApp, type ServerNodeData, SelectedItem } from 
 import { useAppPalette } from "./useAppPalette";
 import { toast } from "sonner";
 import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
+import { registerSharedCatalogInvalidator } from "../../../shared/catalog/catalogCache";
 import { exportToExcel } from "../../../shared/utils/exportUtils";
 import { getErrorMessage } from "../../../shared/utils/errorUtils";
 import {
@@ -120,6 +121,19 @@ export function useDependencyLogic() {
     setSelectedDatacenter("All");
     setSelectedLabels([]);
   }, [graphScopeKey, setEdges]);
+
+  useEffect(() => registerSharedCatalogInvalidator(() => {
+    if (view !== "shared") return;
+    topologyVersionRef.current = 0;
+    pendingChangesRef.current = emptyPendingChanges();
+    setNodes([]);
+    setEdges([]);
+    setSelectedItem({ type: null, id: null });
+    setRightPanelData(null);
+    void queryClient.cancelQueries({ queryKey: ["catalog-graph"] }).then(() => {
+      queryClient.removeQueries({ queryKey: ["catalog-graph"] });
+    });
+  }), [queryClient, setEdges, view]);
 
   const isNarrowedGraph = selectedEnv !== "All"
     || selectedDatacenter !== "All"
