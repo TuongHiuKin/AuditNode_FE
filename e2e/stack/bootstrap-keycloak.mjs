@@ -29,6 +29,34 @@ for (const client of [
   else await request('/admin/realms/auditnode-e2e/clients', { method: 'POST', headers, body: JSON.stringify(desired) });
 }
 
+const bffClients = await (await request('/admin/realms/auditnode-e2e/clients?clientId=auditnode-bff', { headers }, [200])).json();
+const bffClient = bffClients[0];
+if (!bffClient) throw new Error('auditnode-bff client was not created');
+
+const audienceMapper = {
+  name: 'auditnode-api-audience',
+  protocol: 'openid-connect',
+  protocolMapper: 'oidc-audience-mapper',
+  consentRequired: false,
+  config: {
+    'included.custom.audience': 'auditnode-api',
+    'id.token.claim': 'false',
+    'access.token.claim': 'true',
+    'introspection.token.claim': 'true',
+  },
+};
+const protocolMappers = await (await request(`/admin/realms/auditnode-e2e/clients/${bffClient.id}/protocol-mappers/models`, { headers }, [200])).json();
+const existingMapper = protocolMappers.find(mapper => mapper.name === audienceMapper.name);
+if (existingMapper) {
+  await request(`/admin/realms/auditnode-e2e/clients/${bffClient.id}/protocol-mappers/models/${existingMapper.id}`, {
+    method: 'PUT', headers, body: JSON.stringify({ ...existingMapper, ...audienceMapper }),
+  });
+} else {
+  await request(`/admin/realms/auditnode-e2e/clients/${bffClient.id}/protocol-mappers/models`, {
+    method: 'POST', headers, body: JSON.stringify(audienceMapper),
+  });
+}
+
 const adminClients = await (await request('/admin/realms/auditnode-e2e/clients?clientId=auditnode-admin', { headers }, [200])).json();
 const serviceUsers = await (await request(`/admin/realms/auditnode-e2e/clients/${adminClients[0].id}/service-account-user`, { headers }, [200])).json();
 const realmManagement = await (await request('/admin/realms/auditnode-e2e/clients?clientId=realm-management', { headers }, [200])).json();

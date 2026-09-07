@@ -94,10 +94,17 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
     // Wait for the app to finish loading and tokens to be saved
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
 
-    // 3. Navigate directly to Dependency Manager.
-    page.on('console', msg => console.log('BROWSER:', msg.text()));
-    await page.goto('/dependency-manager');
-    await page.waitForLoadState('networkidle');
+    // 3. Navigate through the SPA so the in-memory access token remains active.
+    // Wait for the initial graph restoration to finish before changing filters;
+    // otherwise its slower response can overwrite the filtered graph state.
+    const initialTopologyStateResponse = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return response.request().method() === 'GET'
+        && url.pathname === '/api/v1/topology/state';
+    });
+    await page.getByRole('link', { name: 'Dependencies' }).click();
+    await expect(page).toHaveURL(/\/dependency-manager$/);
+    await initialTopologyStateResponse;
 
     // 4. Verify the Labels Dropdown exists and open it.
     const labelsDropdown = page.getByRole('button', { name: /labels/i, exact: false }).first();
@@ -107,7 +114,14 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
     // 5. Select the real shared-scope label created by app bootstrap.
     const sharedLabelOption = page.getByRole('button', { name: 'scope shared', exact: true });
     await expect(sharedLabelOption).toBeVisible({ timeout: 10000 });
+    const filteredTopologyResponse = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return response.request().method() === 'GET'
+        && url.pathname === '/api/v1/topology/map'
+        && [...url.searchParams.keys()].some(key => key.startsWith('labels'));
+    });
     await sharedLabelOption.click();
+    await filteredTopologyResponse;
     
     // Close dropdown by clicking outside or pressing Escape
     await page.keyboard.press('Escape');

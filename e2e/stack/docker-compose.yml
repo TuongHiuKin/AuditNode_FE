@@ -68,7 +68,7 @@ services:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=auditnode_e2e;Username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME};Password=${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
       Keycloak__Authority: http://keycloak:8080/realms/auditnode-e2e
       Keycloak__Realm: auditnode-e2e
-      Keycloak__Audience: auditnode-bff
+      Keycloak__Audience: auditnode-api
       Keycloak__BffClientId: auditnode-bff
       Keycloak__BffClientSecret: ${E2E_BFF_CLIENT_SECRET:?set E2E_BFF_CLIENT_SECRET}
       Keycloak__AdminClientId: auditnode-admin
