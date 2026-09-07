@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "backendRepository": "TuongHiuKin/AuditNode_BE",
+  "backendCommit": "ba8528df5ca765694790675418de8de0e7aea51f",
+  "openApiDocument": "/openapi/v1.json",
+  "artifact": "auditnode-api-v1.json",
+  "sha256": "b0fe51c370bb2d2ebe7d0e587182e2a59559ca96344a2caacb917af92514b889"
+}

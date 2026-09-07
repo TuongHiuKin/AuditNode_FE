@@ -6,7 +6,8 @@ React, TypeScript and Vite frontend for AuditNode inventory, topology and depend
 
 - Authentication uses the backend auth gateway at `/api/v1/auth/*`. Login and registration remain custom React screens; the application does not launch the Keycloak-hosted UI.
 - Access tokens are held in memory only. Refresh tokens are backend-managed `HttpOnly` cookies and refresh requests use credentials.
-- The selected workspace is validated against `/api/v1/workspaces`. Tenant queries include the workspace ID in their React Query key, and the standard API client adds the workspace header only after a valid selection.
+- The Global Catalog is partitioned by owner identity. `CatalogAccessProvider` scopes React Query keys by principal, selected `mine`/`shared` view, filters and owner selection; the client does not send a Workspace header.
+- Owners can grant label-scoped Viewer or Editor access directly to users. Anonymous Viewer links use the dedicated public-share flow.
 - Server CRUD, canonical multipart inventory import, application labels and deployment-specific updates use the versioned `/api/v1` contracts.
 - Dependency nodes use `PortMappingId` as deployment identity. Canvas layout is persisted through `/api/v1/topology/state`.
 - Inventory and graph exports escape spreadsheet formula prefixes and multi-ID exports use repeated `ids` query parameters.
@@ -27,12 +28,13 @@ Verification:
 
 ```powershell
 npm.cmd run test:ci
-npx.cmd tsc --noEmit
+npm.cmd run typecheck
 npm.cmd run build
+npm.cmd run sync-api:check
 ```
 
-The latest Phase 8 verification completed with 40 test files and 151 tests passing. The production build split the former 1,256.38 kB main JavaScript bundle into a 400.01 kB main chunk plus lazy route and XLSX chunks.
+CI uploads the Vitest JUnit report and command logs on every run. Docker image publication depends on the complete test, typecheck, pinned-contract and production-build gate.
 
 ## Generated API contract
 
-`src/shared/api/v1-contract.ts` is generated from a pinned backend OpenAPI artifact. Run `npm.cmd run sync-api:safe -- <artifact-path>` to update it, then `npm.cmd run sync-api:check -- <artifact-path>` to generate it twice and fail if the output is non-deterministic or differs from the checked-in contract. HTTPS inputs use normal Node.js certificate verification; TLS verification must not be bypassed.
+`src/shared/api/v1-contract.ts` is generated from `contracts/openapi/auditnode-api-v1.json`. Its metadata pins the exact backend commit and SHA-256 checksum. Run `npm.cmd run sync-api:check` to verify the checksum, generate twice and fail if output is non-deterministic or differs from the checked-in contract. To update it, generate a new artifact from an exact reviewed backend commit, run `npm.cmd run sync-api:safe -- <artifact-path>`, and update both committed artifact and metadata in the same change. CI never fetches a live OpenAPI URL.
