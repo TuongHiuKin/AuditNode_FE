@@ -16,3 +16,11 @@ The bootstrap reconciles an existing realm, clients, and users, then idempotentl
 The migration runner upgrades volumes that already have a valid EF migration history, and the readiness chain verifies the owner-scoped topology/dependency views created by migrations. A volume created by the former Workspace initializer is not a valid Phase 9 fixture; recreate only the named E2E project volume after confirming its exact target. For release evidence, run against a fresh project volume so the complete migration history is exercised.
 
 Published ports bind only to loopback. Override `E2E_POSTGRES_PORT`, `E2E_KEYCLOAK_PORT`, `E2E_BACKEND_PORT`, `E2E_BACKEND_PEER_PORT`, or `E2E_FRONTEND_PORT` when the defaults `15432`, `18080`, `15000`, `15001`, and `15173` conflict. The PostgreSQL binding exists for the opt-in `AUDITNODE_TEST_POSTGRES` advisory-lock integration tests and must not be exposed beyond loopback. The peer backend shares PostgreSQL and Keycloak with the primary backend so Playwright can verify the last-SystemAdmin invariant across API processes. Container images use explicit version tags; digest pinning remains a supply-chain hardening follow-up because verified registry digests are not stored in this repository.
+
+## Pinned release workflow
+
+`.github/workflows/pinned-release.yml` is the only workflow that publishes AuditNode application images. A release operator supplies full 40-character `backend_sha` and `frontend_sha` values plus the backend repository name. The workflow checks out both immutable revisions, verifies the resolved SHAs, records them in a release-candidate manifest, and runs this complete stack including the two-process SystemAdmin invariant before publishing.
+
+The cross-repository checkout uses `AUDITNODE_BACKEND_READ_TOKEN`, which must be a fine-grained token with read-only Contents access to the backend repository. Docker Hub credentials remain in `DOCKER_USERNAME` and `DOCKER_PASSWORD`. E2E identities and client secrets are synthetic workflow-local values used only by the disposable Compose project; they are not development or production credentials.
+
+Published images are tagged with their respective commit SHA, not `latest`. The uploaded release manifest is the matching-set record. Standard backend/frontend CI workflows still build and test pushes to `main`, but do not publish images independently.

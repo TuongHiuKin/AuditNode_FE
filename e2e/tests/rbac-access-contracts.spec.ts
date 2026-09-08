@@ -3,6 +3,8 @@ import { actor, type E2EActorName } from '../fixtures/actors';
 
 const backend = process.env.E2E_BACKEND_URL ??
   (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15000' : 'http://localhost:5000');
+const backendPeer = process.env.E2E_BACKEND_PEER_URL ??
+  (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15001' : backend);
 
 type Session = { headers: Record<string, string>; user: { id: string } };
 type CatalogPage<T> = { items: T[]; nextCursor: string | null; hasNextPage: boolean };
@@ -28,6 +30,12 @@ type Server = {
   labels: Array<{ key: string; value: string }>;
   ownerUserId: string;
   effectivePermission: string;
+};
+type AdminUser = {
+  id: string;
+  username: string;
+  enabled: boolean;
+  isSystemAdmin: boolean;
 };
 
 async function login(api: APIRequestContext, name: E2EActorName): Promise<Session> {
@@ -104,6 +112,72 @@ test.describe.serial('Global Catalog authorization contracts', () => {
     expect(systemAdminShared.items.some(item => item.ownerUserId === owner.user.id)).toBe(false);
     expect((await request.get(`${backend}/api/v1/servers/${sharedServer.id}`, { headers: systemAdmin.headers })).status()).toBe(404);
     expect(adminUsers.status()).toBe(200);
+  });
+
+  test('two backend processes preserve at least one enabled SystemAdmin', async ({ request }) => {
+    test.skip(process.env.E2E_EXTERNAL_STACK !== '1', 'Requires the external backend and backend-peer services.');
+    expect(backendPeer).not.toBe(backend);
+
+    const setStatus = async (baseUrl: string, userId: string, enabled: boolean) =>
+      request.put(`${baseUrl}/api/v1/admin/users/${userId}/status`, {
+        headers: systemAdmin.headers,
+        data: { enabled },
+      });
+    const setRole = async (baseUrl: string, userId: string, enabled: boolean) =>
+      request.put(`${baseUrl}/api/v1/admin/users/${userId}/roles`, {
+        headers: systemAdmin.headers,
+        data: { systemAdmin: enabled },
+      });
+    const expectSuccess = async (operation: Promise<{ status(): number }>) =>
+      expect((await operation).status()).toBe(204);
+    const assertInvariant = async () => {
+      await expect.poll(async () => {
+        const response = await request.get(`${backend}/api/v1/admin/users?first=0&max=100`, {
+          headers: systemAdmin.headers,
+        });
+        expect(response.status()).toBe(200);
+        const users = await response.json() as AdminUser[];
+        return users.filter(user => user.enabled && user.isSystemAdmin).length;
+      }, { timeout: 10_000, intervals: [100, 250, 500] }).toBeGreaterThanOrEqual(1);
+    };
+    const prepare = async () => {
+      await expectSuccess(setStatus(backend, systemAdmin.user.id, true));
+      await expectSuccess(setRole(backend, systemAdmin.user.id, true));
+      await expectSuccess(setStatus(backend, managedUser.user.id, true));
+      await expectSuccess(setRole(backend, managedUser.user.id, true));
+      await assertInvariant();
+    };
+    const recover = async () => {
+      await expectSuccess(setStatus(backend, systemAdmin.user.id, true));
+      await expectSuccess(setRole(backend, systemAdmin.user.id, true));
+      await expectSuccess(setStatus(backend, managedUser.user.id, true));
+      await expectSuccess(setRole(backend, managedUser.user.id, false));
+      await assertInvariant();
+    };
+
+    try {
+      await prepare();
+      const [revokeFirst, disableSecond] = await Promise.all([
+        setRole(backend, systemAdmin.user.id, false),
+        setStatus(backendPeer, managedUser.user.id, false),
+      ]);
+      expect([revokeFirst.status(), disableSecond.status()].sort()).toEqual([204, 409]);
+      await assertInvariant();
+    } finally {
+      await recover();
+    }
+
+    try {
+      await prepare();
+      const [revokeFirst, revokeSecond] = await Promise.all([
+        setRole(backend, systemAdmin.user.id, false),
+        setRole(backendPeer, managedUser.user.id, false),
+      ]);
+      expect([revokeFirst.status(), revokeSecond.status()].sort()).toEqual([204, 409]);
+      await assertInvariant();
+    } finally {
+      await recover();
+    }
   });
 
   test('same-named labels remain owner-specific', async ({ request }) => {

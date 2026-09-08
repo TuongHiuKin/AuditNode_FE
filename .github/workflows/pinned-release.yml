@@ -1,0 +1,158 @@
+name: Pinned Full-Stack Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_repository:
+        description: Backend repository in owner/name form
+        required: true
+        type: string
+      backend_sha:
+        description: Exact 40-character backend commit SHA
+        required: true
+        type: string
+      frontend_sha:
+        description: Exact 40-character frontend commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_PROJECT_NAME: auditnode-release-${{ github.run_id }}-${{ github.run_attempt }}
+  E2E_DB_USERNAME: auditnode_release
+  E2E_DB_PASSWORD: AuditNode-Release-Database-Only
+  E2E_KEYCLOAK_ADMIN_USERNAME: auditnode-release-admin
+  E2E_KEYCLOAK_ADMIN_PASSWORD: AuditNode-Release-Keycloak-Only
+  E2E_BFF_CLIENT_SECRET: auditnode-release-bff-client-secret
+  E2E_ADMIN_CLIENT_SECRET: auditnode-release-admin-client-secret
+  E2E_SYSTEM_ADMIN_USERNAME: release-system-admin
+  E2E_SYSTEM_ADMIN_PASSWORD: AuditNode-Release-User-Only
+  E2E_OWNER_USERNAME: release-owner
+  E2E_OWNER_PASSWORD: AuditNode-Release-User-Only
+  E2E_WORKSPACE_ADMIN_USERNAME: release-managed-user
+  E2E_WORKSPACE_ADMIN_PASSWORD: AuditNode-Release-User-Only
+  E2E_LABEL_AUDITOR_USERNAME: release-editor
+  E2E_LABEL_AUDITOR_PASSWORD: AuditNode-Release-User-Only
+  E2E_FRAME_AUDITOR_USERNAME: release-second-owner
+  E2E_FRAME_AUDITOR_PASSWORD: AuditNode-Release-User-Only
+  E2E_VIEWER_USERNAME: release-viewer
+  E2E_VIEWER_PASSWORD: AuditNode-Release-User-Only
+
+jobs:
+  full-stack-gate:
+    name: Full-stack and distributed identity gate
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_SHA: ${{ inputs.backend_sha }}
+      FRONTEND_SHA: ${{ inputs.frontend_sha }}
+
+    steps:
+      - name: Require immutable commit SHAs
+        shell: bash
+        run: |
+          [[ "$BACKEND_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "backend_sha must be a full lowercase commit SHA"; exit 1; }
+          [[ "$FRONTEND_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "frontend_sha must be a full lowercase commit SHA"; exit 1; }
+
+      - name: Checkout pinned frontend
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          path: AuditNode.Frontend
+          persist-credentials: false
+
+      - name: Checkout pinned backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_sha }}
+          path: AuditNode.Backend
+          token: ${{ secrets.AUDITNODE_BACKEND_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Verify resolved checkout SHAs
+        shell: bash
+        run: |
+          test "$(git -C AuditNode.Frontend rev-parse HEAD)" = "$FRONTEND_SHA"
+          test "$(git -C AuditNode.Backend rev-parse HEAD)" = "$BACKEND_SHA"
+
+      - name: Record release candidate manifest
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          jq -n --arg backendRepository "${{ inputs.backend_repository }}" --arg backendSha "$BACKEND_SHA" --arg frontendRepository "${{ github.repository }}" --arg frontendSha "$FRONTEND_SHA" --arg runId "${{ github.run_id }}" '{schemaVersion: 1, backendRepository: $backendRepository, backendSha: $backendSha, frontendRepository: $frontendRepository, frontendSha: $frontendSha, githubRunId: $runId}' > artifacts/release-manifest.json
+
+      - name: Run pinned full-stack E2E
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          up --build --abort-on-container-exit --exit-code-from playwright playwright
+
+      - name: Tear down synthetic release stack
+        if: always()
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          down --volumes --remove-orphans
+
+      - name: Upload release gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinned-release-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/release-manifest.json
+            AuditNode.Frontend/playwright-report/
+            AuditNode.Frontend/test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish-images:
+    name: Publish matching SHA-tagged images
+    needs: full-stack-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pinned frontend
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          path: AuditNode.Frontend
+          persist-credentials: false
+
+      - name: Checkout pinned backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_sha }}
+          path: AuditNode.Backend
+          token: ${{ secrets.AUDITNODE_BACKEND_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Publish pinned backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: AuditNode.Backend
+          file: AuditNode.Backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auditnode-be:${{ inputs.backend_sha }}
+
+      - name: Publish pinned frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: AuditNode.Frontend
+          file: AuditNode.Frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auditnode-fe:${{ inputs.frontend_sha }}
