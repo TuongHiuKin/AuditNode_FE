@@ -81,7 +81,7 @@ describe("EditEntityDrawer", () => {
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("test-server")).toBeDefined();
-      expect(screen.getByDisplayValue("10.0.0.1")).toBeDisabled();
+      expect(screen.getByDisplayValue("10.0.0.1")).toHaveAttribute("readonly");
     });
 
     expect(apiClient.get).toHaveBeenCalledWith("/api/v1/servers/srv-123");
@@ -129,6 +129,9 @@ describe("EditEntityDrawer", () => {
     );
 
     await waitFor(() => expect(screen.getByDisplayValue("test-server")).toBeDefined());
+    const ipAddress = screen.getByLabelText(/IP Address \(Read-only\)/i);
+    expect(ipAddress).toHaveAttribute("readonly");
+    expect(ipAddress).not.toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /Save Changes/i }));
 
     await waitFor(() => {

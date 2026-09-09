@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
-import { actor, type E2EActorName } from '../fixtures/actors';
+import { actor, type E2EActorName } from '../../fixtures/actors';
 
 const backend = process.env.E2E_BACKEND_URL ??
   (process.env.E2E_EXTERNAL_STACK === '1' ? 'http://localhost:15000' : 'http://localhost:5000');

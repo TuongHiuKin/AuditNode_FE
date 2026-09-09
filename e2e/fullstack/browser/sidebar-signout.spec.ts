@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAs } from '../fixtures/actors';
+import { loginAs } from '../../fixtures/actors';
 
 test.describe('Sidebar Collapse and Sign Out E2E Tests', () => {
 

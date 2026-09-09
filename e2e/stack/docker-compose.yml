@@ -180,7 +180,7 @@ services:
     image: mcr.microsoft.com/playwright:v1.61.1-noble
     profiles: ["test"]
     working_dir: /app
-    command: ["sh", "-c", "npm ci && npm run test:e2e"]
+    command: ["sh", "-c", "npm ci && npm run test:e2e -- --project=fullstack"]
     volumes:
       - ../..:/app
       - playwright-node-modules:/app/node_modules

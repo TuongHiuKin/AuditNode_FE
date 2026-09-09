@@ -1,10 +1,35 @@
 import { test, expect } from '@playwright/test';
-import { loginAs } from '../fixtures/actors';
+
+const sharedLabel = {
+  id: 'label-scope-shared',
+  key: 'scope',
+  value: 'shared',
+  ownerUserId: 'mock-owner',
+  kind: 'business',
+  isProtected: false,
+  effectivePermission: 'owner',
+  sharedLabelIds: [],
+  capabilities: {
+    canRead: true,
+    canEditProperties: true,
+    canCreate: true,
+    canDelete: true,
+    canChangeLabels: true,
+    canChangeOwner: false,
+    canManageGrants: true,
+  },
+};
 
 test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
 
   test('Should render boundary frames and nest servers correctly when filtering by label', async ({ page }) => {
-    // 1. Use the real bootstrapped owner labels, and mock only graph-specific data.
+    await page.route(/\/api\/v1\/auth\/login$/, route => route.fulfill({ json: { accessToken: 'mock-owner-token', expiresIn: 300 } }));
+    await page.route(/\/api\/v1\/auth\/me$/, route => route.fulfill({ json: { id: 'mock-owner', username: 'mock-owner', email: 'owner@example.test', roles: [] } }));
+    await page.route(/\/api\/v1\/labels(?:\?|$)/, route => route.fulfill({ json: { items: [sharedLabel], nextCursor: null, hasNextPage: false } }));
+    await page.route(/\/api\/v1\/(?:servers|applications|datacenters)(?:\?|$)/, route => route.fulfill({ json: { items: [], nextCursor: null, hasNextPage: false } }));
+    await page.route(/\/api\/v1\/topology\/state(?:\?|$)/, route => route.fulfill({ json: { version: 0, nodes: [], edges: [] } }));
+
+    // Mock the graph integration boundary so this suite never claims backend coverage.
     // Intercept topology map API to provide controlled node data.
     await page.route(/\/api\/v1\/topology\/map/, async route => {
       if (route.request().method() === 'OPTIONS') {
@@ -88,8 +113,11 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
       });
     });
 
-    // 2. Login as the catalog owner.
-    await loginAs(page, 'owner', '/inventory');
+    // Login through the real UI against deterministic browser routes.
+    await page.goto('/inventory');
+    await page.locator('#login-username').fill('mock-owner');
+    await page.locator('#login-password').fill('mock-password');
+    await page.locator('#login-submit').click();
 
     // Wait for the app to finish loading and tokens to be saved
     await expect(page.getByRole('link', { name: /servers/i })).toBeVisible({ timeout: 15000 });
@@ -111,7 +139,7 @@ test.describe('Dependency Graph - Label Grouping & 3-Tier Nesting', () => {
     await expect(labelsDropdown).toBeVisible({ timeout: 10000 });
     await labelsDropdown.click();
 
-    // 5. Select the real shared-scope label created by app bootstrap.
+    // 5. Select the deterministic shared-scope label.
     const sharedLabelOption = page.getByRole('button', { name: 'scope shared', exact: true });
     await expect(sharedLabelOption).toBeVisible({ timeout: 10000 });
     const filteredTopologyResponse = page.waitForResponse(response => {

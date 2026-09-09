@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAs } from '../fixtures/actors';
+import { loginAs } from '../../fixtures/actors';
 
 test.describe('Inventory Page - Servers', () => {
   test('should load the inventory page and display servers', async ({ page }) => {

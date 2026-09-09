@@ -335,7 +335,7 @@ export function EditEntityDrawer({
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="ipAddress" className="block text-xs font-bold text-muted-foreground uppercase mb-2 font-label">IP Address (Read-only)</label>
-                    <input id="ipAddress" {...register("ipAddress", { disabled: true })} className="w-full bg-background border border-border rounded-lg p-2.5 text-sm text-muted-foreground cursor-not-allowed" />
+                    <input id="ipAddress" {...register("ipAddress")} readOnly className="w-full bg-background border border-border rounded-lg p-2.5 text-sm text-muted-foreground cursor-not-allowed" />
                   </div>
                   <div>
                     <label htmlFor="hostname" className="block text-xs font-bold text-foreground uppercase mb-2 font-label">Hostname</label>

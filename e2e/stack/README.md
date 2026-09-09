@@ -24,3 +24,12 @@ Published ports bind only to loopback. Override `E2E_POSTGRES_PORT`, `E2E_KEYCLO
 The cross-repository checkout uses `AUDITNODE_BACKEND_READ_TOKEN`, which must be a fine-grained token with read-only Contents access to the backend repository. Docker Hub credentials remain in `DOCKER_USERNAME` and `DOCKER_PASSWORD`. E2E identities and client secrets are synthetic workflow-local values used only by the disposable Compose project; they are not development or production credentials.
 
 Published images are tagged with their respective commit SHA, not `latest`. The uploaded release manifest is the matching-set record. Standard backend/frontend CI workflows still build and test pushes to `main`, but do not publish images independently.
+
+## Playwright suite boundaries
+
+- `fullstack`: real frontend, backend, PostgreSQL, and Keycloak. The Docker Compose `playwright` service runs only this project.
+- `mocked`: browser/component integration with intercepted API boundaries. It is reported separately and is not evidence of backend integration.
+- `smoke-staging`: remote synthetic checks. Mutation is refused unless `E2E_STAGING_MUTATION_GUARD=AUDITNODE_SYNTHETIC_STAGING`; the selected label and grantee must be disposable staging fixtures.
+- `smoke-production`: remote read-only health and frontend checks, plus optional canary login and `/auth/me`. It contains no catalog, identity, graph, or permission mutation.
+
+Use `npm run test:e2e:list` to audit classification and `npm run test:e2e -- --project=<name>` to run one boundary explicitly. Deployment smoke is also available through the environment-protected `Deployment Smoke` workflow.

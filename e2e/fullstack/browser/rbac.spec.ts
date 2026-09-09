@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { loginAs } from '../fixtures/actors';
+import { loginAs } from '../../fixtures/actors';
 
 async function selectShared(page: import('@playwright/test').Page) {
   const shared = page.getByRole('button', { name: 'Shared with me' });
