@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { invalidateSharedCatalog } from "./catalogCache";
 import { emptyCatalogFilters, type CatalogFilters, type CatalogView } from "./types";
 
 interface CatalogAccessValue {
@@ -50,7 +51,10 @@ export function CatalogAccessProvider({
     sharedEnabled,
     filters,
     selectView(nextView) {
-      if (nextView === "shared") setSharedEnabled(true);
+      if (nextView === "shared") {
+        invalidateSharedCatalog();
+        setSharedEnabled(true);
+      }
       if (nextView !== view) setFilterState(emptyCatalogFilters);
       setView(nextView);
     },

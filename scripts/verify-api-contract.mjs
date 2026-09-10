@@ -6,6 +6,7 @@ import path from "node:path";
 const defaultManifest = path.resolve("contracts/openapi/auditnode-api-v1.metadata.json");
 const manifestInput = path.resolve(process.argv[3] ?? defaultManifest);
 const manifest = JSON.parse(readFileSync(manifestInput, "utf8"));
+const expectedBackendCommit = process.env.EXPECTED_BACKEND_SHA;
 
 if (manifest.schemaVersion !== 1) {
   throw new Error("Unsupported pinned OpenAPI metadata schema version.");
@@ -13,6 +14,12 @@ if (manifest.schemaVersion !== 1) {
 
 if (!/^[0-9a-f]{40}$/.test(manifest.backendCommit ?? "")) {
   throw new Error("Pinned OpenAPI metadata must contain a full lowercase backend commit SHA.");
+}
+
+if (expectedBackendCommit && manifest.backendCommit !== expectedBackendCommit) {
+  throw new Error(
+    `Pinned OpenAPI backend SHA mismatch: expected ${expectedBackendCommit}, received ${manifest.backendCommit}.`,
+  );
 }
 
 if (!/^[0-9a-f]{64}$/.test(manifest.sha256 ?? "")) {

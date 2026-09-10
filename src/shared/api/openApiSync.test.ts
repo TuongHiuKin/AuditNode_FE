@@ -60,6 +60,53 @@ describe("safe OpenAPI synchronization", () => {
     expect(metadata.sha256).toBe(createHash("sha256").update(artifact).digest("hex"));
   });
 
+  it("rejects release verification when metadata is pinned to a different backend SHA", () => {
+    const result = spawnSync(
+      process.execPath,
+      [path.resolve(projectRoot, "scripts/verify-api-contract.mjs")],
+      {
+        cwd: projectRoot,
+        env: { ...process.env, EXPECTED_BACKEND_SHA: "f".repeat(40) },
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toMatch(/backend SHA mismatch/i);
+  });
+
+  it("creates checksum metadata beside a runtime OpenAPI artifact", () => {
+    const temporaryRoot = mkdtempSync(path.join(tmpdir(), "auditnode-openapi-metadata-"));
+    const artifactPath = path.join(temporaryRoot, "runtime.json");
+    const metadataPath = path.join(temporaryRoot, "runtime.metadata.json");
+    const artifact = Buffer.from('{"openapi":"3.1.0","paths":{}}\n');
+    const backendCommit = "b".repeat(40);
+
+    try {
+      writeFileSync(artifactPath, artifact);
+      const result = spawnSync(
+        process.execPath,
+        [
+          path.resolve(projectRoot, "scripts/create-openapi-metadata.mjs"),
+          artifactPath,
+          backendCommit,
+          metadataPath,
+        ],
+        { cwd: projectRoot, encoding: "utf8" },
+      );
+
+      expect(result.status).toBe(0);
+      expect(JSON.parse(readFileSync(metadataPath, "utf8"))).toMatchObject({
+        schemaVersion: 1,
+        backendCommit,
+        artifact: "runtime.json",
+        sha256: createHash("sha256").update(artifact).digest("hex"),
+      });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rejects an artifact that is not selected by the committed metadata", () => {
     const result = spawnSync(
       process.execPath,

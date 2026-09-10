@@ -136,15 +136,27 @@ test.describe.serial('Browser revocation boundaries', () => {
       // Entity endpoints intentionally fail closed with non-disclosing not-found after access loss.
       expect(denied.status()).toBe(404);
 
-      await page.getByRole('button', { name: 'My catalog' }).click();
+      const mineView = page.getByRole('button', { name: 'My catalog' });
       const sharedView = page.getByRole('button', { name: 'Shared with me' });
+      const mineRefreshed = page.waitForResponse(response => response.request().method() === 'GET'
+        && new URL(response.url()).pathname === '/api/v1/servers'
+        && new URL(response.url()).searchParams.get('view') === 'mine');
+      await mineView.click();
+      expect((await mineRefreshed).status()).toBe(200);
+      await expect(mineView).toHaveAttribute('aria-pressed', 'true');
+
       const refreshed = page.waitForResponse(response => response.request().method() === 'GET'
         && new URL(response.url()).pathname === '/api/v1/servers'
         && new URL(response.url()).searchParams.get('view') === 'shared');
       await sharedView.click();
-      expect((await refreshed).status()).toBe(200);
+      const refreshedResponse = await refreshed;
+      expect(refreshedResponse.status()).toBe(200);
+      const refreshedPage = await refreshedResponse.json() as CatalogPage<Server>;
+      expect(refreshedPage.items.some(item => item.id === server.id)).toBe(false);
       await expect(sharedView).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByText(server.hostname, { exact: true })).toHaveCount(0);
+      const inventoryTable = page.getByRole('columnheader', { name: 'Hostname', exact: true })
+        .locator('xpath=ancestor::table');
+      await expect(inventoryTable.locator('tbody tr').filter({ hasText: server.hostname })).toHaveCount(0);
     } finally {
       const restoreServer = await request.put(`${backend}/api/v1/servers/${server.id}`, {
         headers: owner.headers,

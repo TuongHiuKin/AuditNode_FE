@@ -51,6 +51,18 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'coverage',
+      reporter: ['text', 'json-summary', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/__tests__/**',
+        'src/**/*.d.ts',
+        'src/shared/api/v1-contract.ts',
+      ],
+    },
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

@@ -180,13 +180,14 @@ services:
     image: mcr.microsoft.com/playwright:v1.61.1-noble
     profiles: ["test"]
     working_dir: /app
-    command: ["sh", "-c", "npm ci && npm run test:e2e -- --project=fullstack"]
+    command: ["sh", "-c", "npm ci && if [ \"$$E2E_CAPTURE_OPENAPI\" = \"1\" ]; then npm run capture-openapi; fi && npm run test:e2e -- --project=fullstack"]
     volumes:
       - ../..:/app
       - playwright-node-modules:/app/node_modules
     environment:
       CI: "true"
       E2E_EXTERNAL_STACK: "1"
+      E2E_CAPTURE_OPENAPI: ${E2E_CAPTURE_OPENAPI:-0}
       E2E_FRONTEND_URL: http://frontend:5173
       E2E_BACKEND_URL: http://backend:5000
       E2E_BACKEND_PEER_URL: http://backend-peer:5000
