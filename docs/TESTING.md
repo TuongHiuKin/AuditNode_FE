@@ -38,3 +38,9 @@ Initial server-side policy:
 The pinned release workflow captures OpenAPI from the exact backend SHA exercised by Docker full-stack E2E. It binds the artifact to that SHA with checksum metadata, verifies frontend generation, and compares it with the explicitly selected previous frontend release baseline.
 
 OpenAPI breaking-change analysis is report-only in Phase 5. It must not become blocking until false positives are calibrated and the independent-release compatibility policy is approved.
+
+## Docker performance baseline
+
+Phase 6 performance checks live under `performance/` and run only against the disposable Docker E2E stack. The approved dataset contains 10,000 resources across ten synthetic owners. `smoke`, `baseline`, and `stress` profiles publish k6 summaries; latency is report-only for the first three comparable runs.
+
+Only functional contract failures and cross-owner disclosure fail the initial job. The suite is manual through `performance.yml`, is not a pull-request gate, and must never target staging or production.

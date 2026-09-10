@@ -1,0 +1,161 @@
+\set ON_ERROR_STOP on
+
+BEGIN;
+
+DELETE FROM owner_catalog_states WHERE owner_user_id LIKE 'perf-owner-%';
+DELETE FROM labels WHERE owner_user_id LIKE 'perf-owner-%';
+DELETE FROM applications WHERE owner_user_id LIKE 'perf-owner-%';
+DELETE FROM datacenters WHERE owner_user_id LIKE 'perf-owner-%';
+
+INSERT INTO datacenters (id, owner_user_id, name, location)
+SELECT
+  (md5('perf-datacenter-' || owner_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  'Performance Datacenter ' || lpad(owner_number::text, 2, '0'),
+  'Synthetic'
+FROM generate_series(1, 10) AS owner_number;
+
+INSERT INTO labels (id, owner_user_id, key, value, kind, is_protected, created_at, updated_at)
+SELECT
+  (md5('perf-label-' || owner_number || '-' || label_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  CASE WHEN label_number = 1 THEN 'owner' ELSE 'scope' END,
+  CASE
+    WHEN label_number = 1 THEN 'perf-owner-' || lpad(owner_number::text, 2, '0')
+    ELSE 'perf-' || lpad(owner_number::text, 2, '0') || '-' || lpad(label_number::text, 2, '0')
+  END,
+  CASE WHEN label_number = 1 THEN 'owner' ELSE 'business' END,
+  label_number = 1,
+  NOW(),
+  NOW()
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(1, 10) AS label_number;
+
+INSERT INTO servers (id, owner_user_id, datacenter_id, ip_address, hostname, os_type, environment, status)
+SELECT
+  (md5('perf-server-' || owner_number || '-' || server_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-datacenter-' || owner_number))::uuid,
+  format('10.%s.%s.%s', owner_number, ((server_number - 1) / 250)::int, ((server_number - 1) % 250) + 1),
+  'perf-server-' || lpad(owner_number::text, 2, '0') || '-' || lpad(server_number::text, 4, '0'),
+  'Linux',
+  CASE WHEN server_number % 3 = 0 THEN 'Production' WHEN server_number % 3 = 1 THEN 'Staging' ELSE 'Development' END,
+  CASE WHEN server_number % 20 = 0 THEN 'Maintenance' ELSE 'Online' END
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(1, 600) AS server_number;
+
+INSERT INTO applications (id, owner_user_id, app_code, app_name, owner_team, risk, icon, tech_stack)
+SELECT
+  (md5('perf-application-' || owner_number || '-' || application_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  'PERF-' || lpad(owner_number::text, 2, '0') || '-' || lpad(application_number::text, 4, '0'),
+  'Performance Application ' || owner_number || '-' || application_number,
+  'Performance Team ' || owner_number,
+  CASE WHEN application_number % 10 = 0 THEN 'High' WHEN application_number % 3 = 0 THEN 'Medium' ELSE 'Low' END,
+  'application',
+  CASE WHEN application_number % 2 = 0 THEN 'dotnet' ELSE 'typescript' END
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(1, 400) AS application_number;
+
+INSERT INTO server_labels (owner_user_id, server_id, label_id)
+SELECT
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-server-' || owner_number || '-' || server_number))::uuid,
+  (md5('perf-label-' || owner_number || '-' || (((server_number - 1) % 9) + 2)))::uuid
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(1, 600) AS server_number;
+
+INSERT INTO application_labels (owner_user_id, application_id, label_id)
+SELECT
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-application-' || owner_number || '-' || application_number))::uuid,
+  (md5('perf-label-' || owner_number || '-' || (((application_number - 1) % 9) + 2)))::uuid
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(1, 400) AS application_number;
+
+INSERT INTO label_grants (
+  id, owner_user_id, label_id, grantee_user_id, token_hash, permission,
+  expires_at, revoked_at, version, created_by_user_id, created_at, updated_at)
+SELECT
+  (md5('perf-viewer-grant-' || owner_number || '-' || label_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-label-' || owner_number || '-' || label_number))::uuid,
+  '{{VIEWER_USER_ID}}',
+  NULL,
+  'viewer',
+  NULL,
+  NULL,
+  1,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  NOW(),
+  NOW()
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(2, 10) AS label_number
+UNION ALL
+SELECT
+  (md5('perf-editor-grant-' || owner_number || '-' || label_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-label-' || owner_number || '-' || label_number))::uuid,
+  '{{EDITOR_USER_ID}}',
+  NULL,
+  'editor',
+  CASE WHEN owner_number = 10 AND label_number IN (2, 3) THEN NOW() - INTERVAL '1 hour' ELSE NULL END,
+  CASE WHEN owner_number = 10 AND label_number IN (4, 5) THEN NOW() ELSE NULL END,
+  1,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  NOW(),
+  NOW()
+FROM generate_series(1, 10) AS owner_number
+CROSS JOIN generate_series(2, 10) AS label_number;
+
+INSERT INTO label_grants (
+  id, owner_user_id, label_id, grantee_user_id, token_hash, permission,
+  expires_at, revoked_at, version, created_by_user_id, created_at, updated_at)
+SELECT
+  (md5('perf-expired-owner-grant-' || owner_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-label-' || owner_number || '-1'))::uuid,
+  '{{EXPIRED_USER_ID}}',
+  NULL,
+  'viewer',
+  NOW() - INTERVAL '1 hour',
+  NULL,
+  1,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  NOW(),
+  NOW()
+FROM generate_series(1, 10) AS owner_number
+UNION ALL
+SELECT
+  (md5('perf-revoked-owner-grant-' || owner_number))::uuid,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  (md5('perf-label-' || owner_number || '-1'))::uuid,
+  '{{REVOKED_USER_ID}}',
+  NULL,
+  'viewer',
+  NULL,
+  NOW(),
+  1,
+  'perf-owner-' || lpad(owner_number::text, 2, '0'),
+  NOW(),
+  NOW()
+FROM generate_series(1, 10) AS owner_number;
+
+INSERT INTO label_grants (
+  id, owner_user_id, label_id, grantee_user_id, token_hash, permission,
+  expires_at, revoked_at, version, created_by_user_id, created_at, updated_at)
+VALUES
+{{ANONYMOUS_GRANT_ROWS}};
+
+COMMIT;
+
+ANALYZE datacenters;
+ANALYZE servers;
+ANALYZE applications;
+ANALYZE labels;
+ANALYZE server_labels;
+ANALYZE application_labels;
+ANALYZE label_grants;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+SELECT pg_stat_statements_reset();
