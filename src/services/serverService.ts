@@ -2,9 +2,9 @@ import apiClient, { Schemas } from "../shared/api/client";
 import { API_ENDPOINTS } from "../config/endpoints";
 import { buildRepeatedIdParams, type ServerExportRecord } from "../shared/utils/inventoryExport";
 
-export type ServerWritePayload = Omit<Schemas["CreateServerDto"], "ipAddress"> & {
+export type ServerWritePayload = Omit<Schemas["CreateServerDto"], "ipAddress" | "labels"> & {
   ipAddress: string;
-  labels?: Schemas["LabelDto"][];
+  labels?: Schemas["LabelDto"][] | null;
 };
 
 function unwrapList<T>(payload: unknown): T[] {

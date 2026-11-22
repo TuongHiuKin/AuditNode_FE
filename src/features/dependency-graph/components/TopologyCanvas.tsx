@@ -71,7 +71,7 @@ export function TopologyCanvas({
         nodesDraggable={false}
       >
         <Background color="#1e293b" gap={24} size={1} variant={BackgroundVariant.Dots} />
-        <GraphToolbar />
+        <GraphToolbar canEditStructure={false} />
         <MiniMap
           position="bottom-right"
           nodeColor={(n) =>

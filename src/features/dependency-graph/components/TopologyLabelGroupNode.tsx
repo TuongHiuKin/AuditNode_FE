@@ -1,10 +1,12 @@
 import { memo } from "react";
 import { Tags } from "lucide-react";
 import type { NodeProps } from "@xyflow/react";
-import type { TopologyLabelGroupNode as TopologyLabelGroupNodeType } from "../topology-types";
+import type { TopologyLabelGroupNodeData } from "../topology-types";
 
 export const TopologyLabelGroupNode = memo(
-  ({ data }: NodeProps<TopologyLabelGroupNodeType>) => (
+  ({ data: rawData }: NodeProps) => {
+    const data = rawData as TopologyLabelGroupNodeData;
+    return (
     <div className="pointer-events-none relative size-full rounded-xl border border-dashed border-border bg-surface/30">
       <div className="absolute -top-3 left-4 flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 shadow-sm">
         <Tags size={12} className="text-primary" />
@@ -17,7 +19,8 @@ export const TopologyLabelGroupNode = memo(
         </span>
       </div>
     </div>
-  ),
+    );
+  },
 );
 
 TopologyLabelGroupNode.displayName = "TopologyLabelGroupNode";

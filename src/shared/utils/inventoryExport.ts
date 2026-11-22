@@ -1,5 +1,4 @@
 import type { ApplicationResponse } from "../api/applicationTypes";
-import type { WorkspaceSummary } from "../workspace/WorkspaceContext";
 
 export interface ExportLabel {
   key: string;
@@ -78,13 +77,6 @@ export function selectExportColumns(
   return rows.map((item) => Object.fromEntries(columns
     .filter((column) => selectedColumns.includes(column.key))
     .map((column) => [column.label, item[column.key] ?? "N/A"])));
-}
-
-export function workspaceExportName(
-  selectedWorkspace: WorkspaceSummary | null,
-  selectedWorkspaceId: string | null,
-): string {
-  return selectedWorkspace?.name.trim() || selectedWorkspaceId || "workspace";
 }
 
 function datacenterName(server: ServerExportRecord): string {

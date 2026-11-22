@@ -13,7 +13,16 @@ export interface PaletteApp {
   techStack: string;
   risk?: string;
   isMapped?: boolean;
+  isDerivedLabelInstance?: boolean;
+  labels?: GraphLabelData[];
 }
+export interface GraphLabelData { id: string; key: string; value: string; colorHex?: string; }
+export interface DependencyLabelGroupNodeData extends Record<string, unknown> { label: GraphLabelData; serverCount: number; applicationCount: number; width: number; height: number; }
+export type DependencyLabelGroupNode = Node<DependencyLabelGroupNodeData, "dependencyLabelGroupNode">;
+export interface GraphTopologyLabelDto { id?: string; key?: string; value?: string; colorHex?: string; }
+export interface GraphApplicationNodeDto { id?: string; appId?: string; serverId?: string; name?: string; port?: string | number; protocol?: string; riskLevel?: string; portMappingId?: string; labels?: GraphTopologyLabelDto[]; }
+export interface GraphServerNodeDto { id?: string; hostname?: string; ipAddress?: string; osType?: string; environment?: string; status?: string; labels?: GraphTopologyLabelDto[]; applications?: GraphApplicationNodeDto[]; }
+export interface GraphConnectionDto { sourceAppId?: string; targetAppId?: string; }
 
 export interface AppNodeData extends Record<string, unknown> {
   app: PaletteApp;

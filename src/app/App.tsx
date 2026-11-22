@@ -1,8 +1,10 @@
 import { RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { router } from "./routes";
-import { AuthProvider } from "../shared/auth/AuthContext";
-import { WorkspaceProvider } from "../shared/workspace/WorkspaceContext";
+import { AuthProvider, useAuth } from "../shared/auth/AuthContext";
+import { registerSessionCacheClearer } from "../shared/auth/authStore";
+import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,13 +16,26 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  useEffect(() => {
+    registerSessionCacheClearer(() => queryClient.clear());
+    return () => registerSessionCacheClearer(() => undefined);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <WorkspaceProvider>
-          <RouterProvider router={router} />
-        </WorkspaceProvider>
+        <AuthenticatedApplication />
       </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function AuthenticatedApplication() {
+  const { status, user } = useAuth();
+  const principalId = status === "authenticated" && user ? user.id : "anonymous";
+  return (
+    <CatalogAccessProvider key={principalId} principalId={principalId}>
+      <RouterProvider router={router} />
+    </CatalogAccessProvider>
   );
 }

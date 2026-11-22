@@ -1,0 +1,109 @@
+services:
+  postgres:
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "track_io_timing=on"]
+
+  performance-keycloak-config:
+    image: node:20-alpine
+    profiles: ["performance"]
+    working_dir: /performance
+    command: ["node", "scripts/configure-keycloak.mjs"]
+    volumes:
+      - ../../performance:/performance:ro
+    environment:
+      PERF_KEYCLOAK_URL: http://keycloak:8080
+      E2E_KEYCLOAK_ADMIN_USERNAME: ${E2E_KEYCLOAK_ADMIN_USERNAME:?set E2E_KEYCLOAK_ADMIN_USERNAME}
+      E2E_KEYCLOAK_ADMIN_PASSWORD: ${E2E_KEYCLOAK_ADMIN_PASSWORD:?set E2E_KEYCLOAK_ADMIN_PASSWORD}
+    depends_on:
+      keycloak-bootstrap:
+        condition: service_completed_successfully
+
+  performance-identity:
+    image: node:20-alpine
+    profiles: ["performance"]
+    working_dir: /performance
+    command: ["node", "scripts/render-fixture.mjs"]
+    volumes:
+      - ../../performance:/performance:ro
+      - performance-runtime:/runtime
+    environment:
+      PERF_BACKEND_URL: http://backend:5000
+      PERF_RUNTIME_DIRECTORY: /runtime
+      PERF_SEED_TEMPLATE: /performance/fixtures/seed-catalog.sql.template
+      E2E_VIEWER_USERNAME: ${E2E_VIEWER_USERNAME:?set E2E_VIEWER_USERNAME}
+      E2E_VIEWER_PASSWORD: ${E2E_VIEWER_PASSWORD:?set E2E_VIEWER_PASSWORD}
+      E2E_LABEL_AUDITOR_USERNAME: ${E2E_LABEL_AUDITOR_USERNAME:?set E2E_LABEL_AUDITOR_USERNAME}
+      E2E_LABEL_AUDITOR_PASSWORD: ${E2E_LABEL_AUDITOR_PASSWORD:?set E2E_LABEL_AUDITOR_PASSWORD}
+      E2E_WORKSPACE_ADMIN_USERNAME: ${E2E_WORKSPACE_ADMIN_USERNAME:?set E2E_WORKSPACE_ADMIN_USERNAME}
+      E2E_WORKSPACE_ADMIN_PASSWORD: ${E2E_WORKSPACE_ADMIN_PASSWORD:?set E2E_WORKSPACE_ADMIN_PASSWORD}
+      E2E_FRAME_AUDITOR_USERNAME: ${E2E_FRAME_AUDITOR_USERNAME:?set E2E_FRAME_AUDITOR_USERNAME}
+      E2E_FRAME_AUDITOR_PASSWORD: ${E2E_FRAME_AUDITOR_PASSWORD:?set E2E_FRAME_AUDITOR_PASSWORD}
+    depends_on:
+      performance-keycloak-config:
+        condition: service_completed_successfully
+      backend-ready:
+        condition: service_completed_successfully
+      backend-peer-ready:
+        condition: service_completed_successfully
+
+  performance-seed:
+    image: postgres:17-alpine
+    profiles: ["performance"]
+    command: ["psql", "--set=ON_ERROR_STOP=1", "--host=postgres", "--username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME}", "--dbname=auditnode_e2e", "--file=/runtime/seed-catalog.sql"]
+    environment:
+      PGPASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+    volumes:
+      - performance-runtime:/runtime:ro
+    depends_on:
+      performance-identity:
+        condition: service_completed_successfully
+
+  performance-verify:
+    image: postgres:17-alpine
+    profiles: ["performance"]
+    command: ["psql", "--set=ON_ERROR_STOP=1", "--host=postgres", "--username=${E2E_DB_USERNAME:?set E2E_DB_USERNAME}", "--dbname=auditnode_e2e", "--file=/performance/fixtures/verify-catalog.sql.template"]
+    environment:
+      PGPASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+    volumes:
+      - ../../performance:/performance:ro
+    depends_on:
+      performance-seed:
+        condition: service_completed_successfully
+
+  k6:
+    image: grafana/k6:2.2.0@sha256:5221b620a4f874faff6e32ba597aa667c058391fe4898b1c6f6377f062c6cdec
+    profiles: ["performance"]
+    command: ["run", "/scripts/shared-catalog.js"]
+    volumes:
+      - ../../performance/k6:/scripts:ro
+      - ../../artifacts/performance:/results
+      - performance-runtime:/runtime:ro
+    environment:
+      PERF_PROFILE: ${PERF_PROFILE:-smoke}
+      PERF_BACKEND_URL: http://backend:5000
+      PERF_BACKEND_PEER_URL: http://backend-peer:5000
+      E2E_VIEWER_USERNAME: ${E2E_VIEWER_USERNAME:?set E2E_VIEWER_USERNAME}
+      E2E_VIEWER_PASSWORD: ${E2E_VIEWER_PASSWORD:?set E2E_VIEWER_PASSWORD}
+    depends_on:
+      performance-verify:
+        condition: service_completed_successfully
+
+  performance-db-report:
+    image: postgres:17-alpine
+    profiles: ["performance"]
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        psql --host=postgres --username=$${E2E_DB_USERNAME} --dbname=auditnode_e2e --csv
+        --command="SELECT queryid, left(regexp_replace(query, '[[:space:]]+', ' ', 'g'), 500) AS normalized_query, calls, rows, round(total_exec_time::numeric, 3) AS total_exec_ms, round(mean_exec_time::numeric, 3) AS mean_exec_ms, shared_blks_read, shared_blks_hit, temp_blks_written FROM pg_stat_statements WHERE query ILIKE '%servers%' OR query ILIKE '%applications%' OR query ILIKE '%label_grants%' ORDER BY total_exec_time DESC LIMIT 100"
+        > /results/pg-stat-statements.csv
+    environment:
+      E2E_DB_USERNAME: ${E2E_DB_USERNAME:?set E2E_DB_USERNAME}
+      PGPASSWORD: ${E2E_DB_PASSWORD:?set E2E_DB_PASSWORD}
+    volumes:
+      - ../../artifacts/performance:/results
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  performance-runtime:

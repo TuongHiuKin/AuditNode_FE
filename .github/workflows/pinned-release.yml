@@ -1,0 +1,223 @@
+name: Pinned Full-Stack Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_repository:
+        description: Backend repository in owner/name form
+        required: true
+        type: string
+      backend_sha:
+        description: Exact 40-character backend commit SHA
+        required: true
+        type: string
+      frontend_sha:
+        description: Exact 40-character frontend commit SHA
+        required: true
+        type: string
+      released_frontend_sha:
+        description: Approved previous release frontend SHA containing the OpenAPI baseline
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_PROJECT_NAME: auditnode-release-${{ github.run_id }}-${{ github.run_attempt }}
+  E2E_CAPTURE_OPENAPI: '1'
+  E2E_DB_USERNAME: auditnode_release
+  E2E_DB_PASSWORD: AuditNode-Release-Database-Only
+  E2E_KEYCLOAK_ADMIN_USERNAME: auditnode-release-admin
+  E2E_KEYCLOAK_ADMIN_PASSWORD: AuditNode-Release-Keycloak-Only
+  E2E_BFF_CLIENT_SECRET: auditnode-release-bff-client-secret
+  E2E_ADMIN_CLIENT_SECRET: auditnode-release-admin-client-secret
+  E2E_SYSTEM_ADMIN_USERNAME: release-system-admin
+  E2E_SYSTEM_ADMIN_PASSWORD: AuditNode-Release-User-Only
+  E2E_OWNER_USERNAME: release-owner
+  E2E_OWNER_PASSWORD: AuditNode-Release-User-Only
+  E2E_WORKSPACE_ADMIN_USERNAME: release-managed-user
+  E2E_WORKSPACE_ADMIN_PASSWORD: AuditNode-Release-User-Only
+  E2E_LABEL_AUDITOR_USERNAME: release-editor
+  E2E_LABEL_AUDITOR_PASSWORD: AuditNode-Release-User-Only
+  E2E_FRAME_AUDITOR_USERNAME: release-second-owner
+  E2E_FRAME_AUDITOR_PASSWORD: AuditNode-Release-User-Only
+  E2E_VIEWER_USERNAME: release-viewer
+  E2E_VIEWER_PASSWORD: AuditNode-Release-User-Only
+
+jobs:
+  full-stack-gate:
+    name: Full-stack and distributed identity gate
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_SHA: ${{ inputs.backend_sha }}
+      FRONTEND_SHA: ${{ inputs.frontend_sha }}
+      RELEASED_FRONTEND_SHA: ${{ inputs.released_frontend_sha }}
+
+    steps:
+      - name: Require immutable commit SHAs
+        shell: bash
+        run: |
+          [[ "$BACKEND_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "backend_sha must be a full lowercase commit SHA"; exit 1; }
+          [[ "$FRONTEND_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "frontend_sha must be a full lowercase commit SHA"; exit 1; }
+          [[ "$RELEASED_FRONTEND_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "released_frontend_sha must be a full lowercase commit SHA"; exit 1; }
+
+      - name: Checkout pinned frontend
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          path: AuditNode.Frontend
+          persist-credentials: false
+
+      - name: Checkout pinned backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_sha }}
+          path: AuditNode.Backend
+          token: ${{ secrets.AUDITNODE_BACKEND_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Checkout approved released contract baseline
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.released_frontend_sha }}
+          path: AuditNode.Frontend.Released
+          persist-credentials: false
+
+      - name: Verify resolved checkout SHAs
+        shell: bash
+        run: |
+          test "$(git -C AuditNode.Frontend rev-parse HEAD)" = "$FRONTEND_SHA"
+          test "$(git -C AuditNode.Backend rev-parse HEAD)" = "$BACKEND_SHA"
+          test "$(git -C AuditNode.Frontend.Released rev-parse HEAD)" = "$RELEASED_FRONTEND_SHA"
+
+      - name: Run pinned full-stack E2E
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          up --build --abort-on-container-exit --exit-code-from playwright playwright
+
+      - name: Set up Node.js for contract verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: AuditNode.Frontend/package-lock.json
+
+      - name: Install pinned frontend dependencies
+        working-directory: AuditNode.Frontend
+        run: npm ci
+
+      - name: Bind runtime OpenAPI to the exact backend SHA
+        working-directory: AuditNode.Frontend
+        run: >-
+          npm run create-openapi-metadata --
+          artifacts/release-openapi.json
+          "$BACKEND_SHA"
+          artifacts/release-openapi.metadata.json
+
+      - name: Verify exact-SHA frontend contract
+        working-directory: AuditNode.Frontend
+        env:
+          EXPECTED_BACKEND_SHA: ${{ inputs.backend_sha }}
+        run: >-
+          npm run sync-api:check --
+          artifacts/release-openapi.json
+          artifacts/release-openapi.metadata.json
+
+      - name: Report compatibility against the approved released contract
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          test -f AuditNode.Frontend.Released/contracts/openapi/auditnode-api-v1.json
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -w /work \
+            tufin/oasdiff:v1.30.0@sha256:c1200e64fa9b2229b7aee39fe389bd5b49c7cb955923f8a6b20791a6dcf1deed \
+            breaking --format markdown -- \
+            AuditNode.Frontend.Released/contracts/openapi/auditnode-api-v1.json \
+            AuditNode.Frontend/artifacts/release-openapi.json \
+            > artifacts/openapi-breaking.md
+          baseline_sha="$(sha256sum AuditNode.Frontend.Released/contracts/openapi/auditnode-api-v1.json | cut -d ' ' -f 1)"
+          printf '%s\n' "$baseline_sha" > artifacts/released-openapi.sha256
+
+      - name: Record release candidate manifest
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          openapi_sha="$(jq -r '.sha256' AuditNode.Frontend/artifacts/release-openapi.metadata.json)"
+          baseline_sha="$(cat artifacts/released-openapi.sha256)"
+          jq -n --arg backendRepository "${{ inputs.backend_repository }}" --arg backendSha "$BACKEND_SHA" --arg frontendRepository "${{ github.repository }}" --arg frontendSha "$FRONTEND_SHA" --arg releasedFrontendSha "$RELEASED_FRONTEND_SHA" --arg runId "${{ github.run_id }}" --arg openapiSha256 "$openapi_sha" --arg baselineSha256 "$baseline_sha" '{schemaVersion: 2, backendRepository: $backendRepository, backendSha: $backendSha, frontendRepository: $frontendRepository, frontendSha: $frontendSha, releasedFrontendSha: $releasedFrontendSha, githubRunId: $runId, openApi: {path: "AuditNode.Frontend/artifacts/release-openapi.json", sha256: $openapiSha256, verification: "exact-sha-compatible", releasedBaselineSha256: $baselineSha256, breakingChangePolicy: "report-only"}, evidence: {openApiBreakingReport: "artifacts/openapi-breaking.md", backendCoverageArtifact: "backend-verification-<backend-sha>-<run-id>-<attempt>", frontendCoverageArtifact: "frontend-verification-<frontend-sha>-<run-id>-<attempt>", sonarQualityGate: "not-configured"}}' > artifacts/release-manifest.json
+
+      - name: Tear down synthetic release stack
+        if: always()
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          down --volumes --remove-orphans
+
+      - name: Upload release gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinned-release-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/release-manifest.json
+            artifacts/openapi-breaking.md
+            artifacts/released-openapi.sha256
+            AuditNode.Frontend/artifacts/release-openapi.json
+            AuditNode.Frontend/artifacts/release-openapi.metadata.json
+            AuditNode.Frontend/playwright-report/
+            AuditNode.Frontend/test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  publish-images:
+    name: Publish matching SHA-tagged images
+    needs: full-stack-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout pinned frontend
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          path: AuditNode.Frontend
+          persist-credentials: false
+
+      - name: Checkout pinned backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.backend_repository }}
+          ref: ${{ inputs.backend_sha }}
+          path: AuditNode.Backend
+          token: ${{ secrets.AUDITNODE_BACKEND_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Publish pinned backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: AuditNode.Backend
+          file: AuditNode.Backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auditnode-be:${{ inputs.backend_sha }}
+
+      - name: Publish pinned frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: AuditNode.Frontend
+          file: AuditNode.Frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auditnode-fe:${{ inputs.frontend_sha }}

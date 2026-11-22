@@ -7,7 +7,6 @@ import {
   registerSessionCacheClearer,
   setAuthenticatedSession,
 } from "../shared/auth/authStore";
-import { clearWorkspaceSelection, setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 
 describe("apiClient auth interceptors", () => {
   beforeEach(() => {
@@ -16,7 +15,6 @@ describe("apiClient auth interceptors", () => {
     sessionStorage.clear();
     beginAuthInitialization();
     clearClientSession();
-    clearWorkspaceSelection();
   });
 
   it("adds the Bearer token from memory and ignores legacy browser token storage", async () => {
@@ -30,13 +28,20 @@ describe("apiClient auth interceptors", () => {
     expect(result.headers.get("Authorization")).not.toContain("legacy-token");
   });
 
-  it("adds a workspace header only for a valid selected workspace", async () => {
-    const withoutSelection = await requestInterceptorHandler({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig);
-    expect(withoutSelection.headers.get("X-Workspace-Id")).toBeFalsy();
+  it("clears a one-time Viewer share link when the authenticated principal changes", () => {
+    sessionStorage.setItem("auditnode.activeViewerLink", "owner-a-link");
+    sessionStorage.setItem("auditnode.shareToken", "anonymous-bearer-token");
 
-    setSelectedWorkspaceId("11111111-1111-4111-8111-111111111111");
-    const withSelection = await requestInterceptorHandler({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig);
-    expect(withSelection.headers.get("X-Workspace-Id")).toBe("11111111-1111-4111-8111-111111111111");
+    setAuthenticatedSession("owner-b-token", { id: "owner-b", username: "owner-b", roles: [] });
+
+    expect(sessionStorage.getItem("auditnode.activeViewerLink")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.shareToken")).toBeNull();
+  });
+
+  it("never sends the retired workspace header", async () => {
+    localStorage.setItem("workspaceId", "legacy-workspace-id");
+    const result = await requestInterceptorHandler({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig);
+    expect(result.headers.get("X-Workspace-Id")).toBeFalsy();
   });
 
   it("uses one refresh for concurrent 401 responses and retries each request once", async () => {
@@ -69,10 +74,11 @@ describe("apiClient auth interceptors", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it("clears auth, workspace, graph session, and query cache after terminal refresh failure", async () => {
+  it("clears auth, graph session, and query cache after terminal refresh failure", async () => {
     setAuthenticatedSession("expired-token", { id: "id", username: "user", roles: [] });
-    localStorage.setItem("workspaceId", "workspace-id");
     sessionStorage.setItem("dependencyGraphState", "cached-graph");
+    sessionStorage.setItem("auditnode.activeViewerLink", "sensitive-link");
+    sessionStorage.setItem("auditnode.shareToken", "anonymous-bearer-token");
     const clearCache = vi.fn();
     registerSessionCacheClearer(clearCache);
     vi.spyOn(apiClient, "post").mockRejectedValue(new Error("refresh failed"));
@@ -80,8 +86,9 @@ describe("apiClient auth interceptors", () => {
     const error = unauthorized("/api/v1/servers");
     await expect(responseInterceptorErrorHandler(error)).rejects.toBe(error);
 
-    expect(localStorage.getItem("workspaceId")).toBeNull();
     expect(sessionStorage.getItem("dependencyGraphState")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.activeViewerLink")).toBeNull();
+    expect(sessionStorage.getItem("auditnode.shareToken")).toBeNull();
     expect(clearCache).toHaveBeenCalledTimes(1);
   });
 });

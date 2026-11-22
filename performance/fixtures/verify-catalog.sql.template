@@ -1,0 +1,41 @@
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+  actual_count bigint;
+BEGIN
+  SELECT COUNT(DISTINCT owner_user_id) INTO actual_count FROM datacenters WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 10 THEN RAISE EXCEPTION 'Expected 10 performance owners, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM servers WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 6000 THEN RAISE EXCEPTION 'Expected 6000 performance servers, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM applications WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 4000 THEN RAISE EXCEPTION 'Expected 4000 performance applications, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM labels WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 100 THEN RAISE EXCEPTION 'Expected 100 performance labels, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM label_grants WHERE owner_user_id LIKE 'perf-owner-%' AND grantee_user_id IS NOT NULL;
+  IF actual_count <> 200 THEN RAISE EXCEPTION 'Expected 200 user performance grants, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM label_grants WHERE owner_user_id LIKE 'perf-owner-%' AND token_hash IS NOT NULL;
+  IF actual_count <> 20 THEN RAISE EXCEPTION 'Expected 20 anonymous performance grants, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM label_grants
+  WHERE owner_user_id LIKE 'perf-owner-%' AND grantee_user_id IS NOT NULL AND expires_at <= NOW() AND revoked_at IS NULL;
+  IF actual_count <> 12 THEN RAISE EXCEPTION 'Expected 12 expired user performance grants, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM label_grants
+  WHERE owner_user_id LIKE 'perf-owner-%' AND grantee_user_id IS NOT NULL AND revoked_at IS NOT NULL;
+  IF actual_count <> 12 THEN RAISE EXCEPTION 'Expected 12 revoked user performance grants, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM server_labels WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 6000 THEN RAISE EXCEPTION 'Expected 6000 server label links, found %', actual_count; END IF;
+
+  SELECT COUNT(*) INTO actual_count FROM application_labels WHERE owner_user_id LIKE 'perf-owner-%';
+  IF actual_count <> 4000 THEN RAISE EXCEPTION 'Expected 4000 application label links, found %', actual_count; END IF;
+END $$;
+
+SELECT 1 FROM v_topology_map LIMIT 0;
+SELECT 1 FROM v_dependency_graph LIMIT 0;

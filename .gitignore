@@ -132,6 +132,9 @@ playwright-report/
 test-results/
 playwright/.auth/
 
+# CI reports
+artifacts/
+
 # IDE / Editor
 .idea/
 .vscode/*

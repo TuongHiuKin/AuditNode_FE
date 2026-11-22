@@ -1,16 +1,16 @@
 # Frontend Architecture
 
-AuditNode follows an FSD-Lite structure: application shell and routing in `src/app`, dependency graph behavior in `src/features`, and reusable authentication, API, workspace, UI and utility code in `src/shared`.
+AuditNode follows an FSD-Lite structure: application shell and routing in `src/app`, catalog and dependency-graph behavior in `src/features`, and reusable authentication, API, catalog-access, UI and utility code in `src/shared`.
 
 ## Authentication and session lifecycle
 
 The frontend uses custom Login and Register pages backed by the ASP.NET auth gateway. Keycloak remains the identity provider behind the backend; `keycloak-js` and the hosted Keycloak UI are not part of the runtime flow.
 
-The access token exists only in the in-memory auth store. The refresh token is an `HttpOnly` cookie owned by the backend. Application bootstrap attempts one cookie refresh before resolving to authenticated or anonymous state. The API client performs single-flight refresh on eligible `401` responses and retries at most once. Terminal failure and logout clear auth state, workspace state and React Query cache.
+The access token exists only in the in-memory auth store. The refresh token is an `HttpOnly` cookie owned by the backend. Application bootstrap attempts one cookie refresh before resolving to authenticated or anonymous state. The API client performs single-flight refresh on eligible `401` responses and retries at most once. Terminal failure and logout clear auth state and React Query cache.
 
-## Workspace isolation
+## Global Catalog isolation and sharing
 
-`WorkspaceProvider` loads accessible workspaces after authentication and exposes the validated active workspace. Tenant query keys include `workspaceId`. The API client omits the workspace header until selection is valid. Switching workspace removes old tenant cache; logout clears workspace selection and cache.
+Catalog records are partitioned by `ownerUserId`; there is no runtime Workspace provider or `X-Workspace-Id` header. `CatalogAccessProvider` scopes query keys by authenticated principal, `mine`/`shared` view, filters and selected owner. Direct Label Grants expose label-scoped Viewer or Editor capabilities, while anonymous Viewer links resolve through the public-share endpoints. Principal changes and logout clear cached catalog data.
 
 ## Inventory contracts
 
@@ -24,7 +24,7 @@ Canonical topology state uses `/api/v1/topology/state`. UI node types translate 
 
 ## Export and loading boundaries
 
-Inventory exports use repeated `ids` query parameters, map datacenter/labels/deployment fields, and sanitize formula-prefixed cells. Graph audit export uses the same sanitizer and current workspace identity.
+Inventory exports use repeated `ids` query parameters, map datacenter/labels/deployment fields, and sanitize formula-prefixed cells. Graph audit export uses the same sanitizer and current owner/catalog scope.
 
 InventoryLayout, Inventory, Topology and Dependency Manager are route-level lazy chunks. Bulk Import is component-lazy, and SheetJS loads through dynamic import. Phase 8 reduced the main production JavaScript chunk from 1,256.38 kB to 400.01 kB; XLSX is isolated in a 429.53 kB lazy chunk.
 
@@ -32,8 +32,9 @@ InventoryLayout, Inventory, Topology and Dependency Manager are route-level lazy
 
 ```powershell
 npm.cmd run test:ci
-npx.cmd tsc --noEmit
+npm.cmd run typecheck
 npm.cmd run build
+npm.cmd run sync-api:check
 ```
 
-OpenAPI regeneration remains deferred after three unavailable local attempts caused by API startup behavior involving DataProtection/EventLog in the PowerShell environment. The generated file is unchanged, and TLS checks were not bypassed.
+CI verifies the committed OpenAPI artifact checksum and backend commit metadata before regenerating the TypeScript contract twice. It does not fetch a live or unpinned URL.

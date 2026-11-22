@@ -18,6 +18,7 @@ export function FloatingSmoothStepEdge({
   target,
   markerEnd,
   style,
+  data,
 }: EdgeProps) {
   const { setEdges } = useReactFlow();
   const [isHovered, setIsHovered] = useState(false);
@@ -62,8 +63,11 @@ export function FloatingSmoothStepEdge({
 
   const onEdgeClick = useCallback((evt: React.MouseEvent) => {
     evt.stopPropagation();
-    setEdges((edges) => edges.filter((edge) => edge.id !== id));
-  }, [id, setEdges]);
+    if (data?.readOnly) return;
+    const onDeleteEdge = (data as { onDeleteEdge?: (edgeId: string) => void } | undefined)?.onDeleteEdge;
+    if (onDeleteEdge) onDeleteEdge(id);
+    else setEdges((edges) => edges.filter((edge) => edge.id !== id));
+  }, [data, id, setEdges]);
 
   return (
     <>
@@ -94,13 +98,13 @@ export function FloatingSmoothStepEdge({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <button
+          {!data?.readOnly && <button
             onClick={onEdgeClick}
             className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground shadow-md transition-all hover:bg-danger hover:text-foreground hover:border-danger active:scale-90 pointer-events-auto"
             title="Remove Connection"
           >
             <X size={10} strokeWidth={3} />
-          </button>
+          </button>}
         </div>
       </EdgeLabelRenderer>
     </>

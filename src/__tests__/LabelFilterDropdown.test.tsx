@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LabelFilterDropdown } from "../app/components/LabelFilterDropdown";
 import apiClient from "../shared/api/client";
-import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
+import { CatalogAccessProvider, useCatalogAccess } from "../shared/catalog/CatalogAccessContext";
 
 vi.mock("../shared/api/client", () => ({
   default: {
@@ -21,8 +21,6 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe("LabelFilterDropdown", () => {
-  const workspaceA = "11111111-1111-4111-8111-111111111111";
-  const workspaceB = "22222222-2222-4222-8222-222222222222";
   const availableLabels = [
     { key: "PROJECT", value: "COREBANKING" },
     { key: "TEAM", value: "BACKEND" },
@@ -30,7 +28,6 @@ describe("LabelFilterDropdown", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setSelectedWorkspaceId(workspaceA, { persist: false });
     vi.mocked(apiClient.get).mockResolvedValue({ data: availableLabels });
   });
 
@@ -104,7 +101,7 @@ describe("LabelFilterDropdown", () => {
     expect(screen.getByText("2")).toBeDefined();
   });
 
-  it("clears labels and re-fetches when switching workspaces", async () => {
+  it("clears labels and re-fetches when switching catalog views", async () => {
     let resolveB!: (value: { data: typeof availableLabels }) => void;
     const requestB = new Promise<{ data: typeof availableLabels }>((resolve) => { resolveB = resolve; });
     vi.mocked(apiClient.get)
@@ -112,10 +109,19 @@ describe("LabelFilterDropdown", () => {
       .mockReturnValueOnce(requestB);
 
     const onChange = vi.fn();
-    renderWithClient(<LabelFilterDropdown selectedKeys={["OLD"]} onChange={onChange} />);
+    const ScopeSwitch = () => {
+      const catalog = useCatalogAccess();
+      return <button onClick={() => catalog.selectView("shared")}>Shared scope</button>;
+    };
+    renderWithClient(
+      <CatalogAccessProvider>
+        <ScopeSwitch />
+        <LabelFilterDropdown selectedKeys={["OLD"]} onChange={onChange} />
+      </CatalogAccessProvider>,
+    );
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(1));
 
-    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    fireEvent.click(screen.getByText("Shared scope"));
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(2));
     expect(onChange).toHaveBeenCalledWith([]);
 

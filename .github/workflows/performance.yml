@@ -1,0 +1,167 @@
+name: Docker Performance Baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      backend_sha:
+        description: Exact 40-character backend commit SHA
+        required: true
+        type: string
+      profile:
+        description: Report-only k6 workload profile
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - baseline
+          - stress
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auditnode-performance
+  cancel-in-progress: false
+
+env:
+  COMPOSE_PROJECT_NAME: auditnode-performance-${{ github.run_id }}-${{ github.run_attempt }}
+  PERF_PROFILE: ${{ inputs.profile }}
+  E2E_DB_USERNAME: auditnode_performance
+  E2E_DB_PASSWORD: AuditNode-Performance-Database-Only
+  E2E_KEYCLOAK_ADMIN_USERNAME: auditnode-performance-admin
+  E2E_KEYCLOAK_ADMIN_PASSWORD: AuditNode-Performance-Keycloak-Only
+  E2E_BFF_CLIENT_SECRET: auditnode-performance-bff-client-secret
+  E2E_ADMIN_CLIENT_SECRET: auditnode-performance-admin-client-secret
+  E2E_SYSTEM_ADMIN_USERNAME: performance-system-admin
+  E2E_SYSTEM_ADMIN_PASSWORD: AuditNode-Performance-User-Only
+  E2E_OWNER_USERNAME: performance-owner
+  E2E_OWNER_PASSWORD: AuditNode-Performance-User-Only
+  E2E_WORKSPACE_ADMIN_USERNAME: performance-managed-user
+  E2E_WORKSPACE_ADMIN_PASSWORD: AuditNode-Performance-User-Only
+  E2E_LABEL_AUDITOR_USERNAME: performance-editor
+  E2E_LABEL_AUDITOR_PASSWORD: AuditNode-Performance-User-Only
+  E2E_FRAME_AUDITOR_USERNAME: performance-second-owner
+  E2E_FRAME_AUDITOR_PASSWORD: AuditNode-Performance-User-Only
+  E2E_VIEWER_USERNAME: performance-viewer
+  E2E_VIEWER_PASSWORD: AuditNode-Performance-User-Only
+
+jobs:
+  performance:
+    name: ${{ inputs.profile }} synthetic baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require immutable release inputs
+        shell: bash
+        env:
+          BACKEND_SHA: ${{ inputs.backend_sha }}
+          BACKEND_REPOSITORY: ${{ vars.AUDITNODE_BACKEND_REPOSITORY }}
+        run: |
+          [[ "$BACKEND_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$BACKEND_REPOSITORY" =~ ^[^/]+/[^/]+$ ]]
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: AuditNode.Frontend
+          persist-credentials: false
+
+      - name: Checkout pinned backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.AUDITNODE_BACKEND_REPOSITORY }}
+          ref: ${{ inputs.backend_sha }}
+          path: AuditNode.Backend
+          token: ${{ secrets.AUDITNODE_BACKEND_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Create performance evidence directory
+        run: mkdir -p AuditNode.Frontend/artifacts/performance
+
+      - name: Build, seed, and verify the synthetic environment
+        run: |
+          docker compose \
+            -p "$COMPOSE_PROJECT_NAME" \
+            -f AuditNode.Frontend/e2e/stack/docker-compose.yml \
+            -f AuditNode.Frontend/performance/docker-compose.yml \
+            --profile performance \
+            up --build -d performance-verify
+          verify_id="$(docker compose -p "$COMPOSE_PROJECT_NAME" -f AuditNode.Frontend/e2e/stack/docker-compose.yml -f AuditNode.Frontend/performance/docker-compose.yml ps -aq performance-verify)"
+          test -n "$verify_id"
+          docker wait "$verify_id"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$verify_id")" -eq 0
+
+      - name: Capture resource state before load
+        shell: bash
+        run: |
+          mapfile -t container_ids < <(docker compose -p "$COMPOSE_PROJECT_NAME" -f AuditNode.Frontend/e2e/stack/docker-compose.yml -f AuditNode.Frontend/performance/docker-compose.yml ps -q postgres backend backend-peer)
+          test "${#container_ids[@]}" -eq 3
+          docker stats --no-stream --format '{{json .}}' "${container_ids[@]}" > AuditNode.Frontend/artifacts/performance/docker-stats-before.jsonl
+
+      - name: Run Docker performance profile
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          -f AuditNode.Frontend/performance/docker-compose.yml
+          --profile performance
+          run --no-deps --rm k6
+
+      - name: Capture database and resource evidence
+        shell: bash
+        run: |
+          docker compose \
+            -p "$COMPOSE_PROJECT_NAME" \
+            -f AuditNode.Frontend/e2e/stack/docker-compose.yml \
+            -f AuditNode.Frontend/performance/docker-compose.yml \
+            --profile performance \
+            run --no-deps --rm performance-db-report
+          mapfile -t container_ids < <(docker compose -p "$COMPOSE_PROJECT_NAME" -f AuditNode.Frontend/e2e/stack/docker-compose.yml -f AuditNode.Frontend/performance/docker-compose.yml ps -q postgres backend backend-peer)
+          test "${#container_ids[@]}" -eq 3
+          docker stats --no-stream --format '{{json .}}' "${container_ids[@]}" > AuditNode.Frontend/artifacts/performance/docker-stats-after.jsonl
+
+      - name: Bind evidence to exact sources and runner
+        shell: bash
+        env:
+          BACKEND_REPOSITORY: ${{ vars.AUDITNODE_BACKEND_REPOSITORY }}
+          BACKEND_SHA: ${{ inputs.backend_sha }}
+          FRONTEND_SHA: ${{ github.sha }}
+        run: |
+          cat > AuditNode.Frontend/artifacts/performance/manifest.json <<EOF
+          {
+            "profile": "$PERF_PROFILE",
+            "backendRepository": "$BACKEND_REPOSITORY",
+            "backendSha": "$BACKEND_SHA",
+            "frontendSha": "$FRONTEND_SHA",
+            "k6Image": "grafana/k6:2.2.0@sha256:5221b620a4f874faff6e32ba597aa667c058391fe4898b1c6f6377f062c6cdec"
+          }
+          EOF
+
+      - name: Verify required performance evidence
+        shell: bash
+        run: |
+          test -s "AuditNode.Frontend/artifacts/performance/${PERF_PROFILE}-summary.json"
+          test -s AuditNode.Frontend/artifacts/performance/pg-stat-statements.csv
+          test -s AuditNode.Frontend/artifacts/performance/docker-stats-before.jsonl
+          test -s AuditNode.Frontend/artifacts/performance/docker-stats-after.jsonl
+          test -s AuditNode.Frontend/artifacts/performance/manifest.json
+
+      - name: Tear down synthetic performance stack
+        if: always()
+        run: >-
+          docker compose
+          -p "$COMPOSE_PROJECT_NAME"
+          -f AuditNode.Frontend/e2e/stack/docker-compose.yml
+          -f AuditNode.Frontend/performance/docker-compose.yml
+          --profile performance
+          down --volumes --remove-orphans
+
+      - name: Upload performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-${{ inputs.profile }}-${{ inputs.backend_sha }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: AuditNode.Frontend/artifacts/performance/
+          if-no-files-found: warn
+          retention-days: 30

@@ -3,8 +3,7 @@ import apiClient, { Schemas } from "../../../shared/api/client";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
 import { LabelFilterDropdown } from "../../../app/components/LabelFilterDropdown";
-import { useWorkspace } from "../../../shared/workspace/WorkspaceContext";
-import { tenantQueryKey } from "../../../shared/workspace/workspaceStore";
+import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
 
 interface FilterBarProps {
   selectedEnv: string;
@@ -16,6 +15,7 @@ interface FilterBarProps {
   query?: string;
   onQueryChange?: (query: string) => void;
   onSelectResult?: (id: string, type: SearchResultType) => void;
+  showLabelPicker?: boolean;
 }
 
 const envOptions = [
@@ -34,22 +34,25 @@ export function FilterBar({
   query = "",
   onQueryChange,
   onSelectResult,
+  showLabelPicker = true,
 }: FilterBarProps) {
-  const { selectedWorkspaceId } = useWorkspace();
+  const { view, filters } = useCatalogAccess();
   // Fetch real datacenters from the API
   const { data: datacenterData = [] } = useQuery({
-    queryKey: tenantQueryKey("datacenters", selectedWorkspaceId),
+    queryKey: ["catalog", "graph-filter", "datacenters", view, filters.ownerUserId ?? "all-owners"],
     queryFn: async () => {
-      const response = await apiClient.get<Schemas["Datacenter"][]>("/api/v1/datacenters");
-      const rawResponse = response as any;
-      return Array.isArray(rawResponse.data) ? rawResponse.data : (rawResponse.data?.data || []);
+      const response = await apiClient.get<Schemas["CursorPageDtoOfDatacenterDto"]>("/api/v1/datacenters", {
+        params: { view, limit: 100, ownerUserId: filters.ownerUserId || undefined },
+        catalogRequest: true,
+        catalogView: view,
+      });
+      return response.data.items ?? [];
     },
-    enabled: !!selectedWorkspaceId,
   });
 
   const datacenterOptions = [
     { value: "All", label: "All" },
-    ...datacenterData.map((dc: any) => ({
+    ...datacenterData.filter((dc): dc is typeof dc & { id: string; name: string } => Boolean(dc.id && dc.name)).map((dc) => ({
       value: dc.id,
       label: dc.name,
     })),
@@ -70,7 +73,7 @@ export function FilterBar({
           options={datacenterOptions}
           onChange={setSelectedDatacenter}
         />
-        {setSelectedLabels && (
+        {showLabelPicker && setSelectedLabels && (
           <LabelFilterDropdown
             selectedKeys={selectedLabels || []}
             onChange={setSelectedLabels}

@@ -1,5 +1,5 @@
 import type { Node } from "@xyflow/react";
-import type { Schemas } from "../../../shared/api/client";
+import type { GraphApplicationNodeDto, GraphServerNodeDto, GraphTopologyLabelDto } from "../types";
 import type {
   TopologyAppData,
   TopologyLabelData,
@@ -14,7 +14,7 @@ const EMPTY_GROUP_WIDTH = 360;
 const EMPTY_GROUP_HEIGHT = 160;
 
 export function normalizeTopologyLabel(
-  label: Schemas["TopologyLabelDto"],
+  label: GraphTopologyLabelDto,
 ): TopologyLabelData | null {
   if (!label.id || !label.key || !label.value) {
     return null;
@@ -30,10 +30,13 @@ export function normalizeTopologyLabel(
 
 function normalizeApps(
   serverId: string,
-  applications: Schemas["ApplicationNodeDto"][] = [],
+  applications: GraphApplicationNodeDto[] = [],
 ): TopologyAppData[] {
   return applications.map((app, index) => ({
     id: app.id ?? app.portMappingId ?? `${serverId}-app-${index}`,
+    appId: app.appId ?? app.id ?? `${serverId}-app-${index}`,
+    serverId: app.serverId ?? serverId,
+    portMappingId: app.portMappingId ?? app.id ?? `${serverId}-app-${index}`,
     appName: app.name ?? "Unnamed application",
     portNumber: Number(app.port ?? 0),
     protocol: app.protocol ?? "",
@@ -41,7 +44,7 @@ function normalizeApps(
 }
 
 function createServerData(
-  server: Schemas["ServerNodeDto"],
+  server: GraphServerNodeDto,
   entityId: string,
   isDuplicated: boolean,
 ): TopologyServerNodeData {
@@ -70,11 +73,11 @@ function createServerData(
 }
 
 export function buildTopologyNodes(
-  servers: Schemas["ServerNodeDto"][],
+  servers: GraphServerNodeDto[],
   selectedLabels: TopologyLabelData[],
 ): Node[] {
   const validServers = servers.filter(
-    (server): server is Schemas["ServerNodeDto"] & { id: string } => Boolean(server.id),
+    (server): server is GraphServerNodeDto & { id: string } => Boolean(server.id),
   );
 
   if (selectedLabels.length === 0) {

@@ -1,6 +1,6 @@
 # Frontend API Contracts
 
-All calls use the shared Axios client. Authenticated tenant requests carry the in-memory bearer token and a valid `X-Workspace-Id`; refresh-cookie requests use credentials. URLs and ports remain environment-configured.
+All calls use the shared Axios client. Authenticated requests carry the in-memory bearer token; refresh-cookie requests use credentials. Catalog ownership and sharing are represented by versioned route/query contracts, not by a Workspace header. URLs and ports remain environment-configured.
 
 ## Authentication gateway
 
@@ -14,11 +14,13 @@ All calls use the shared Axios client. Authenticated tenant requests carry the i
 
 Only login, register and refresh are anonymous. The frontend never stores access or refresh tokens in `localStorage` or `sessionStorage`.
 
-## Workspaces
+## Global Catalog access
 
-- `GET /api/v1/workspaces` loads accessible workspaces after authentication.
-- No tenant request or `X-Workspace-Id` header is sent before a valid selection.
-- Switching workspace removes old tenant cache and scopes subsequent query keys to the new workspace.
+- Catalog records are partitioned by owner identity and selected through the `mine` or `shared` view.
+- Shared queries can select `ownerUserId` and label filters; React Query keys include the principal and complete catalog scope.
+- Direct grants under `/api/v1/labels/{labelId}/grants` provide label-scoped Viewer or Editor access.
+- Anonymous Viewer links use `/api/v1/labels/{labelId}/share-links` and the anonymous resolve/browse routes.
+- The frontend does not send `X-Workspace-Id`.
 
 ## Inventory
 
@@ -34,7 +36,7 @@ Only login, register and refresh are anonymous. The frontend never stores access
 ### Import
 
 - `POST /api/v1/inventory/import` with canonical multipart `FormData`.
-- The standard API client supplies authentication and workspace context; callers do not construct an Authorization header.
+- The standard API client supplies authentication and catalog scope; callers do not construct an Authorization header.
 
 ### Applications and deployments
 
@@ -58,8 +60,8 @@ Application graph nodes are identified by `PortMappingId`, so one application de
 
 ## Export safety
 
-Spreadsheet cells whose first effective character is `=`, `+`, `-` or `@` are prefixed with an apostrophe, including values with leading spaces or tabs. Export filenames and rows use the current workspace name, falling back to workspace ID.
+Spreadsheet cells whose first effective character is `=`, `+`, `-` or `@` are prefixed with an apostrophe, including values with leading spaces or tabs. Export filenames and rows use the active owner/catalog scope.
 
-## Contract generation status
+## Contract verification
 
-The generated OpenAPI file was not modified. Three generation attempts were unavailable because the local API process could not remain available under the current PowerShell/DataProtection/EventLog environment. No TLS bypass was used. Exact focused local types remain temporary until deterministic regeneration is possible.
+The committed OpenAPI JSON is paired with metadata containing the exact backend commit and SHA-256 checksum. `npm.cmd run sync-api:check` validates that pin, regenerates twice, and compares against `src/shared/api/v1-contract.ts`. CI does not use a live OpenAPI URL.

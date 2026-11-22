@@ -100,7 +100,15 @@ describe("DependencyManager Integration", () => {
   });
 
   it("toggles App Palette visibility", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url.includes("/api/v1/topology/state")) {
+        return Promise.resolve({ data: { version: 0, nodes: [], edges: [] } });
+      }
+      if (url.includes("/api/v1/topology/map")) {
+        return Promise.resolve({ data: { servers: [], connections: [] } });
+      }
+      return Promise.resolve({ data: [] });
+    });
 
     render(
       <QueryClientProvider client={queryClient}>

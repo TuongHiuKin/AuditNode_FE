@@ -1,0 +1,68 @@
+name: Deployment Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment protected by the smoke gate
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: ${{ inputs.target }} smoke
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run staging synthetic smoke
+        if: inputs.target == 'staging'
+        env:
+          CI: 'true'
+          E2E_STAGING_FRONTEND_URL: ${{ vars.AUDITNODE_FRONTEND_URL }}
+          E2E_STAGING_BACKEND_URL: ${{ vars.AUDITNODE_BACKEND_URL }}
+          E2E_STAGING_OWNER_USERNAME: ${{ secrets.AUDITNODE_SMOKE_OWNER_USERNAME }}
+          E2E_STAGING_OWNER_PASSWORD: ${{ secrets.AUDITNODE_SMOKE_OWNER_PASSWORD }}
+          E2E_STAGING_SYSTEM_ADMIN_USERNAME: ${{ secrets.AUDITNODE_SMOKE_SYSTEM_ADMIN_USERNAME }}
+          E2E_STAGING_SYSTEM_ADMIN_PASSWORD: ${{ secrets.AUDITNODE_SMOKE_SYSTEM_ADMIN_PASSWORD }}
+          E2E_STAGING_SYNTHETIC_LABEL_ID: ${{ vars.AUDITNODE_SMOKE_LABEL_ID }}
+          E2E_STAGING_SYNTHETIC_GRANTEE_ID: ${{ vars.AUDITNODE_SMOKE_GRANTEE_ID }}
+          E2E_STAGING_MUTATION_GUARD: AUDITNODE_SYNTHETIC_STAGING
+        run: npm run test:smoke:staging
+      - name: Run production read-only smoke
+        if: inputs.target == 'production'
+        env:
+          CI: 'true'
+          E2E_PRODUCTION_FRONTEND_URL: ${{ vars.AUDITNODE_FRONTEND_URL }}
+          E2E_PRODUCTION_BACKEND_URL: ${{ vars.AUDITNODE_BACKEND_URL }}
+          E2E_PRODUCTION_CANARY_USERNAME: ${{ secrets.AUDITNODE_SMOKE_CANARY_USERNAME }}
+          E2E_PRODUCTION_CANARY_PASSWORD: ${{ secrets.AUDITNODE_SMOKE_CANARY_PASSWORD }}
+        run: npm run test:smoke:production
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.target }}-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/playwright-junit.xml
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

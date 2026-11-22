@@ -12,6 +12,7 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
   const [showMenu, setShowMenu] = useState(false);
   const label = data.label || "Infrastructure Cluster";
   const { setNodes } = useReactFlow();
+  const canMutateGroup = data?.canEditStructure === true;
 
   const handleDelete = () => {
     setShowMenu(false);
@@ -40,7 +41,7 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
       {/* Node Resizer */}
       <NodeResizer 
         color="var(--color-primary)" 
-        isVisible={selected} 
+        isVisible={selected && canMutateGroup}
         minWidth={200} 
         minHeight={150} 
         handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
@@ -85,13 +86,13 @@ const GroupNode = ({ id, data, selected }: NodeProps<any>) => {
                 <FileSpreadsheet size={14} className="text-success" />
                 Export Group Audit Matrix
               </button>
-              <button
+              {canMutateGroup && <button
                 onClick={handleDelete}
                 className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors border-t border-border"
               >
                 <Trash2 size={14} />
                 Delete Group
-              </button>
+              </button>}
             </div>
           </>
         )}

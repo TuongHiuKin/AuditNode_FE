@@ -16,7 +16,7 @@ vi.mock("../shared/auth/AuthContext", () => ({
 }));
 
 describe("Sidebar logout", () => {
-  it("calls the backend-gateway logout action and navigates to AuditNode Login", async () => {
+  it("calls the backend-gateway logout action and navigates to AuditNode Login when expanded", async () => {
     render(
       <MemoryRouter initialEntries={["/inventory"]}>
         <Routes>
@@ -30,6 +30,31 @@ describe("Sidebar logout", () => {
     await userEvent.click(screen.getByRole("button", { name: /sign out/i }));
 
     expect(logout).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Login destination")).toBeInTheDocument();
+  });
+
+  it("renders and triggers Sign Out correctly when collapsed", async () => {
+    render(
+      <MemoryRouter initialEntries={["/inventory"]}>
+        <Routes>
+          <Route path="/inventory" element={<Sidebar />} />
+          <Route path="/login" element={<div>Login destination</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // Click collapse button
+    await userEvent.click(screen.getByRole("button", { name: /collapse sidebar/i }));
+
+    // Click user avatar profile button
+    await userEvent.click(screen.getByRole("button", { name: "Test User" }));
+
+    // Sign out button should be rendered and clickable in portal
+    const signOutBtn = screen.getByRole("button", { name: /sign out/i });
+    expect(signOutBtn).toBeInTheDocument();
+
+    await userEvent.click(signOutBtn);
+    expect(logout).toHaveBeenCalled();
     expect(await screen.findByText("Login destination")).toBeInTheDocument();
   });
 });

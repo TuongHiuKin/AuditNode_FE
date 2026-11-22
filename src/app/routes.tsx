@@ -13,12 +13,14 @@ const Topology = lazy(() => import("./pages/Topology")
   .then((module) => ({ default: module.Topology })));
 const DependencyManager = lazy(() => import("./pages/Dependency")
   .then((module) => ({ default: module.DependencyManager })));
+const AdminUsers = lazy(() => import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
+const PublicSharePage = lazy(() => import("../features/public-share/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
 
 function lazyRoute(element: ReactNode) {
   return (
     <Suspense fallback={(
       <div className="flex h-full items-center justify-center bg-background text-sm text-muted-foreground" role="status">
-        Loading workspace view…
+        Loading catalog view…
       </div>
     )}>
       {element}
@@ -29,6 +31,7 @@ function lazyRoute(element: ReactNode) {
 export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
   { path: "/register", Component: RegisterPage },
+  { path: "/shared", element: lazyRoute(<PublicSharePage />) },
   {
     path: "/",
     element: (
@@ -49,6 +52,7 @@ export const router = createBrowserRouter([
       },
       { path: "topology", element: lazyRoute(<Topology />) },
       { path: "dependency-manager", element: lazyRoute(<DependencyManager />) },
+      { path: "admin/users", element: <ProtectedRoute allowedRoles={["SystemAdmin"]}>{lazyRoute(<AdminUsers />)}</ProtectedRoute> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },

@@ -5,8 +5,9 @@ import apiClient from "../shared/api/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactFlowProvider } from "@xyflow/react";
 import React from "react";
-import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 import { toTopologyState } from "../features/dependency-graph/graphContract";
+import { CatalogAccessProvider, useCatalogAccess } from "../shared/catalog/CatalogAccessContext";
+import { invalidateSharedCatalog } from "../shared/catalog/catalogCache";
 
 // Mock apiClient
 vi.mock("../shared/api/client", () => ({
@@ -45,25 +46,59 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe("useDependencyLogic", () => {
-  const workspaceA = "11111111-1111-4111-8111-111111111111";
-  const workspaceB = "22222222-2222-4222-8222-222222222222";
+  const ownerB = "22222222-2222-4222-8222-222222222222";
   let queryClient: QueryClient;
+  let setCatalogOwner: (ownerUserId: string) => void = () => undefined;
+
+  function CaptureCatalogControls() {
+    const { setFilters } = useCatalogAccess();
+    setCatalogOwner = (ownerUserId) => setFilters({ ownerUserId });
+    return null;
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setSelectedWorkspaceId(workspaceA, { persist: false });
     queryClient = createTestQueryClient();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      
+      <CatalogAccessProvider>
+        <CaptureCatalogControls />
         <ReactFlowProvider>
           {children}
         </ReactFlowProvider>
-      
+      </CatalogAccessProvider>
     </QueryClientProvider>
   );
+
+  const sharedWrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>
+      <CatalogAccessProvider principalId="shared-viewer" initialView="shared">
+        <ReactFlowProvider>{children}</ReactFlowProvider>
+      </CatalogAccessProvider>
+    </QueryClientProvider>
+  );
+
+  it("removes Shared graph cache and rendered nodes when access is invalidated", async () => {
+    vi.mocked(apiClient.get).mockImplementation((url: string) => {
+      if (url === "/api/v1/topology/map") {
+        return Promise.resolve({ data: {
+          servers: [{ id: "shared-server", serverId: "shared-server", hostname: "shared", ipAddress: "10.0.0.8", applications: [] }],
+          connections: [],
+        } });
+      }
+      if (url === "/api/v1/applications" || url === "/api/v1/servers") return Promise.resolve({ data: [] });
+      return Promise.reject(new Error(`Unknown URL: ${url}`));
+    });
+    const { result } = renderHook(() => useDependencyLogic(), { wrapper: sharedWrapper });
+    await waitFor(() => expect(result.current.nodes.length).toBeGreaterThan(0));
+
+    act(() => invalidateSharedCatalog());
+
+    await waitFor(() => expect(result.current.nodes).toHaveLength(0));
+    expect(queryClient.getQueriesData({ queryKey: ["catalog-graph"] })).toHaveLength(0);
+  });
 
   it("fetches and maps initial data correctly", async () => {
     const mockDependencyMap = {
@@ -165,7 +200,7 @@ describe("useDependencyLogic", () => {
 
     expect(result.current.selectedEnv).toBe("Production");
     expect(invalidateSpy).toHaveBeenCalledWith({ 
-      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111", "Production", "All", []]
+      queryKey: ["catalog-graph", "dependency-map", "mine:all", "Production", "All", []]
     });
   });
 
@@ -179,13 +214,18 @@ describe("useDependencyLogic", () => {
       await result.current.handleSync();
     });
 
-    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", {
-      dependencies: [
-        { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
-      ]
-    });
+    expect(apiClient.put).toHaveBeenCalledWith(
+      "/api/v1/topology/state",
+      expect.objectContaining({
+        dependencies: [
+          { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
+        ]
+      }),
+      expect.objectContaining({ catalogView: "mine" }),
+    );
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ["dependency-map", "11111111-1111-4111-8111-111111111111"],
+      queryKey: ["catalog-graph", "dependency-map"],
     });
   });
 
@@ -213,7 +253,7 @@ describe("useDependencyLogic", () => {
     expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
   });
 
-  it("saves the complete graph through the canonical state endpoint idempotently", async () => {
+  it("saves the complete graph through the versioned canonical state endpoint", async () => {
     vi.mocked(apiClient.get).mockImplementation((url: string) => {
       if (url === "/api/v1/topology/map") return Promise.resolve({ data: { servers: [], connections: [] } });
       if (url === "/api/v1/topology/state") return Promise.resolve({ data: { nodes: [], edges: [] } });
@@ -222,6 +262,8 @@ describe("useDependencyLogic", () => {
     });
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith("/api/v1/topology/state", expect.anything()));
+    await act(async () => Promise.resolve());
 
     await act(async () => {
       await result.current.handleSaveNetworkState();
@@ -230,8 +272,9 @@ describe("useDependencyLogic", () => {
 
     const stateCalls = vi.mocked(apiClient.put).mock.calls.filter(([url]) => url === "/api/v1/topology/state");
     expect(stateCalls).toHaveLength(2);
-    expect(stateCalls[0][1]).toEqual(stateCalls[1][1]);
-    expect(apiClient.put).toHaveBeenCalledWith("/api/v1/dependencies/sync", { dependencies: [] });
+    expect(stateCalls[0][1]).toEqual(expect.objectContaining({ version: 0, dependencies: [] }));
+    expect(stateCalls[1][1]).toEqual(expect.objectContaining({ version: 1, dependencies: [] }));
+    expect(apiClient.put).not.toHaveBeenCalledWith("/api/v1/dependencies/sync", expect.anything());
   });
 
   it("clears stale dependency identity when reconnecting an edge", async () => {
@@ -276,7 +319,7 @@ describe("useDependencyLogic", () => {
     });
   });
 
-  it("does not render a late workspace A graph response after switching to workspace B", async () => {
+  it("does not render a late owner A graph response after switching to owner B", async () => {
     let resolveA!: (value: { data: unknown }) => void;
     let resolveB!: (value: { data: unknown }) => void;
     const requestA = new Promise<{ data: unknown }>((resolve) => { resolveA = resolve; });
@@ -294,12 +337,12 @@ describe("useDependencyLogic", () => {
 
     const { result } = renderHook(() => useDependencyLogic(), { wrapper });
     await waitFor(() => expect(mapCalls).toBe(1));
-    act(() => { setSelectedWorkspaceId(workspaceB, { persist: false }); });
+    act(() => { setCatalogOwner(ownerB); });
     await waitFor(() => expect(mapCalls).toBe(2));
 
-    await act(async () => { resolveB({ data: graph("server-b", "Workspace B") }); });
+    await act(async () => { resolveB({ data: graph("server-b", "Catalog B") }); });
     await waitFor(() => expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true));
-    await act(async () => { resolveA({ data: graph("server-a", "Workspace A") }); });
+    await act(async () => { resolveA({ data: graph("server-a", "Catalog A") }); });
 
     expect(result.current.nodes.some((node) => node.id === "server-a")).toBe(false);
     expect(result.current.nodes.some((node) => node.id === "server-b")).toBe(true);

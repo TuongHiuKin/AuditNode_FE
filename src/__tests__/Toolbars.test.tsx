@@ -57,6 +57,8 @@ describe("Toolbars", () => {
       onAutoMap: vi.fn(),
       onSync: vi.fn(),
       isSyncing: false,
+      canEditGraph: true,
+      canAddNodes: true,
     };
 
     it("triggers onAutoMap when button clicked", () => {

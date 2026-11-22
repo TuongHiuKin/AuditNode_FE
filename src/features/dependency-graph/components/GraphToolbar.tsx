@@ -2,16 +2,15 @@ import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
 import { Button } from "../../../shared/ui/Button";
-import { useRBAC } from "../../../shared/auth/useRBAC";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;
   onAddGroup?: () => void;
   onAddBoundaryFrame?: () => void;
+  canEditStructure?: boolean;
 }
 
-export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: GraphToolbarProps) {
-  const { canEditInventory } = useRBAC();
+export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame, canEditStructure = false }: GraphToolbarProps) {
   const handleExport = () => {
     const flowElement = document.querySelector(".react-flow__viewport") as HTMLElement;
     if (!flowElement) return;
@@ -47,8 +46,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddGroup}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Group Box"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot create graph containers in this catalog view" : "Add Group Box"}
           variant="ghost"
           size="icon"
           className="border-b border-border rounded-none"
@@ -57,8 +56,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onAddBoundaryFrame}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Add Boundary Frame"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot create boundary frames in this catalog view" : "Add Boundary Frame"}
           variant="ghost"
           size="icon"
           className="border-b border-border font-bold uppercase rounded-none"
@@ -67,8 +66,8 @@ export function GraphToolbar({ onQuickAdd, onAddGroup, onAddBoundaryFrame }: Gra
         </Button>
         <Button
           onClick={onQuickAdd}
-          disabled={!canEditInventory}
-          title={!canEditInventory ? "Bạn không có quyền thao tác" : "Quick Add Infrastructure"}
+          disabled={!canEditStructure}
+          title={!canEditStructure ? "You cannot add graph nodes in this catalog view" : "Quick Add Infrastructure"}
           variant="ghost"
           size="icon"
           className="rounded-none"

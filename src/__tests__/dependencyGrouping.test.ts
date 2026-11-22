@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../shared/api/client";
-import type { GraphLabelData } from "../features/dependency-graph/types";
+import type { GraphConnectionDto, GraphLabelData, GraphServerNodeDto } from "../features/dependency-graph/types";
 import { buildDependencyGraph } from "../features/dependency-graph/utils/dependencyGrouping";
 
 const platform: GraphLabelData = {
@@ -15,7 +14,7 @@ const payments: GraphLabelData = {
   value: "payments",
 };
 
-const servers: Schemas["ServerNodeDto"][] = [
+const servers: GraphServerNodeDto[] = [
   {
     id: "server-1",
     hostname: "api-host",
@@ -89,7 +88,7 @@ describe("dependency label grouping", () => {
   });
 
   it("keeps only edges whose applications are visible inside the same frame", () => {
-    const connections: Schemas["ConnectionDto"][] = [
+    const connections: GraphConnectionDto[] = [
       { sourceAppId: "app-api", targetAppId: "app-agent" },
     ];
 

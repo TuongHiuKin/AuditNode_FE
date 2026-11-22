@@ -4,7 +4,6 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 import { setAuthenticatedSession } from "../shared/auth/authStore";
-import { setSelectedWorkspaceId } from "../shared/workspace/workspaceStore";
 
 // Polyfill ResizeObserver for ReactFlow tests
 class ResizeObserverMock {
@@ -25,5 +24,4 @@ setAuthenticatedSession("test-memory-token", {
   username: "Test User",
   roles: ["Admin"],
 });
-setSelectedWorkspaceId("11111111-1111-4111-8111-111111111111", { persist: false });
 

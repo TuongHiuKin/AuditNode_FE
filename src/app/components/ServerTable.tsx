@@ -3,16 +3,16 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { Grid, ChevronDown, ChevronRight, Plus, Filter, X, Check } from "lucide-react";
 import { ActionButtons } from "./ActionButtons";
-import { Schemas } from "../../shared/api/client";
+import type { CatalogServer } from "../../features/catalog/api/catalogApi";
 import UniversalSearch from "./UniversalSearch";
 import { Dropdown } from "../../shared/ui/Dropdown";
 import { useServers } from "../../hooks/queries/useServers";
 import { useDatacenters } from "../../hooks/queries/useDatacenters";
-import { useRBAC } from "../../shared/auth/useRBAC";
+import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
 import { LabelBadge, LabelData } from "./LabelBadge";
 import { LabelFilterDropdown } from "./LabelFilterDropdown";
 
-type ServerRow = Schemas["ServerResponseDto"];
+type ServerRow = CatalogServer;
 
 const ENV_OPTIONS = ["All", "Production", "Staging", "Development"];
 
@@ -75,9 +75,10 @@ export function ServerTable({
   const [datacenterFilter, setDatacenterFilter] = useState("ALL");
   const [selectedLabelKeys, setSelectedLabelKeys] = useState<string[]>([]);
   const navigate = useNavigate();
-  const { canManageSystem } = useRBAC();
+  const { view } = useCatalogAccess();
+  const canManageSystem = view === "mine";
 
-  const { data: servers = [], isLoading } = useServers();
+  const { data: servers = [], isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useServers();
   const { data: datacenters = [] } = useDatacenters();
   
   const LAST_DC_KEY = "auditnode_last_datacenter";
@@ -279,6 +280,7 @@ export function ServerTable({
                 )}
               </tbody>
             </table>
+            {hasNextPage && <div className="flex justify-center border-t border-border p-3"><button className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-foreground disabled:opacity-50" disabled={isFetchingNextPage} onClick={() => void fetchNextPage()}>{isFetchingNextPage ? "Loading…" : "Load more"}</button></div>}
           </div>
         )}
       </div>
@@ -330,6 +332,7 @@ function ServerRowItem({
         <td className="px-6 py-4">
           <div className="font-semibold text-foreground">{server.hostname}</div>
           <div className="text-[11px] text-muted-foreground capitalize">{(server as any).provider || server.environment || "Unknown"}</div>
+          <div className="mt-1 text-[10px] text-muted-foreground">{server.effectivePermission === "owner" ? "Owned by you" : `Shared by ${server.ownerUserId} · ${server.effectivePermission}`}</div>
         </td>
         <td className="px-6 py-4 text-muted-foreground">{server.osType}</td>
         
@@ -366,6 +369,7 @@ function ServerRowItem({
 
         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
           <ActionButtons
+            capabilities={server.capabilities}
             onDepClick={() => onDepClick(server.id || "", server.environment)}
             onEditClick={() => onEditClick(server.id || "", "SERVER")}
             onDeleteClick={() => onDeleteClick(server.id || "", server.hostname || "Server")}
@@ -388,7 +392,6 @@ function ServerRowItem({
                       <th className="px-4 py-2 font-bold">App Name</th>
                       <th className="px-4 py-2 font-bold">Port</th>
                       <th className="px-4 py-2 font-bold">Protocol</th>
-                      <th className="px-4 py-2 font-bold">Owner</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -398,7 +401,6 @@ function ServerRowItem({
                         <td className="px-4 py-2 text-sm">{app.appName}</td>
                         <td className="px-4 py-2 font-label text-[11px] font-bold text-primary tracking-tighter">{app.portNumber}</td>
                         <td className="px-4 py-2 text-[10px] font-label font-bold text-muted-foreground/70 uppercase">{app.protocol}</td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground/70">{app.ownerTeam || "—"}</td>
                       </tr>
                     ))}
                   </tbody>

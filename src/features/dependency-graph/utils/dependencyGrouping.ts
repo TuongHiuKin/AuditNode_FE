@@ -3,12 +3,15 @@ import {
   type Edge,
   type Node,
 } from "@xyflow/react";
-import type { Schemas } from "../../../shared/api/client";
 import type {
   AppNodeData,
   DependencyLabelGroupNodeData,
   GraphLabelData,
   ServerNodeData,
+  GraphApplicationNodeDto,
+  GraphConnectionDto,
+  GraphServerNodeDto,
+  GraphTopologyLabelDto,
 } from "../types";
 
 const SERVER_WIDTH = 300;
@@ -25,8 +28,8 @@ const GROUP_MIN_WIDTH = 380;
 const GROUP_MIN_HEIGHT = 180;
 
 interface ServerEntry {
-  server: Schemas["ServerNodeDto"] & { id: string };
-  applications: Schemas["ApplicationNodeDto"][];
+  server: GraphServerNodeDto & { id: string };
+  applications: GraphApplicationNodeDto[];
 }
 
 export interface DependencyGraphBuildResult {
@@ -35,7 +38,7 @@ export interface DependencyGraphBuildResult {
 }
 
 function normalizeLabel(
-  label: Schemas["TopologyLabelDto"],
+  label: GraphTopologyLabelDto,
 ): GraphLabelData | null {
   if (!label.id || !label.key || !label.value) return null;
 
@@ -48,7 +51,7 @@ function normalizeLabel(
 }
 
 function hasLabel(
-  labels: Schemas["TopologyLabelDto"][] | undefined,
+  labels: GraphTopologyLabelDto[] | undefined,
   labelId: string,
 ): boolean {
   return labels?.some((label) => label.id === labelId) ?? false;
@@ -101,7 +104,7 @@ function createServerNode(
 }
 
 function createAppNode(
-  app: Schemas["ApplicationNodeDto"],
+  app: GraphApplicationNodeDto,
   id: string,
   parentId: string,
   index: number,
@@ -123,10 +126,15 @@ function createAppNode(
     data: {
       app: {
         id: app.id ?? app.portMappingId ?? id,
+        appId: app.appId ?? app.id ?? id,
+        serverId: app.serverId ?? "",
         appName: app.name ?? "Unnamed application",
         portNumber: Number(app.port ?? 0),
         protocol: app.protocol ?? "",
-        portMappingId: app.portMappingId,
+        portMappingId: app.portMappingId ?? app.id ?? id,
+        ownerId: "",
+        icon: "",
+        techStack: "",
         labels,
         isDerivedLabelInstance,
       },
@@ -136,7 +144,7 @@ function createAppNode(
 }
 
 function createEdges(
-  connections: Schemas["ConnectionDto"][],
+  connections: GraphConnectionDto[],
   visualAppIds: Map<string, string[]>,
   scopeId: string,
 ): Edge[] {
@@ -167,17 +175,17 @@ function createEdges(
 }
 
 function validServers(
-  servers: Schemas["ServerNodeDto"][],
-): Array<Schemas["ServerNodeDto"] & { id: string }> {
+  servers: GraphServerNodeDto[],
+): Array<GraphServerNodeDto & { id: string }> {
   return servers.filter(
-    (server): server is Schemas["ServerNodeDto"] & { id: string } =>
+    (server): server is GraphServerNodeDto & { id: string } =>
       Boolean(server.id),
   );
 }
 
 function buildUngroupedGraph(
-  servers: Schemas["ServerNodeDto"][],
-  connections: Schemas["ConnectionDto"][],
+  servers: GraphServerNodeDto[],
+  connections: GraphConnectionDto[],
 ): DependencyGraphBuildResult {
   const nodes: Node[] = [];
   const visualAppIds = new Map<string, string[]>();
@@ -221,8 +229,8 @@ function buildUngroupedGraph(
 }
 
 export function buildDependencyGraph(
-  servers: Schemas["ServerNodeDto"][],
-  connections: Schemas["ConnectionDto"][],
+  servers: GraphServerNodeDto[],
+  connections: GraphConnectionDto[],
   selectedLabels: GraphLabelData[],
 ): DependencyGraphBuildResult {
   if (selectedLabels.length === 0) {
