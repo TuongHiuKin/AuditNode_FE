@@ -1,0 +1,9 @@
+# Generated and checksum-pinned artifacts must keep LF in the working tree.
+# core.autocrlf=true on Windows would rewrite them to CRLF on checkout, which
+# breaks both the SHA-256 pinning in contracts/openapi/*.metadata.json and the
+# deterministic OpenAPI contract comparison in src/shared/api/openApiSync.test.ts.
+src/shared/api/v1-contract.ts text eol=lf
+contracts/openapi/*.json text eol=lf
+
+# Shell and CI entry points must stay LF to run on Linux runners.
+*.sh text eol=lf
