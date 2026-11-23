@@ -1,14 +1,8 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Topbar } from "../app/components/Topbar";
-import * as keycloakService from "../services/keycloakService";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import apiClient from "../shared/api/client";
-
-vi.mock("../../services/keycloakService", () => ({
-  getUsername: vi.fn(),
-  doLogout: vi.fn(),
-}));
 
 vi.mock("../shared/api/client", () => ({
   default: {
