@@ -10,16 +10,16 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { AppNode } from "./AppNode";
-import { ServerGroupNode } from "./ServerGroupNode";
-import GroupNode from "./GroupNode";
-import ZoneNode from "./ZoneNode";
-import { BoundaryFrameNode } from "./BoundaryFrameNode";
-import { DependencyLabelGroupNode } from "./DependencyLabelGroupNode";
-import { GraphToolbar } from "./GraphToolbar";
-import { RemovableEdge } from "./RemovableEdge";
-import { FloatingSmoothStepEdge } from "./FloatingSmoothStepEdge";
-import { RestrictedNode } from "./RestrictedNode";
+import { AppNode } from "@/features/dependency-graph/components/AppNode";
+import { ServerGroupNode } from "@/features/dependency-graph/components/ServerGroupNode";
+import GroupNode from "@/features/dependency-graph/components/GroupNode";
+import ZoneNode from "@/features/dependency-graph/components/ZoneNode";
+import { BoundaryFrameNode } from "@/features/dependency-graph/components/BoundaryFrameNode";
+import { DependencyLabelGroupNode } from "@/features/dependency-graph/components/DependencyLabelGroupNode";
+import { GraphToolbar } from "@/features/dependency-graph/components/GraphToolbar";
+import { RemovableEdge } from "@/features/dependency-graph/components/RemovableEdge";
+import { FloatingSmoothStepEdge } from "@/features/dependency-graph/components/FloatingSmoothStepEdge";
+import { RestrictedNode } from "@/features/dependency-graph/components/RestrictedNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',

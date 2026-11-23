@@ -1,8 +1,8 @@
 import { Outlet } from "react-router";
 import { Toaster } from "sonner";
-import { Sidebar } from "./Sidebar";
-import { Topbar } from "./Topbar";
-import { HeaderProvider } from "../hooks/useHeader";
+import { Sidebar } from "@/app/components/Sidebar";
+import { Topbar } from "@/app/components/Topbar";
+import { HeaderProvider } from "@/app/hooks/useHeader";
 
 export function Layout() {
   return (

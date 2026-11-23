@@ -1,13 +1,13 @@
-import { API_ENDPOINTS } from "../config/endpoints";
-import apiClient from "../shared/api/client";
+import { API_ENDPOINTS } from "@/config/endpoints";
+import apiClient from "@/shared/api/client";
 import type {
   ApplicationFilters,
   ApplicationResponse,
   CreateApplicationRequest,
   MigrateApplicationRequest,
   UpdateApplicationRequest,
-} from "../shared/api/applicationTypes";
-import { isNonEmptyIdentifier } from "../shared/api/applicationTypes";
+} from "@/shared/api/applicationTypes";
+import { isNonEmptyIdentifier } from "@/shared/api/applicationTypes";
 
 export const ApplicationService = {
   async getApplications(filters: ApplicationFilters = {}): Promise<ApplicationResponse[]> {

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, Tags } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient from "../../../shared/api/client";
-import type { TopologyLabelData } from "../topology-types";
-import type { GraphTopologyLabelDto } from "../types";
-import { normalizeTopologyLabel } from "../utils/topologyGrouping";
+import apiClient from "@/shared/api/client";
+import type { TopologyLabelData } from "@/features/dependency-graph/topology-types";
+import type { GraphTopologyLabelDto } from "@/features/dependency-graph/types";
+import { normalizeTopologyLabel } from "@/features/dependency-graph/utils/topologyGrouping";
 
 interface TopologyLabelPickerProps {
   selectedLabels: TopologyLabelData[];

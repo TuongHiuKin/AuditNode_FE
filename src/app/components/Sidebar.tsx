@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut, Users } from "lucide-react";
-import { useRBAC } from "../../shared/auth/useRBAC";
-import { useAuth } from "../../shared/auth/AuthContext";
+import { useRBAC } from "@/shared/auth/useRBAC";
+import { useAuth } from "@/shared/auth/AuthContext";
 
 const navGroups = [
   {

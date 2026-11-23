@@ -2,12 +2,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CatalogAccessProvider } from "../../../shared/catalog/CatalogAccessContext";
-import { invalidateSharedCatalog } from "../../../shared/catalog/catalogCache";
-import { fetchCatalogPage } from "./catalogApi";
-import { useCatalogPages } from "./useCatalogPages";
+import { CatalogAccessProvider } from "@/shared/catalog/CatalogAccessContext";
+import { invalidateSharedCatalog } from "@/shared/catalog/catalogCache";
+import { fetchCatalogPage } from "@/features/catalog/api/catalogApi";
+import { useCatalogPages } from "@/features/catalog/api/useCatalogPages";
 
-vi.mock("./catalogApi", () => ({ fetchCatalogPage: vi.fn() }));
+vi.mock("@/features/catalog/api/catalogApi", () => ({ fetchCatalogPage: vi.fn() }));
 
 describe("useCatalogPages shared-cache security", () => {
   beforeEach(() => {

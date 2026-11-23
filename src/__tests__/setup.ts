@@ -3,7 +3,7 @@
 // (e.g. toBeInTheDocument, toHaveTextContent, toBeVisible, etc.)
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
-import { setAuthenticatedSession } from "../shared/auth/authStore";
+import { setAuthenticatedSession } from "@/shared/auth/authStore";
 
 // Polyfill ResizeObserver for ReactFlow tests
 class ResizeObserverMock {

@@ -1,5 +1,5 @@
 import { Workflow, GripVertical, Globe, CreditCard, Shield, Database, Zap, X } from "lucide-react";
-import { PaletteApp } from "../types";
+import { PaletteApp } from "@/features/dependency-graph/types";
 
 const ICONS: Record<string, any> = { CreditCard, Shield, Database, Zap, Globe };
 

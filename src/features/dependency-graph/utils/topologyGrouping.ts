@@ -1,12 +1,12 @@
 import type { Node } from "@xyflow/react";
-import type { GraphApplicationNodeDto, GraphServerNodeDto, GraphTopologyLabelDto } from "../types";
+import type { GraphApplicationNodeDto, GraphServerNodeDto, GraphTopologyLabelDto } from "@/features/dependency-graph/types";
 import type {
   TopologyAppData,
   TopologyLabelData,
   TopologyLabelGroupNode,
   TopologyServerNode,
   TopologyServerNodeData,
-} from "../topology-types";
+} from "@/features/dependency-graph/topology-types";
 
 const COLLAPSED_SERVER_WIDTH = 280;
 const COLLAPSED_SERVER_HEIGHT = 80;

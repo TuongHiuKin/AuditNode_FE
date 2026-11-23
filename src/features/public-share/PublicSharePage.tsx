@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import apiClient from "../../shared/api/client";
-import type { CatalogApplication, CatalogServer } from "../../shared/catalog/types";
-import type { CatalogPage } from "../../shared/catalog/types";
+import apiClient from "@/shared/api/client";
+import type { CatalogApplication, CatalogServer } from "@/shared/catalog/types";
+import type { CatalogPage } from "@/shared/catalog/types";
 
 const TOKEN_SESSION_KEY = "auditnode.shareToken";
 

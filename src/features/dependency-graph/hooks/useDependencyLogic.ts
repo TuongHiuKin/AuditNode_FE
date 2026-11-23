@@ -15,14 +15,14 @@ import {
   type NodeChange
 } from "@xyflow/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import apiClient, { type Schemas } from "../../../shared/api/client";
-import { type AppNodeData, PaletteApp, type ServerNodeData, SelectedItem } from "../types";
-import { useAppPalette } from "./useAppPalette";
+import apiClient, { type Schemas } from "@/shared/api/client";
+import { type AppNodeData, PaletteApp, type ServerNodeData, SelectedItem } from "@/features/dependency-graph/types";
+import { useAppPalette } from "@/features/dependency-graph/hooks/useAppPalette";
 import { toast } from "sonner";
-import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
-import { registerSharedCatalogInvalidator } from "../../../shared/catalog/catalogCache";
-import { exportToExcel } from "../../../shared/utils/exportUtils";
-import { getErrorMessage } from "../../../shared/utils/errorUtils";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
+import { registerSharedCatalogInvalidator } from "@/shared/catalog/catalogCache";
+import { exportToExcel } from "@/shared/utils/exportUtils";
+import { getErrorMessage } from "@/shared/utils/errorUtils";
 import {
   buildDependencySyncRequest,
   buildTopologyCommandBatch,
@@ -36,7 +36,7 @@ import {
   type SaveTopologyState,
   type TopologyState,
   type PendingTopologyChanges,
-} from "../graphContract";
+} from "@/features/dependency-graph/graphContract";
 
 
 const edgeStyle = { stroke: "#3b82f6", strokeWidth: 2 };

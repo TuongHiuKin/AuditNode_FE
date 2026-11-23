@@ -5,9 +5,9 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { toast } from "sonner";
-import { clearClientSession, getAccessToken, setAccessToken } from "../auth/authStore";
-import { invalidateSharedCatalog } from "../catalog/catalogCache";
-import { paths } from "./v1-contract";
+import { clearClientSession, getAccessToken, setAccessToken } from "@/shared/auth/authStore";
+import { invalidateSharedCatalog } from "@/shared/catalog/catalogCache";
+import { paths } from "@/shared/api/v1-contract";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -126,4 +126,4 @@ function isRefreshExcluded(url: string) {
 
 export default apiClient;
 export type ApiPaths = paths;
-export type Schemas = import("./v1-contract").components["schemas"];
+export type Schemas = import("@/shared/api/v1-contract").components["schemas"];

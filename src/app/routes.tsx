@@ -1,20 +1,20 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
-import { Layout } from "./components/Layout";
-import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Layout } from "@/app/components/Layout";
+import { LoginPage } from "@/app/pages/LoginPage";
+import { RegisterPage } from "@/app/pages/RegisterPage";
+import { ProtectedRoute } from "@/app/components/ProtectedRoute";
 
-const InventoryLayout = lazy(() => import("./pages/InventoryLayout")
+const InventoryLayout = lazy(() => import("@/app/pages/InventoryLayout")
   .then((module) => ({ default: module.InventoryLayout })));
-const Inventory = lazy(() => import("./pages/Inventory")
+const Inventory = lazy(() => import("@/app/pages/Inventory")
   .then((module) => ({ default: module.Inventory })));
-const Topology = lazy(() => import("./pages/Topology")
+const Topology = lazy(() => import("@/app/pages/Topology")
   .then((module) => ({ default: module.Topology })));
-const DependencyManager = lazy(() => import("./pages/Dependency")
+const DependencyManager = lazy(() => import("@/app/pages/Dependency")
   .then((module) => ({ default: module.DependencyManager })));
-const AdminUsers = lazy(() => import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
-const PublicSharePage = lazy(() => import("../features/public-share/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
+const AdminUsers = lazy(() => import("@/app/pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
+const PublicSharePage = lazy(() => import("@/features/public-share/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
 
 function lazyRoute(element: ReactNode) {
   return (

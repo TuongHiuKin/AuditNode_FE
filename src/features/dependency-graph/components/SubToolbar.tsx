@@ -1,5 +1,5 @@
 import { Database, CloudUpload, Loader2 } from "lucide-react";
-import { Button } from "../../../shared/ui/Button";
+import { Button } from "@/shared/ui/Button";
 
 interface SubToolbarProps {
   onAutoMap: () => void;

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Tags } from "lucide-react";
 import type { NodeProps } from "@xyflow/react";
-import type { DependencyLabelGroupNode as DependencyLabelGroupNodeType } from "../types";
+import type { DependencyLabelGroupNode as DependencyLabelGroupNodeType } from "@/features/dependency-graph/types";
 
 export const DependencyLabelGroupNode = memo(
   ({ data }: NodeProps<DependencyLabelGroupNodeType>) => (

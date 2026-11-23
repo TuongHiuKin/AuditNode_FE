@@ -2,9 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CatalogLabel } from "../../../shared/catalog/types";
-import type { LabelGrant, ShareLinkMetadata } from "../api/labelSharing";
-import { ShareLabelModal } from "./ShareLabelModal";
+import type { CatalogLabel } from "@/shared/catalog/types";
+import type { LabelGrant, ShareLinkMetadata } from "@/features/label-sharing/api/labelSharing";
+import { ShareLabelModal } from "@/features/label-sharing/components/ShareLabelModal";
 
 const hookMocks = vi.hoisted(() => ({
   createGrant: { mutateAsync: vi.fn(), isPending: false },
@@ -16,7 +16,7 @@ const hookMocks = vi.hoisted(() => ({
   links: [] as ShareLinkMetadata[],
 }));
 
-vi.mock("../api/useLabelSharing", () => ({
+vi.mock("@/features/label-sharing/api/useLabelSharing", () => ({
   useLabelGrants: () => ({ data: hookMocks.grants }),
   useShareOptions: () => ({
     data: {

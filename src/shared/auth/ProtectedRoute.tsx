@@ -1,8 +1,8 @@
 import React, { ReactNode } from "react";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Navigate, Outlet, useNavigate } from "react-router";
-import { Button } from "../ui/Button";
-import { useAuth } from "./AuthContext";
+import { Button } from "@/shared/ui/Button";
+import { useAuth } from "@/shared/auth/AuthContext";
 
 export interface ProtectedRouteProps {
   allowedRoles?: string[];

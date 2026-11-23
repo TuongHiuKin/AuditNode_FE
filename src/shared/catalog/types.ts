@@ -47,4 +47,4 @@ export const emptyCatalogFilters: CatalogFilters = {
   labelKey: null,
   labelValue: null,
 };
-import type { Schemas } from "../api/client";
+import type { Schemas } from "@/shared/api/client";

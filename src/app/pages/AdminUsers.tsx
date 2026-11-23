@@ -2,8 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import { Search, Users } from "lucide-react";
 import { toast } from "sonner";
-import { useAdminUsers } from "../../features/admin-users/api/useAdminUsers";
-import type { AdminUser } from "../../features/admin-users/api/adminUsers";
+import { useAdminUsers } from "@/features/admin-users/api/useAdminUsers";
+import type { AdminUser } from "@/features/admin-users/api/adminUsers";
 
 export function AdminUsers() {
   const [input, setInput] = useState("");

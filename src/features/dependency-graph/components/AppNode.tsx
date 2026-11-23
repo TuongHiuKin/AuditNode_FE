@@ -1,6 +1,6 @@
 import { Handle, Position, NodeProps } from "@xyflow/react";
 import { CreditCard, Shield, Database, Zap, Globe } from "lucide-react";
-import { AppNode as AppNodeModel } from "../types";
+import { AppNode as AppNodeModel } from "@/features/dependency-graph/types";
 
 const ICONS: Record<string, any> = { CreditCard, Shield, Database, Zap, Globe };
 

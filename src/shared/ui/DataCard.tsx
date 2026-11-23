@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { cn } from "./Button";
+import { cn } from "@/shared/ui/Button";
 
 export function DataSection({ title, children, className }: { title: string, children: ReactNode, className?: string }) {
   return (

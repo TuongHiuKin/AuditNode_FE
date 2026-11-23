@@ -1,4 +1,4 @@
-import type { ApplicationResponse } from "../api/applicationTypes";
+import type { ApplicationResponse } from "@/shared/api/applicationTypes";
 
 export interface ExportLabel {
   key: string;

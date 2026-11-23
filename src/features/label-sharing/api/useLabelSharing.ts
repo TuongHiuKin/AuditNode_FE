@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { invalidateSharedCatalog } from "../../../shared/catalog/catalogCache";
+import { invalidateSharedCatalog } from "@/shared/catalog/catalogCache";
 import {
   createAnonymousViewerLink, createUserGrant, listAnonymousViewerLinks, listUserGrants, revokeAnonymousViewerLink,
   revokeUserGrant, searchShareUsers, updateUserGrant, type CreateGrantRequest, type LabelGrant,
-} from "./labelSharing";
+} from "@/features/label-sharing/api/labelSharing";
 
 export function useLabelGrants(labelId: string | null) {
   return useQuery({

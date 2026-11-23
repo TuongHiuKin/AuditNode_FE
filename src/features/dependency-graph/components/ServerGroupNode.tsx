@@ -1,6 +1,6 @@
 import { Server as ServerIcon, Maximize } from "lucide-react";
 import { Handle, Position, NodeProps, useReactFlow, NodeResizer } from "@xyflow/react";
-import { ServerNode } from "../types";
+import { ServerNode } from "@/features/dependency-graph/types";
 
 export function ServerGroupNode({ id, data, selected, width, height }: NodeProps<ServerNode>) {
   const { getNodes, setNodes } = useReactFlow();

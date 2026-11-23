@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import apiClient from "../../../shared/api/client";
-import { createAnonymousViewerLink, createUserGrant, listAnonymousViewerLinks } from "./labelSharing";
+import apiClient from "@/shared/api/client";
+import { createAnonymousViewerLink, createUserGrant, listAnonymousViewerLinks } from "@/features/label-sharing/api/labelSharing";
 
 describe("label sharing API", () => {
   it("allows an existing system user to be selected as Viewer or Editor", async () => {

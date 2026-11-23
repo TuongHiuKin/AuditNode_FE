@@ -1,5 +1,5 @@
-import apiClient from "../../../shared/api/client";
-import type { components } from "../../../shared/api/v1-contract";
+import apiClient from "@/shared/api/client";
+import type { components } from "@/shared/api/v1-contract";
 
 type AdminUserDto = components["schemas"]["IdentityAdminUserDto"];
 export type CreateAdminUser = components["schemas"]["CreateIdentityAdminUserDto"];

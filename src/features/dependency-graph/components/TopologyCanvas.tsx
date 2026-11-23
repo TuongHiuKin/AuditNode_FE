@@ -9,9 +9,9 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { TopologyServerNode } from "./TopologyServerNode";
-import { TopologyLabelGroupNode } from "./TopologyLabelGroupNode";
-import { GraphToolbar } from "./GraphToolbar";
+import { TopologyServerNode } from "@/features/dependency-graph/components/TopologyServerNode";
+import { TopologyLabelGroupNode } from "@/features/dependency-graph/components/TopologyLabelGroupNode";
+import { GraphToolbar } from "@/features/dependency-graph/components/GraphToolbar";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'default',

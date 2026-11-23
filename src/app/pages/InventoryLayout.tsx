@@ -3,11 +3,11 @@ import { NavLink, Outlet, useOutletContext, useLocation } from "react-router";
 import { Server, Grid, Download, ChevronDown, FileText, Upload, X, ArrowRight, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useHeader } from "../hooks/useHeader";
-import { exportToExcel, exportToCSV, ExportFormat } from "../../shared/utils/exportUtils";
-import apiClient from "../../shared/api/client";
-import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
-import type { ApplicationResponse } from "../../shared/api/applicationTypes";
+import { useHeader } from "@/app/hooks/useHeader";
+import { exportToExcel, exportToCSV, ExportFormat } from "@/shared/utils/exportUtils";
+import apiClient from "@/shared/api/client";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
+import type { ApplicationResponse } from "@/shared/api/applicationTypes";
 import {
   buildRepeatedIdParams,
   mapApplicationExportRows,
@@ -15,13 +15,13 @@ import {
   selectExportColumns,
   unwrapExportList,
   type ServerExportRecord,
-} from "../../shared/utils/inventoryExport";
-import { getErrorMessage } from "../../shared/utils/errorUtils";
+} from "@/shared/utils/inventoryExport";
+import { getErrorMessage } from "@/shared/utils/errorUtils";
 
-import { RegisterModal } from "../components/RegisterModal";
-import { CreateDatacenterModal } from "../components/CreateDatacenterModal";
+import { RegisterModal } from "@/features/inventory/components/RegisterModal";
+import { CreateDatacenterModal } from "@/features/inventory/components/CreateDatacenterModal";
 
-const BulkImportModal = lazy(() => import("../components/BulkImportModal")
+const BulkImportModal = lazy(() => import("@/features/inventory/components/BulkImportModal")
   .then((module) => ({ default: module.BulkImportModal })));
 
 // Context type shared with child routes

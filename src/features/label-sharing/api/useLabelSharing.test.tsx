@@ -2,10 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { AxiosRequestConfig } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { responseInterceptorErrorHandler } from "../../../shared/api/client";
-import { registerSharedCatalogInvalidator } from "../../../shared/catalog/catalogCache";
-import * as sharingApi from "./labelSharing";
-import { useLabelSharingMutations } from "./useLabelSharing";
+import { responseInterceptorErrorHandler } from "@/shared/api/client";
+import { registerSharedCatalogInvalidator } from "@/shared/catalog/catalogCache";
+import * as sharingApi from "@/features/label-sharing/api/labelSharing";
+import { useLabelSharingMutations } from "@/features/label-sharing/api/useLabelSharing";
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 

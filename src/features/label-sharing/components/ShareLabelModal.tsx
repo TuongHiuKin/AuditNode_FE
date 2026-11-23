@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Copy, Link2, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
-import type { CatalogLabel } from "../../../shared/catalog/types";
-import { buildPublicShareUrl, type CreatedShareLink, type GrantPermission } from "../api/labelSharing";
-import { useLabelGrants, useLabelSharingMutations, useShareLinks, useShareOptions } from "../api/useLabelSharing";
+import type { CatalogLabel } from "@/shared/catalog/types";
+import { buildPublicShareUrl, type CreatedShareLink, type GrantPermission } from "@/features/label-sharing/api/labelSharing";
+import { useLabelGrants, useLabelSharingMutations, useShareLinks, useShareOptions } from "@/features/label-sharing/api/useLabelSharing";
 
 const LINK_SESSION_KEY = "auditnode.activeViewerLink";
 

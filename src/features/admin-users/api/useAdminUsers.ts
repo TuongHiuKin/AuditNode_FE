@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { adminUsersApi } from "./adminUsers";
+import { adminUsersApi } from "@/features/admin-users/api/adminUsers";
 export function useAdminUsers(search: string, page: number, size = 25) {
   const client = useQueryClient(); const key = ["admin-users", search, page, size];
   const users = useQuery({ queryKey: key, queryFn: () => adminUsersApi.list(search, page * size, size) });

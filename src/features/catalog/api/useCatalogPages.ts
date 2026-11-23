@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { catalogQueryKey, useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
-import { registerSharedCatalogInvalidator } from "../../../shared/catalog/catalogCache";
-import { fetchCatalogPage, type CatalogResource } from "./catalogApi";
+import { catalogQueryKey, useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
+import { registerSharedCatalogInvalidator } from "@/shared/catalog/catalogCache";
+import { fetchCatalogPage, type CatalogResource } from "@/features/catalog/api/catalogApi";
 
 export function useCatalogPages<T extends CatalogResource>(
   resource: T,
