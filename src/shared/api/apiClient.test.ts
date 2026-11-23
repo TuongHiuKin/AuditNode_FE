@@ -38,6 +38,18 @@ describe("apiClient auth interceptors", () => {
     expect(sessionStorage.getItem("auditnode.shareToken")).toBeNull();
   });
 
+  it("preserves an open Viewer share link when an anonymous bootstrap refresh fails", () => {
+    // The E2E revocation journey caught this: an anonymous visitor lands on
+    // /shared#token=..., AuthProvider fires POST /auth/refresh without a refresh
+    // cookie, gets 401, and clearClientSession used to wipe the share token - so
+    // PublicSharePage rendered "Share link unavailable" for a valid link.
+    sessionStorage.setItem("auditnode.shareToken", "valid-anonymous-token");
+
+    clearClientSession();
+
+    expect(sessionStorage.getItem("auditnode.shareToken")).toBe("valid-anonymous-token");
+  });
+
   it("never sends the retired workspace header", async () => {
     localStorage.setItem("workspaceId", "legacy-workspace-id");
     const result = await requestInterceptorHandler({ headers: new AxiosHeaders() } as InternalAxiosRequestConfig);

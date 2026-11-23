@@ -34,7 +34,11 @@ export function subscribeToAuth(listener: () => void) {
 }
 
 export function beginAuthInitialization() {
-  clearSensitiveSessionArtifacts();
+  // Bootstrap must not scrub the one-time Viewer artifacts. A public /shared#token=...
+  // page mounts AuthProvider too, and beginAuthInitialization runs before the refresh
+  // result is known - clearing there deleted the share token the page had already
+  // captured, leaving it stuck on "Opening shared catalog…". The artifacts are cleared
+  // on a real principal change instead (setAuthenticatedSession, clearClientSession).
   updateSnapshot({ status: "initializing", accessToken: null, user: null, roles: [] });
 }
 
@@ -57,8 +61,15 @@ export function registerSessionCacheClearer(clearer: () => void) {
 }
 
 export function clearClientSession() {
+  // An anonymous visitor who never held a session has no stale authenticated data
+  // to purge. Scrubbing the one-time viewer artifacts or clearing the query cache
+  // there destroys an open Viewer link: AuthProvider fires the bootstrap refresh
+  // for every visitor, so a public /shared#token=... page would lose its token and
+  // its in-flight resolve whenever that unauthenticated refresh returned 401.
+  const discardedPrincipal = snapshot.status === "authenticated";
   updateSnapshot({ status: "anonymous", accessToken: null, user: null, roles: [] });
   localStorage.removeItem("auditnode_last_datacenter");
+  if (!discardedPrincipal) return;
   clearSensitiveSessionArtifacts();
   clearQueryCache();
 }
