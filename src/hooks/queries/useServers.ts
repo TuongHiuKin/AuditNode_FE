@@ -1,4 +1,4 @@
-import { useCatalogPages } from "../../features/catalog/api/useCatalogPages";
+import { useCatalogPages } from "@/features/catalog/api/useCatalogPages";
 /**
  * Custom hook to fetch servers
  */

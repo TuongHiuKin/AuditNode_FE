@@ -3,14 +3,14 @@ import { useSearchParams } from "react-router";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { Network, ChevronRight, Plus } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useDependencyLogic } from "../../features/dependency-graph/hooks/useDependencyLogic";
-import { FlowCanvas } from "../../features/dependency-graph/components/FlowCanvas";
-import { AppPalette } from "../../features/dependency-graph/components/AppPalette";
-import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
-import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
-import { SubToolbar } from "../../features/dependency-graph/components/SubToolbar";
-import { RegisterModal } from "../components/RegisterModal";
-import { useHeader } from "../hooks/useHeader";
+import { useDependencyLogic } from "@/features/dependency-graph/hooks/useDependencyLogic";
+import { FlowCanvas } from "@/features/dependency-graph/components/FlowCanvas";
+import { AppPalette } from "@/features/dependency-graph/components/AppPalette";
+import { DetailsPanel } from "@/features/dependency-graph/components/DetailsPanel";
+import { FilterBar } from "@/features/dependency-graph/components/FilterBar";
+import { SubToolbar } from "@/features/dependency-graph/components/SubToolbar";
+import { RegisterModal } from "@/features/inventory/components/RegisterModal";
+import { useHeader } from "@/app/hooks/useHeader";
 
 function DependencyManagerContent() {
   const [searchParams, setSearchParams] = useSearchParams();

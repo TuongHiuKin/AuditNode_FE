@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { CatalogAccessProvider } from "../../../shared/catalog/CatalogAccessContext";
-import { MineSharedSwitch } from "./MineSharedSwitch";
+import { CatalogAccessProvider } from "@/shared/catalog/CatalogAccessContext";
+import { MineSharedSwitch } from "@/features/catalog/components/MineSharedSwitch";
 
 describe("MineSharedSwitch", () => {
   it("exposes an accessible Mine/Shared selection", () => {

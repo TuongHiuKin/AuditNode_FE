@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
-import { SelectedItem } from "../types";
-import { SlidePanel } from "../../../shared/ui/SlidePanel";
-import { DataSection, DataCard, DataRow } from "../../../shared/ui/DataCard";
+import { SelectedItem } from "@/features/dependency-graph/types";
+import { SlidePanel } from "@/shared/ui/SlidePanel";
+import { DataSection, DataCard, DataRow } from "@/shared/ui/DataCard";
 
 interface DetailsPanelProps {
   selectedItem: SelectedItem;

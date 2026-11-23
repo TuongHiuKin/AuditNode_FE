@@ -1,10 +1,10 @@
 import { RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { router } from "./routes";
-import { AuthProvider, useAuth } from "../shared/auth/AuthContext";
-import { registerSessionCacheClearer } from "../shared/auth/authStore";
-import { CatalogAccessProvider } from "../shared/catalog/CatalogAccessContext";
+import { router } from "@/app/routes";
+import { AuthProvider, useAuth } from "@/shared/auth/AuthContext";
+import { registerSessionCacheClearer } from "@/shared/auth/authStore";
+import { CatalogAccessProvider } from "@/shared/catalog/CatalogAccessContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {

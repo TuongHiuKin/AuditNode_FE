@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import { invalidateSharedCatalog } from "./catalogCache";
-import { emptyCatalogFilters, type CatalogFilters, type CatalogView } from "./types";
+import { invalidateSharedCatalog } from "@/shared/catalog/catalogCache";
+import { emptyCatalogFilters, type CatalogFilters, type CatalogView } from "@/shared/catalog/types";
 
 interface CatalogAccessValue {
   principalId: string;

@@ -1,8 +1,8 @@
 import { Server as ServerIcon, ChevronDown, ChevronUp, Boxes, Link2 } from "lucide-react";
 import { Handle, Position, NodeProps, useReactFlow } from "@xyflow/react";
 import { useState, useEffect } from "react";
-import type { TopologyServerNode as TopologyServerNodeData } from "../topology-types";
-import { TopologyAppCard } from "./TopologyAppCard";
+import type { TopologyServerNode as TopologyServerNodeData } from "@/features/dependency-graph/topology-types";
+import { TopologyAppCard } from "@/features/dependency-graph/components/TopologyAppCard";
 
 export function TopologyServerNode({ id, data }: NodeProps<TopologyServerNodeData>) {
   const { setNodes } = useReactFlow();

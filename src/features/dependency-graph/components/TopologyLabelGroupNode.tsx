@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Tags } from "lucide-react";
 import type { NodeProps } from "@xyflow/react";
-import type { TopologyLabelGroupNodeData } from "../topology-types";
+import type { TopologyLabelGroupNodeData } from "@/features/dependency-graph/topology-types";
 
 export const TopologyLabelGroupNode = memo(
   ({ data: rawData }: NodeProps) => {

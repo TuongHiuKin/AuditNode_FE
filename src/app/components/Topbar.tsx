@@ -1,11 +1,11 @@
 
-import { useHeader } from "../hooks/useHeader";
+import { useHeader } from "@/app/hooks/useHeader";
 import { useEffect, useMemo, useState } from "react";
 import { Share2 } from "lucide-react";
-import { MineSharedSwitch } from "../../features/catalog/components/MineSharedSwitch";
-import { ShareLabelModal } from "../../features/label-sharing/components/ShareLabelModal";
-import { useCatalogPages } from "../../features/catalog/api/useCatalogPages";
-import { useCatalogAccess } from "../../shared/catalog/CatalogAccessContext";
+import { MineSharedSwitch } from "@/features/catalog/components/MineSharedSwitch";
+import { ShareLabelModal } from "@/features/label-sharing/components/ShareLabelModal";
+import { useCatalogPages } from "@/features/catalog/api/useCatalogPages";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
 
 export function Topbar() {
   const { breadcrumbs } = useHeader();

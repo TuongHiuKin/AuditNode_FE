@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import apiClient, { Schemas } from "../../../shared/api/client";
-import { Dropdown } from "../../../shared/ui/Dropdown";
-import UniversalSearch, { SearchResultType } from "../../../app/components/UniversalSearch";
-import { LabelFilterDropdown } from "../../../app/components/LabelFilterDropdown";
-import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
+import apiClient, { Schemas } from "@/shared/api/client";
+import { Dropdown } from "@/shared/ui/Dropdown";
+import UniversalSearch, { SearchResultType } from "@/shared/ui/UniversalSearch";
+import { LabelFilterDropdown } from "@/features/catalog/components/LabelFilterDropdown";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
 
 interface FilterBarProps {
   selectedEnv: string;

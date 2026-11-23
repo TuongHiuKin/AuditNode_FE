@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ServerTable } from "../components/ServerTable";
-import { AppTable } from "../components/AppTable";
-import { EditEntityDrawer } from "../components/EditEntityDrawer";
-import { MigrationDrawer } from "../components/MigrationDrawer";
-import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
-import { useInventoryContext } from "./InventoryLayout";
+import { ServerTable } from "@/features/inventory/components/ServerTable";
+import { AppTable } from "@/features/inventory/components/AppTable";
+import { EditEntityDrawer } from "@/features/inventory/components/EditEntityDrawer";
+import { MigrationDrawer } from "@/features/inventory/components/MigrationDrawer";
+import { DeleteConfirmationModal } from "@/features/inventory/components/DeleteConfirmationModal";
+import { useInventoryContext } from "@/app/pages/InventoryLayout";
 
 export function Inventory({ type }: { type: "servers" | "applications" }) {
   const { selectedIds, onSelectRow, onSelectAll, isSelectionMode, selectedColumns, toggleColumn, toolbarEl, onOpenCreateDc } = useInventoryContext();

@@ -1,8 +1,8 @@
-import apiClient from "../../../shared/api/client";
-import type { CatalogApplication, CatalogDatacenter, CatalogLabel, CatalogPage, CatalogServer, CatalogView } from "../../../shared/catalog/types";
+import apiClient from "@/shared/api/client";
+import type { CatalogApplication, CatalogDatacenter, CatalogLabel, CatalogPage, CatalogServer, CatalogView } from "@/shared/catalog/types";
 
 export type CatalogResource = "servers" | "applications" | "datacenters" | "labels";
-export type { CatalogApplication, CatalogDatacenter, CatalogServer } from "../../../shared/catalog/types";
+export type { CatalogApplication, CatalogDatacenter, CatalogServer } from "@/shared/catalog/types";
 
 export interface CatalogPageRequest {
   view: CatalogView;

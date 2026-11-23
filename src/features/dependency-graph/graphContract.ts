@@ -1,6 +1,6 @@
 import type { Connection, Edge, Node } from "@xyflow/react";
-import type { Schemas } from "../../shared/api/client";
-import type { AppNodeData, PaletteApp, ServerNodeData } from "./types";
+import type { Schemas } from "@/shared/api/client";
+import type { AppNodeData, PaletteApp, ServerNodeData } from "@/features/dependency-graph/types";
 
 export interface DependencyApplicationDto {
   id: string;

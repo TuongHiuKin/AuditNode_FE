@@ -1,6 +1,6 @@
-import apiClient, { Schemas } from "../shared/api/client";
-import { API_ENDPOINTS } from "../config/endpoints";
-import { buildRepeatedIdParams, type ServerExportRecord } from "../shared/utils/inventoryExport";
+import apiClient, { Schemas } from "@/shared/api/client";
+import { API_ENDPOINTS } from "@/config/endpoints";
+import { buildRepeatedIdParams, type ServerExportRecord } from "@/shared/utils/inventoryExport";
 
 export type ServerWritePayload = Omit<Schemas["CreateServerDto"], "ipAddress" | "labels"> & {
   ipAddress: string;

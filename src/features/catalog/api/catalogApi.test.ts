@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import apiClient from "../../../shared/api/client";
-import { fetchCatalogPage } from "./catalogApi";
+import apiClient from "@/shared/api/client";
+import { fetchCatalogPage } from "@/features/catalog/api/catalogApi";
 
 describe("catalogApi", () => {
   it("sends the opaque cursor and marks catalog reads for shared-cache invalidation", async () => {

@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { CatalogAccessProvider, catalogQueryKey, useCatalogAccess } from "./CatalogAccessContext";
-import { registerSharedCatalogInvalidator } from "./catalogCache";
+import { CatalogAccessProvider, catalogQueryKey, useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
+import { registerSharedCatalogInvalidator } from "@/shared/catalog/catalogCache";
 
 describe("CatalogAccessProvider", () => {
   it("defaults to Mine and does not enable Shared until selected", () => {

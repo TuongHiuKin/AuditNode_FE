@@ -1,7 +1,7 @@
 import { Controls } from "@xyflow/react";
 import { Camera, Plus, Briefcase } from "lucide-react";
 import { toPng } from "html-to-image";
-import { Button } from "../../../shared/ui/Button";
+import { Button } from "@/shared/ui/Button";
 
 interface GraphToolbarProps {
   onQuickAdd?: () => void;

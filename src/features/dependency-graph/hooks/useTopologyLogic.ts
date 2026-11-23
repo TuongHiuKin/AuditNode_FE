@@ -7,10 +7,10 @@ import {
   type Edge,
 } from "@xyflow/react";
 import { useQuery } from "@tanstack/react-query";
-import apiClient from "../../../shared/api/client";
-import { SelectedItem } from "../types";
-import type { DependencyMapResponse } from "../graphContract";
-import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
+import apiClient from "@/shared/api/client";
+import { SelectedItem } from "@/features/dependency-graph/types";
+import type { DependencyMapResponse } from "@/features/dependency-graph/graphContract";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
 
 export function useTopologyLogic() {
   const { view, sharedEnabled, filters } = useCatalogAccess();

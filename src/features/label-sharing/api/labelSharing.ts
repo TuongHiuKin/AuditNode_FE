@@ -1,4 +1,4 @@
-import apiClient from "../../../shared/api/client";
+import apiClient from "@/shared/api/client";
 
 export type GrantPermission = "viewer" | "editor";
 export interface LabelGrant {

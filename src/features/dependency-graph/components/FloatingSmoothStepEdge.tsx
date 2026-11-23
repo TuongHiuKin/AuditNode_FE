@@ -10,7 +10,7 @@ import {
   Position,
 } from '@xyflow/react';
 import { X } from "lucide-react";
-import { getEdgeParams } from '../utils/floatingEdgeUtils';
+import { getEdgeParams } from '@/features/dependency-graph/utils/floatingEdgeUtils';
 
 export function FloatingSmoothStepEdge({
   id,

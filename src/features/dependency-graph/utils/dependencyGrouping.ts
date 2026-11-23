@@ -12,7 +12,7 @@ import type {
   GraphConnectionDto,
   GraphServerNodeDto,
   GraphTopologyLabelDto,
-} from "../types";
+} from "@/features/dependency-graph/types";
 
 const SERVER_WIDTH = 300;
 const SERVER_MIN_HEIGHT = 120;

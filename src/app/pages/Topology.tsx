@@ -2,16 +2,16 @@ import { Network } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { useTopologyLogic } from "../../features/dependency-graph/hooks/useTopologyLogic";
-import { TopologyCanvas } from "../../features/dependency-graph/components/TopologyCanvas";
-import { FilterBar } from "../../features/dependency-graph/components/FilterBar";
-import { DetailsPanel } from "../../features/dependency-graph/components/DetailsPanel";
-import { useHeader } from "../hooks/useHeader";
-import { SearchResultType } from "../components/UniversalSearch";
+import { useTopologyLogic } from "@/features/dependency-graph/hooks/useTopologyLogic";
+import { TopologyCanvas } from "@/features/dependency-graph/components/TopologyCanvas";
+import { FilterBar } from "@/features/dependency-graph/components/FilterBar";
+import { DetailsPanel } from "@/features/dependency-graph/components/DetailsPanel";
+import { useHeader } from "@/app/hooks/useHeader";
+import { SearchResultType } from "@/shared/ui/UniversalSearch";
 import {
   countUniqueTopologyServers,
-} from "../../features/dependency-graph/utils/topologyGrouping";
-import type { TopologyServerNodeData } from "../../features/dependency-graph/topology-types";
+} from "@/features/dependency-graph/utils/topologyGrouping";
+import type { TopologyServerNodeData } from "@/features/dependency-graph/topology-types";
 
 function TopologyContent() {
   const {

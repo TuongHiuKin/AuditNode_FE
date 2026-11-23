@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import apiClient from "../api/client";
+import apiClient from "@/shared/api/client";
 import {
   beginAuthInitialization,
   clearClientSession,
@@ -9,7 +9,7 @@ import {
   subscribeToAuth,
   type AuthSnapshot,
   type CurrentUser,
-} from "./authStore";
+} from "@/shared/auth/authStore";
 
 interface TokenResponse {
   accessToken: string;

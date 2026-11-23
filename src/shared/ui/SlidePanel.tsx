@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { X, Info } from "lucide-react";
-import { cn } from "./Button"; 
+import { cn } from "@/shared/ui/Button"; 
 
 export interface SlidePanelProps {
   isOpen: boolean;

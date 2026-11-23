@@ -1,6 +1,6 @@
-import type { PaletteApp } from "../types";
-import { useCatalogPages } from "../../catalog/api/useCatalogPages";
-import type { CatalogApplication } from "../../catalog/api/catalogApi";
+import type { PaletteApp } from "@/features/dependency-graph/types";
+import { useCatalogPages } from "@/features/catalog/api/useCatalogPages";
+import type { CatalogApplication } from "@/features/catalog/api/catalogApi";
 
 type CatalogDeployment = NonNullable<CatalogApplication["servers"]>[number];
 

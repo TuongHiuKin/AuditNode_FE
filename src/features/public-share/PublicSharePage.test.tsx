@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import apiClient from "../../shared/api/client";
-import { PublicSharePage } from "./PublicSharePage";
+import apiClient from "@/shared/api/client";
+import { PublicSharePage } from "@/features/public-share/PublicSharePage";
 
 describe("PublicSharePage", () => {
   beforeEach(() => {

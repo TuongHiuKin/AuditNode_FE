@@ -1,4 +1,4 @@
-import { useCatalogAccess } from "../../../shared/catalog/CatalogAccessContext";
+import { useCatalogAccess } from "@/shared/catalog/CatalogAccessContext";
 
 export function MineSharedSwitch() {
   const { view, selectView } = useCatalogAccess();
