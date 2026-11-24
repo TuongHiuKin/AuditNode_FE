@@ -11,7 +11,7 @@ export interface ProtectedRouteProps {
 }
 
 /**
- * Route guard component that restricts access based on allowed Keycloak realm roles.
+ * Route guard component that restricts access based on the roles carried by the access token.
  * Displays a 403 Access Denied interface if the user lacks required roles.
  */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
