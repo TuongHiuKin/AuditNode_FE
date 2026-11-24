@@ -4,7 +4,7 @@ React, TypeScript and Vite frontend for AuditNode inventory, topology and depend
 
 ## Current architecture
 
-- Authentication uses the backend auth gateway at `/api/v1/auth/*`. Login and registration remain custom React screens; the application does not launch the Keycloak-hosted UI.
+- Authentication uses the backend auth gateway at `/api/v1/auth/*`. Login and registration remain custom React screens; the backend owns identity and issues its own tokens.
 - Access tokens are held in memory only. Refresh tokens are backend-managed `HttpOnly` cookies and refresh requests use credentials.
 - The Global Catalog is partitioned by owner identity. `CatalogAccessProvider` scopes React Query keys by principal, selected `mine`/`shared` view, filters and owner selection; the client does not send a Workspace header.
 - Owners can grant label-scoped Viewer or Editor access directly to users. Anonymous Viewer links use the dedicated public-share flow.

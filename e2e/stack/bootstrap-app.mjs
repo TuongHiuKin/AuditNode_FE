@@ -6,8 +6,12 @@ async function call(path, { token, method = 'GET', body, expected = [200] } = {}
   if (token) headers.authorization = `Bearer ${token}`;
   const response = await fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   if (!expected.includes(response.status)) throw new Error(`${method} ${path} returned ${response.status}: ${await response.text()}`);
+  // Empty bodies are legal: some creates answer 201 without a payload and
+  // deletes answer 204. Read the text and parse only when something came back.
   if (response.status === 204) return undefined;
-  return response.json();
+  const text = await response.text();
+  if (!text) return undefined;
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 async function session(prefix) {

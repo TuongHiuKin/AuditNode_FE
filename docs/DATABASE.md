@@ -20,7 +20,7 @@ Tracks software entities deployed across the infrastructure.
 - `id` (UUID, PK)
 - `app_code` (string, **UNIQUE**) - Unique identifier for business logic tracking.
 - `app_name` (string)
-- `owner_id` (UUID: Keycloak User ID)
+- `owner_id` (UUID: backend user id)
 
 #### 3. Port Mappings (`port_mappings`)
 **The primary bridge** connecting applications to specific servers. This table enables the many-to-many relationship between infrastructure and software.
