@@ -6,8 +6,12 @@ async function call(path, { token, method = 'GET', body, expected = [200] } = {}
   if (token) headers.authorization = `Bearer ${token}`;
   const response = await fetch(`${base}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   if (!expected.includes(response.status)) throw new Error(`${method} ${path} returned ${response.status}: ${await response.text()}`);
+  // Empty bodies are legal: some creates answer 201 without a payload and
+  // deletes answer 204. Read the text and parse only when something came back.
   if (response.status === 204) return undefined;
-  return response.json();
+  const text = await response.text();
+  if (!text) return undefined;
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 async function session(prefix) {
@@ -18,8 +22,31 @@ async function session(prefix) {
   return { token: login.accessToken, userId: me.id };
 }
 
-const sessions = {};
-for (const prefix of ['SYSTEM_ADMIN', 'OWNER', 'WORKSPACE_ADMIN', 'LABEL_AUDITOR', 'FRAME_AUDITOR', 'VIEWER']) sessions[prefix] = await session(prefix);
+// The first administrator is created by the API itself (Identity:BootstrapAdmin).
+// Everyone else is created through the admin API, which is why this runs after
+// the backend is ready.
+const admin = await session('SYSTEM_ADMIN');
+
+async function ensureUser(prefix) {
+  const username = required(`E2E_${prefix}_USERNAME`);
+  const password = required(`E2E_${prefix}_PASSWORD`);
+
+  const existing = await call(`/api/v1/admin/users?search=${encodeURIComponent(username)}`, { token: admin.token });
+  const match = existing.find(user => user.username === username);
+  if (!match) {
+    await call('/api/v1/admin/users', {
+      token: admin.token,
+      method: 'POST',
+      expected: [201],
+      body: { username, email: `${username}@auditnode.local`, password },
+    });
+  }
+  return session(prefix);
+}
+
+const sessions = { SYSTEM_ADMIN: admin };
+for (const prefix of ['OWNER', 'WORKSPACE_ADMIN', 'LABEL_AUDITOR', 'FRAME_AUDITOR', 'VIEWER'])
+  sessions[prefix] = await ensureUser(prefix);
 const owner = sessions.OWNER;
 
 async function page(path, token) {

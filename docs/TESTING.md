@@ -10,7 +10,7 @@ Coverage evidence:
 
     npm run test:coverage
 
-Required frontend verification also includes npm run typecheck, npm run sync-api:check, and npm run build. Full-stack Playwright uses the Docker Compose stack under e2e/stack so PostgreSQL, Keycloak, two backend processes, the frontend, and the browser run together.
+Required frontend verification also includes npm run typecheck, npm run sync-api:check, and npm run build. Full-stack Playwright uses the Docker Compose stack under e2e/stack so PostgreSQL, two backend processes, the frontend, and the browser run together. The stack seeds its own identities; no external identity provider is required.
 
 Coverage produces LCOV and a JSON summary. It is a diagnostic signal, not a percentage target. Generated API contracts and test files are excluded from product coverage.
 

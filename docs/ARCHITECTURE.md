@@ -4,7 +4,7 @@ AuditNode follows an FSD-Lite structure: application shell and routing in `src/a
 
 ## Authentication and session lifecycle
 
-The frontend uses custom Login and Register pages backed by the ASP.NET auth gateway. Keycloak remains the identity provider behind the backend; `keycloak-js` and the hosted Keycloak UI are not part of the runtime flow.
+The frontend uses custom Login and Register pages backed by the ASP.NET auth gateway. The backend owns identity (ASP.NET Core Identity); no external identity provider or SSO library is part of the runtime flow.
 
 The access token exists only in the in-memory auth store. The refresh token is an `HttpOnly` cookie owned by the backend. Application bootstrap attempts one cookie refresh before resolving to authenticated or anonymous state. The API client performs single-flight refresh on eligible `401` responses and retries at most once. Terminal failure and logout clear auth state and React Query cache.
 
