@@ -36,7 +36,7 @@ là tool duy nhất không cần owner filter vì nó không đọc dữ liệu 
    Khi psql chạy dòng `\password auditnode_chat_reader`, nhập mật khẩu mới cho
    role. Dùng chính mật khẩu đó tại dòng `POSTGRES_PASSWORD` trong `.env.local`.
 3. File `.env.local` đã được tạo sẵn. Thay `PUT_READER_PASSWORD_HERE` bằng mật
-   khẩu của role và `PUT_OWNER_ID_HERE` bằng Keycloak subject/`owner_id`.
+   khẩu của role và `PUT_OWNER_ID_HERE` bằng `app_users.id` của user sở hữu.
    Với môi trường local của repository này, có thể tạo/cập nhật role từ mật
    khẩu trong `.env.local` mà không in mật khẩu bằng:
 

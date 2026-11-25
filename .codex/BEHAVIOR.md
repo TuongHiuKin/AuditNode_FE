@@ -18,7 +18,7 @@ This file is loaded by `../AGENTS.md` at the start of every prompt in AuditNode.
 - Use `prompt-archiving` only when the user explicitly asks to save a prompt.
 - Use `tdd-contract` for new behavior, regression fixes, hooks, queries, mutations, or non-trivial components.
 - Use `frontend-fsd` for source structure, components, hooks, features, and shared UI.
-- Use `keycloak-frontend` for login, logout, route protection, token handling, Keycloak, or Axios authorization.
+- Use `identity-frontend` for login, logout, route protection, token handling, or Axios authorization.
 - Use `tokyo-midnight-ui` for visual components, styles, theme tokens, and design-system decisions.
 - Use `typescript-api-sync` for API calls, OpenAPI changes, queries, mutations, and transported data types.
 - Use `xyflow-graph` for topology, dependency graph, custom nodes, edges, handles, and graph layout.
