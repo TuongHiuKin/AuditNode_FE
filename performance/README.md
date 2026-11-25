@@ -8,7 +8,7 @@ Profiles:
 - `baseline`: ramp to 20 catalog VUs, hold for five minutes, then ramp down.
 - `stress`: manual discovery only; ramp from 20 to 50 VUs and hold for three minutes.
 
-Latency remains report-only during the initial baseline. The only failing thresholds protect fixture/HTTP correctness and cross-owner disclosure. The anonymous rate stays below the configured API fixed-window limit and is not intended to determine endpoint capacity. The synthetic Keycloak realm alone receives a 15-minute access-token lifetime so the 6.5-minute baseline is not polluted by token expiry.
+Latency remains report-only during the initial baseline. The only failing thresholds protect fixture/HTTP correctness and cross-owner disclosure. The anonymous rate stays below the configured API fixed-window limit and is not intended to determine endpoint capacity. Access tokens are issued with a 15-minute lifetime by the API itself, so the 6.5-minute baseline is not polluted by token expiry.
 
 Run the base E2E Compose file first and this overlay second. Supply the same synthetic E2E variables used by the full-stack suite and set `PERF_PROFILE`. Start `performance-verify` detached, wait for its container, and require exit code zero before load begins. Then run `k6` with `docker compose run --no-deps --rm k6`, followed by `performance-db-report` with the same flags. Using `--no-deps` is important because the fixture must be seeded and verified exactly once per measurement. Always tear down the exact Compose project with `--profile performance down --volumes --remove-orphans`.
 

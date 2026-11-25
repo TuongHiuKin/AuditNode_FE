@@ -29,10 +29,7 @@ env:
   PERF_PROFILE: ${{ inputs.profile }}
   E2E_DB_USERNAME: auditnode_performance
   E2E_DB_PASSWORD: AuditNode-Performance-Database-Only
-  E2E_KEYCLOAK_ADMIN_USERNAME: auditnode-performance-admin
-  E2E_KEYCLOAK_ADMIN_PASSWORD: AuditNode-Performance-Keycloak-Only
-  E2E_BFF_CLIENT_SECRET: auditnode-performance-bff-client-secret
-  E2E_ADMIN_CLIENT_SECRET: auditnode-performance-admin-client-secret
+  E2E_IDENTITY_SIGNING_KEY: AuditNode-Performance-Signing-Key-32bytes!
   E2E_SYSTEM_ADMIN_USERNAME: performance-system-admin
   E2E_SYSTEM_ADMIN_PASSWORD: AuditNode-Performance-User-Only
   E2E_OWNER_USERNAME: performance-owner

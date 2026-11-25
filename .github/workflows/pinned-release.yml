@@ -28,10 +28,7 @@ env:
   E2E_CAPTURE_OPENAPI: '1'
   E2E_DB_USERNAME: auditnode_release
   E2E_DB_PASSWORD: AuditNode-Release-Database-Only
-  E2E_KEYCLOAK_ADMIN_USERNAME: auditnode-release-admin
-  E2E_KEYCLOAK_ADMIN_PASSWORD: AuditNode-Release-Keycloak-Only
-  E2E_BFF_CLIENT_SECRET: auditnode-release-bff-client-secret
-  E2E_ADMIN_CLIENT_SECRET: auditnode-release-admin-client-secret
+  E2E_IDENTITY_SIGNING_KEY: AuditNode-Release-Signing-Key-32bytes-ok!
   E2E_SYSTEM_ADMIN_USERNAME: release-system-admin
   E2E_SYSTEM_ADMIN_PASSWORD: AuditNode-Release-User-Only
   E2E_OWNER_USERNAME: release-owner

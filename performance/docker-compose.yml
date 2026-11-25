@@ -2,21 +2,6 @@ services:
   postgres:
     command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "track_io_timing=on"]
 
-  performance-keycloak-config:
-    image: node:20-alpine
-    profiles: ["performance"]
-    working_dir: /performance
-    command: ["node", "scripts/configure-keycloak.mjs"]
-    volumes:
-      - ../../performance:/performance:ro
-    environment:
-      PERF_KEYCLOAK_URL: http://keycloak:8080
-      E2E_KEYCLOAK_ADMIN_USERNAME: ${E2E_KEYCLOAK_ADMIN_USERNAME:?set E2E_KEYCLOAK_ADMIN_USERNAME}
-      E2E_KEYCLOAK_ADMIN_PASSWORD: ${E2E_KEYCLOAK_ADMIN_PASSWORD:?set E2E_KEYCLOAK_ADMIN_PASSWORD}
-    depends_on:
-      keycloak-bootstrap:
-        condition: service_completed_successfully
-
   performance-identity:
     image: node:20-alpine
     profiles: ["performance"]
@@ -38,8 +23,8 @@ services:
       E2E_FRAME_AUDITOR_USERNAME: ${E2E_FRAME_AUDITOR_USERNAME:?set E2E_FRAME_AUDITOR_USERNAME}
       E2E_FRAME_AUDITOR_PASSWORD: ${E2E_FRAME_AUDITOR_PASSWORD:?set E2E_FRAME_AUDITOR_PASSWORD}
     depends_on:
-      performance-keycloak-config:
-        condition: service_completed_successfully
+      # Identity fixtures are created through the API itself, so no external
+      # identity provider needs to boot first.
       backend-ready:
         condition: service_completed_successfully
       backend-peer-ready:
