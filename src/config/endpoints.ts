@@ -34,6 +34,10 @@ export const API_ENDPOINTS = {
   DEPENDENCIES: {
     SYNC: "/api/v1/dependencies/sync",
   },
+  EXTERNAL_SERVICES: {
+    BASE: "/api/v1/external-services",
+    BY_ID: (id: string) => `/api/v1/external-services/${id}`,
+  },
   INVENTORY: {
     IMPORT_TEMPLATE: "/api/v1/inventory/import-template",
     IMPORT: "/api/v1/inventory/import",

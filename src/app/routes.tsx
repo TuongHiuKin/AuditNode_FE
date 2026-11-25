@@ -14,6 +14,7 @@ const Topology = lazy(() => import("@/app/pages/Topology")
 const DependencyManager = lazy(() => import("@/app/pages/Dependency")
   .then((module) => ({ default: module.DependencyManager })));
 const AdminUsers = lazy(() => import("@/app/pages/AdminUsers").then((module) => ({ default: module.AdminUsers })));
+const ExternalServices = lazy(() => import("@/app/pages/ExternalServices").then((module) => ({ default: module.ExternalServices })));
 const PublicSharePage = lazy(() => import("@/features/public-share/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
 
 function lazyRoute(element: ReactNode) {
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       },
       { path: "topology", element: lazyRoute(<Topology />) },
       { path: "dependency-manager", element: lazyRoute(<DependencyManager />) },
+      { path: "external-services", element: lazyRoute(<ExternalServices />) },
       { path: "admin/users", element: <ProtectedRoute allowedRoles={["SystemAdmin"]}>{lazyRoute(<AdminUsers />)}</ProtectedRoute> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
