@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router";
-import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut, Users } from "lucide-react";
+import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOut, Users, Cloud } from "lucide-react";
 import { useRBAC } from "@/shared/auth/useRBAC";
 import { useAuth } from "@/shared/auth/AuthContext";
 
@@ -12,6 +12,7 @@ const navGroups = [
       { name: "Inventory", path: "/inventory", icon: Server },
       { name: "Topology Map", path: "/topology", icon: Network },
       { name: "Dependencies", path: "/dependency-manager", icon: Workflow },
+      { name: "External services", path: "/external-services", icon: Cloud },
     ],
   },
 ];
