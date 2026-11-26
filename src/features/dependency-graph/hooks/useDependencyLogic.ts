@@ -829,6 +829,23 @@ export function useDependencyLogic() {
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+
+      // An external service is a leaf: it can never be a dependency source, so it
+      // gets its own node type and drops without the parent/server lookup below.
+      const externalServiceId = event.dataTransfer.getData("external-service/reactflow");
+      if (externalServiceId) {
+        const service = availableExternalServices.find((item) => item.id === externalServiceId);
+        if (!service || nodes.some((node) => node.id === `external-${service.id}`)) return;
+        const dropPosition = reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+        setNodes((current) => current.concat({
+          id: `external-${service.id}`,
+          type: "externalServiceNode",
+          position: { x: dropPosition.x - 110, y: dropPosition.y - 30 },
+          data: { service },
+        } as Node));
+        return;
+      }
+
       const appId = event.dataTransfer.getData("application/reactflow");
       if (!appId) return;
 
@@ -878,7 +895,7 @@ export function useDependencyLogic() {
         refetchApps();
       }, 200);
     },
-    [reactFlowInstance, nodes, setNodes, availableApps, refetchApps],
+    [reactFlowInstance, nodes, setNodes, availableApps, availableExternalServices, refetchApps],
   );
 
   // ── Build dependency map for a node ────────────────────────────────────────

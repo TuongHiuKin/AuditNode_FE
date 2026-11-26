@@ -63,8 +63,59 @@ describe("Phase 7 graph contract", () => {
         sourceAppId: "app-1",
         destAppId: "app-2",
         destinationPortMappingId: "mapping-3",
+        externalServiceId: null,
       }],
     });
+  });
+
+  it("sends an external service id and no app destination for a third-party dependency", () => {
+    const graph = mapDependencyGraph(map);
+    const externalNode: Node = {
+      id: "external-stripe",
+      type: "externalServiceNode",
+      position: { x: 0, y: 0 },
+      data: {
+        service: {
+          id: "stripe-1", name: "Stripe", kind: "payment", provider: "Stripe",
+          endpoint: "https://api.stripe.com", port: 443, environment: "Production",
+          dependentApplicationCount: 0,
+        },
+      },
+    };
+    const edge: Edge = { id: "external-edge", source: "mapping-1", target: "external-stripe" };
+    expect(buildDependencySyncRequest([...graph.nodes, externalNode], [edge])).toEqual({
+      dependencies: [{
+        sourceAppId: "app-1",
+        destAppId: null,
+        destinationPortMappingId: null,
+        externalServiceId: "stripe-1",
+      }],
+    });
+  });
+
+  it("refuses a connection that starts at an external service", () => {
+    const service = {
+      id: "stripe-1", name: "Stripe", kind: "payment", provider: "Stripe",
+      endpoint: null, port: null, environment: "Production", dependentApplicationCount: 0,
+    };
+    const nodes: Node[] = [
+      { id: "external-stripe", type: "externalServiceNode", position: { x: 0, y: 0 }, data: { service } },
+      { id: "mapping-1", type: "appNode", position: { x: 0, y: 0 }, data: { app: { appId: "app-1", portMappingId: "mapping-1", appName: "Caller" } } },
+    ];
+    expect(validateConnection({ source: "external-stripe", target: "mapping-1" }, nodes, []))
+      .toBe("An external service cannot call into your infrastructure.");
+  });
+
+  it("accepts an app depending on an external service", () => {
+    const service = {
+      id: "stripe-1", name: "Stripe", kind: "payment", provider: "Stripe",
+      endpoint: null, port: null, environment: "Production", dependentApplicationCount: 0,
+    };
+    const nodes: Node[] = [
+      { id: "mapping-1", type: "appNode", position: { x: 0, y: 0 }, data: { app: { appId: "app-1", portMappingId: "mapping-1", appName: "Caller" } } },
+      { id: "external-stripe", type: "externalServiceNode", position: { x: 0, y: 0 }, data: { service } },
+    ];
+    expect(validateConnection({ source: "mapping-1", target: "external-stripe" }, nodes, [])).toBeNull();
   });
 
   it("rejects self, duplicate and missing deployment connections", () => {

@@ -77,6 +77,7 @@ export function AppPalette({ availableApps, availableExternalServices = [], isLo
               <div
                 key={service.id}
                 draggable={!readOnly}
+                data-external-service-id={service.id}
                 onDragStart={(event) => {
                   if (readOnly) { event.preventDefault(); return; }
                   event.dataTransfer.setData("external-service/reactflow", service.id);

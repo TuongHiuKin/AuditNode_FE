@@ -218,7 +218,7 @@ describe("useDependencyLogic", () => {
       "/api/v1/topology/state",
       expect.objectContaining({
         dependencies: [
-          { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789" }
+          { sourceAppId: "app-123", destAppId: "app-789", destinationPortMappingId: "mapping-789", externalServiceId: null }
         ]
       }),
       expect.objectContaining({ catalogView: "mine" }),
