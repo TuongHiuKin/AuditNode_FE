@@ -1,6 +1,6 @@
 import type { Connection, Edge, Node } from "@xyflow/react";
 import type { Schemas } from "@/shared/api/client";
-import type { AppNodeData, PaletteApp, ServerNodeData } from "@/features/dependency-graph/types";
+import type { AppNodeData, PaletteApp, PaletteExternalService, ServerNodeData } from "@/features/dependency-graph/types";
 
 export interface DependencyApplicationDto {
   id: string;
@@ -131,6 +131,18 @@ function appData(node: Node): PaletteApp | undefined {
   return app as unknown as PaletteApp;
 }
 
+/** The third-party service behind an `externalServiceNode`, if this node is one. */
+function externalServiceData(node: Node): PaletteExternalService | undefined {
+  if (node.type !== "externalServiceNode") return undefined;
+  const service = node.data?.service;
+  if (!service || typeof service !== "object") return undefined;
+  return service as unknown as PaletteExternalService;
+}
+
+export function isExternalServiceNode(node: Node): boolean {
+  return externalServiceData(node) !== undefined;
+}
+
 export function mapDependencyGraph(data: DependencyMapResponse): { nodes: GraphNode[]; edges: Edge[] } {
   const nodes: GraphNode[] = [];
   (data.servers ?? []).forEach((server, serverIndex) => {
@@ -217,10 +229,18 @@ export function validateConnection(
   const target = nodes.find((node) => node.id === connection.target);
   const sourceApp = source ? appData(source) : undefined;
   const targetApp = target ? appData(target) : undefined;
-  if (!sourceApp || !targetApp || !hasDeploymentId(targetApp.portMappingId)) {
+  const targetExternal = target ? externalServiceData(target) : undefined;
+
+  if (source && externalServiceData(source)) {
+    return "An external service cannot call into your infrastructure.";
+  }
+  if (!sourceApp) return "The calling side must be one of your deployments.";
+  if (!targetApp && !targetExternal) return "A valid target deployment and port are required.";
+  if (targetApp && !hasDeploymentId(targetApp.portMappingId)) {
     return "A valid target deployment and port are required.";
   }
-  if (connection.source === connection.target || sourceApp.appId === targetApp.appId) {
+  if (connection.source === connection.target) return "An application cannot depend on itself.";
+  if (targetApp && sourceApp.appId === targetApp.appId) {
     return "An application cannot depend on itself.";
   }
   if (edges.some((edge) => edge.source === connection.source && edge.target === connection.target)) {
@@ -230,16 +250,30 @@ export function validateConnection(
 }
 
 export function buildDependencySyncRequest(nodes: Node[], edges: Edge[]) {
-  const dependencies = edges.flatMap((edge) => {
+  const dependencies = edges.flatMap((edge): DependencySyncItem[] => {
     const source = nodes.find((node) => node.id === edge.source);
     const target = nodes.find((node) => node.id === edge.target);
     const sourceApp = source ? appData(source) : undefined;
     const targetApp = target ? appData(target) : undefined;
-    if (!sourceApp || !targetApp || !hasDeploymentId(targetApp.portMappingId)) return [];
+    const targetExternal = target ? externalServiceData(target) : undefined;
+    if (!sourceApp) return [];
+
+    // An external destination carries the service id instead of an app/port pair.
+    // The API enforces "exactly one destination", so these branches must not overlap.
+    if (targetExternal) {
+      return [{
+        sourceAppId: sourceApp.appId,
+        destAppId: null,
+        destinationPortMappingId: null,
+        externalServiceId: targetExternal.id,
+      }];
+    }
+    if (!targetApp || !hasDeploymentId(targetApp.portMappingId)) return [];
     return [{
       sourceAppId: sourceApp.appId,
       destAppId: targetApp.appId,
       destinationPortMappingId: targetApp.portMappingId,
+      externalServiceId: null,
     }];
   });
   return {
@@ -247,7 +281,8 @@ export function buildDependencySyncRequest(nodes: Node[], edges: Edge[]) {
       dependencies.findIndex((candidate) =>
         candidate.sourceAppId === item.sourceAppId &&
         candidate.destAppId === item.destAppId &&
-        candidate.destinationPortMappingId === item.destinationPortMappingId,
+        candidate.destinationPortMappingId === item.destinationPortMappingId &&
+        candidate.externalServiceId === item.externalServiceId,
       ) === index,
     ),
   };

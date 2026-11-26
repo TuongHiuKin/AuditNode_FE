@@ -4,6 +4,188 @@
  */
 
 export interface paths {
+    "/api/v1/admin/users/{ownerUserId}/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    ownerUserId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["AdminOwnerCatalogDto"];
+                        "application/json": components["schemas"]["AdminOwnerCatalogDto"];
+                        "text/json": components["schemas"]["AdminOwnerCatalogDto"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{ownerUserId}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    labelId?: string;
+                };
+                header?: never;
+                path: {
+                    ownerUserId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"][];
+                        "application/json": components["schemas"]["LabelGrantDto"][];
+                        "text/json": components["schemas"]["LabelGrantDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: {
+                    labelId?: string;
+                };
+                header?: never;
+                path: {
+                    ownerUserId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateLabelGrantDto"];
+                    "text/json": components["schemas"]["CreateLabelGrantDto"];
+                    "application/*+json": components["schemas"]["CreateLabelGrantDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"];
+                        "application/json": components["schemas"]["LabelGrantDto"];
+                        "text/json": components["schemas"]["LabelGrantDto"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{ownerUserId}/grants/{grantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: {
+                    labelId?: string;
+                };
+                header?: never;
+                path: {
+                    ownerUserId: string;
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateLabelGrantDto"];
+                    "text/json": components["schemas"]["UpdateLabelGrantDto"];
+                    "application/*+json": components["schemas"]["UpdateLabelGrantDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["LabelGrantDto"];
+                        "application/json": components["schemas"]["LabelGrantDto"];
+                        "text/json": components["schemas"]["LabelGrantDto"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: {
+                    labelId?: string;
+                    version?: number | string;
+                };
+                header?: never;
+                path: {
+                    ownerUserId: string;
+                    grantId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users": {
         parameters: {
             query?: never;
@@ -701,6 +883,151 @@ export interface paths {
         };
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/external-services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ExternalServiceDto"][];
+                        "application/json": components["schemas"]["ExternalServiceDto"][];
+                        "text/json": components["schemas"]["ExternalServiceDto"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateExternalServiceDto"];
+                    "text/json": components["schemas"]["CreateExternalServiceDto"];
+                    "application/*+json": components["schemas"]["CreateExternalServiceDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/external-services/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ExternalServiceDto"];
+                        "application/json": components["schemas"]["ExternalServiceDto"];
+                        "text/json": components["schemas"]["ExternalServiceDto"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateExternalServiceDto"];
+                    "text/json": components["schemas"]["UpdateExternalServiceDto"];
+                    "application/*+json": components["schemas"]["UpdateExternalServiceDto"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2211,6 +2538,71 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AdminCatalogApplicationDto: {
+            /** Format: uuid */
+            id?: string;
+            appCode?: string;
+            appName?: string;
+            ownerTeam?: string;
+            techStack?: string;
+            risk?: string;
+            ports?: components["schemas"]["AdminCatalogPortDto"][];
+            labels?: string[];
+        };
+        AdminCatalogDependencyDto: {
+            /** Format: uuid */
+            id?: string;
+            sourceAppCode?: string;
+            destinationAppCode?: null | string;
+            externalServiceName?: null | string;
+        };
+        AdminCatalogExternalServiceDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            kind?: string;
+            endpoint?: null | string;
+            provider?: null | string;
+            environment?: string;
+        };
+        AdminCatalogLabelDto: {
+            /** Format: uuid */
+            id?: string;
+            key?: string;
+            value?: string;
+            kind?: string;
+            /** Format: int32 */
+            activeGrantCount?: number | string;
+        };
+        AdminCatalogPortDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            portNumber?: number | string;
+            protocol?: string;
+            serverHostname?: string;
+        };
+        AdminCatalogServerDto: {
+            /** Format: uuid */
+            id?: string;
+            hostname?: string;
+            ipAddress?: string;
+            osType?: string;
+            environment?: string;
+            status?: string;
+            datacenter?: string;
+            labels?: string[];
+        };
+        AdminOwnerCatalogDto: {
+            ownerUserId?: string;
+            username?: null | string;
+            email?: null | string;
+            servers?: components["schemas"]["AdminCatalogServerDto"][];
+            applications?: components["schemas"]["AdminCatalogApplicationDto"][];
+            externalServices?: components["schemas"]["AdminCatalogExternalServiceDto"][];
+            dependencies?: components["schemas"]["AdminCatalogDependencyDto"][];
+            labels?: components["schemas"]["AdminCatalogLabelDto"][];
+        };
         ApplicationNodeDto: {
             /** Format: uuid */
             id?: string;
@@ -2315,6 +2707,17 @@ export interface components {
             name?: string;
             location?: string;
         };
+        CreateExternalServiceDto: {
+            name?: string;
+            kind?: string;
+            endpoint?: null | string;
+            provider?: null | string;
+            protocol?: null | string;
+            /** Format: int32 */
+            port?: null | number | string;
+            environment?: string;
+            notes?: null | string;
+        };
         CreateIdentityAdminUserDto: {
             username: string;
             email: string;
@@ -2396,9 +2799,11 @@ export interface components {
             /** Format: uuid */
             sourceAppId?: string;
             /** Format: uuid */
-            destAppId?: string;
+            destAppId?: null | string;
             /** Format: uuid */
-            destinationPortMappingId?: string;
+            destinationPortMappingId?: null | string;
+            /** Format: uuid */
+            externalServiceId?: null | string;
         };
         DependencyMapDto: {
             servers?: components["schemas"]["ServerNodeDto"][];
@@ -2414,6 +2819,22 @@ export interface components {
             appName?: string;
             /** Format: int32 */
             portNumber?: number | string;
+        };
+        ExternalServiceDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            kind?: string;
+            endpoint?: null | string;
+            provider?: null | string;
+            protocol?: null | string;
+            /** Format: int32 */
+            port?: null | number | string;
+            environment?: string;
+            notes?: null | string;
+            ownerUserId?: string;
+            /** Format: int32 */
+            dependentApplicationCount?: number | string;
         };
         IdentityAdminUserDto: {
             id: string;
@@ -2686,6 +3107,17 @@ export interface components {
             serverId?: null | string;
             /** Format: int32 */
             portNumber?: null | number | string;
+        };
+        UpdateExternalServiceDto: {
+            name?: null | string;
+            kind?: null | string;
+            endpoint?: null | string;
+            provider?: null | string;
+            protocol?: null | string;
+            /** Format: int32 */
+            port?: null | number | string;
+            environment?: null | string;
+            notes?: null | string;
         };
         UpdateIdentityStatus: {
             enabled: boolean;

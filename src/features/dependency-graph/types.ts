@@ -39,6 +39,10 @@ export interface AppNodeData extends Record<string, unknown> {
   app: PaletteApp;
 }
 
+export interface ExternalServiceNodeData extends Record<string, unknown> {
+  service: PaletteExternalService;
+}
+
 export interface ServerNodeData extends Record<string, unknown> {
   server: {
     serverId?: string;

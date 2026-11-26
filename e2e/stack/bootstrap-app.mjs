@@ -124,6 +124,25 @@ const secondDatacenter = await ensureDatacenter(secondOwner, 'E2E Second Owner D
 const sameNameServer = await ensureServer(secondOwner, secondDatacenter, 'e2e-second-owner-shared', '10.251.0.10', 'shared');
 const secondOwnerLabel = await findOwnedLabel(secondOwner, 'scope', 'shared');
 
+// The dependency palette and its external node spec need a real third-party service.
+const externalServices = await call('/api/v1/external-services', { token: owner.token });
+const existingExternal = externalServices.find((service) => service.name === 'Stripe');
+const externalService = existingExternal ?? await call('/api/v1/external-services', {
+  method: 'POST',
+  token: owner.token,
+  expected: [201],
+  body: {
+    name: 'Stripe',
+    kind: 'payment',
+    endpoint: 'https://api.stripe.com',
+    provider: 'Stripe',
+    protocol: 'HTTPS',
+    port: 443,
+    environment: 'Production',
+    notes: 'E2E seeded third-party service',
+  },
+});
+
 console.log(JSON.stringify({
   ownerUserId: owner.userId,
   sharedLabelId: sharedLabel.id,
@@ -132,4 +151,5 @@ console.log(JSON.stringify({
   secondOwnerUserId: secondOwner.userId,
   secondOwnerLabelId: secondOwnerLabel.id,
   secondOwnerServerId: sameNameServer.id,
+  externalServiceId: externalService.id,
 }));

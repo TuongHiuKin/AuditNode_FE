@@ -20,6 +20,7 @@ import { GraphToolbar } from "@/features/dependency-graph/components/GraphToolba
 import { RemovableEdge } from "@/features/dependency-graph/components/RemovableEdge";
 import { FloatingSmoothStepEdge } from "@/features/dependency-graph/components/FloatingSmoothStepEdge";
 import { RestrictedNode } from "@/features/dependency-graph/components/RestrictedNode";
+import { ExternalServiceNode } from "@/features/dependency-graph/components/ExternalServiceNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   type: 'floatingSmooth',
@@ -106,6 +107,7 @@ export function FlowCanvas({
     boundaryFrame: BoundaryFrameNode as ComponentType<any>,
     dependencyLabelGroupNode: DependencyLabelGroupNode as ComponentType<any>,
     restricted: RestrictedNode as ComponentType<any>,
+    externalServiceNode: ExternalServiceNode as ComponentType<any>,
   }), []);
 
   const edgeTypes = useMemo(() => ({
