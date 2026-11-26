@@ -5,7 +5,12 @@ import { Server, Network, Workflow, Activity, ChevronsLeft, ChevronsRight, LogOu
 import { useRBAC } from "@/shared/auth/useRBAC";
 import { useAuth } from "@/shared/auth/AuthContext";
 
-const navGroups = [
+/**
+ * Navigation is split by role: a SystemAdmin is an administrator and sees only the
+ * administration console. Catalog navigation belongs to ordinary users, so an
+ * administrator cannot wander into a workspace they do not own.
+ */
+const infrastructureNavGroups = [
   {
     group: "Infrastructure",
     items: [
@@ -14,6 +19,13 @@ const navGroups = [
       { name: "Dependencies", path: "/dependency-manager", icon: Workflow },
       { name: "External services", path: "/external-services", icon: Cloud },
     ],
+  },
+];
+
+const administrationNavGroups = [
+  {
+    group: "Administration",
+    items: [{ name: "Users", path: "/admin/users", icon: Users }],
   },
 ];
 
@@ -119,7 +131,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
-        {navGroups.map((section) => (
+        {(isSystemAdmin ? administrationNavGroups : infrastructureNavGroups).map((section) => (
           <div key={section.group}>
             {!collapsed && (
               <div className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -149,7 +161,6 @@ export function Sidebar() {
             </div>
           </div>
         ))}
-        {isSystemAdmin && <div><div className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Administration</div><Link to="/admin/users" className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium ${location.pathname.startsWith("/admin/users") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"}`}><Users className="size-4" />{!collapsed && <span>Users</span>}</Link></div>}
       </nav>
 
       {/* Footer: user info + collapse button */}

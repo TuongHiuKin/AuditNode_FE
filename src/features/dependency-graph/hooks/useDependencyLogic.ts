@@ -93,7 +93,7 @@ export function useDependencyLogic() {
     }
     setEdges((current) => applyEdgeChanges(allowedChanges, current));
   }, [edges, isAuditor, setEdges, view]);
-  const { availableApps, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
+  const { availableApps, availableExternalServices, isLoading: isAppsLoading, refetch: refetchApps } = useAppPalette();
   const [selectedItem, setSelectedItem] = useState<SelectedItem>({ type: null, id: null });
   const [rightPanelData, setRightPanelData] = useState<any>(null);
 
@@ -1034,6 +1034,7 @@ export function useDependencyLogic() {
     onSelectionChange,
     isLoading,
     availableApps,
+    availableExternalServices,
     isAppsLoading,
     selectedItem,
     setSelectedItem,

@@ -38,6 +38,13 @@ export const API_ENDPOINTS = {
     BASE: "/api/v1/external-services",
     BY_ID: (id: string) => `/api/v1/external-services/${id}`,
   },
+  ADMIN: {
+    USERS: "/api/v1/admin/users",
+    USER_STATUS: (id: string) => `/api/v1/admin/users/${id}/status`,
+    USER_ROLES: (id: string) => `/api/v1/admin/users/${id}/roles`,
+    USER_CATALOG: (id: string) => `/api/v1/admin/users/${id}/catalog`,
+    USER_GRANTS: (id: string) => `/api/v1/admin/users/${id}/grants`,
+  },
   INVENTORY: {
     IMPORT_TEMPLATE: "/api/v1/inventory/import-template",
     IMPORT: "/api/v1/inventory/import",
