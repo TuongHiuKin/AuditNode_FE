@@ -22,7 +22,7 @@ function DependencyManagerContent() {
 
   const {
     nodes, edges, onNodesChange, onEdgesChange, onConnect, onDrop, onDragOver,
-    onSelectionChange, isLoading, availableApps, isAppsLoading, selectedItem, setSelectedItem,
+    onSelectionChange, isLoading, availableApps, availableExternalServices, isAppsLoading, selectedItem, setSelectedItem,
     rightPanelData, setRightPanelData,
     selectedEnv, setSelectedEnv, selectedDatacenter, setSelectedDatacenter,
     selectedLabels, setSelectedLabels,
@@ -94,6 +94,7 @@ function DependencyManagerContent() {
       >
         <AppPalette 
           availableApps={availableApps} 
+          availableExternalServices={availableExternalServices}
           isLoading={isAppsLoading} 
           onClose={() => setIsPaletteOpen(false)}
           readOnly={!canCreateGraphStructure}

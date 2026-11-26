@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import axios from "axios";
 import { Search, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -69,6 +70,7 @@ export function AdminUsers() {
               <tr key={user.id} className="border-t border-border">
                 <td className="p-3 font-semibold">{user.username}</td><td>{user.email || "—"}</td><td>{user.enabled ? "Active" : "Locked"}</td>
                 <td className="space-x-2 pr-3 text-right">
+                  <Link to={`/admin/users/${user.id}`} className="rounded-md border border-border px-3 py-1.5">Manage</Link>
                   <button disabled={status.isPending} onClick={() => status.mutate({ id: user.id, enabled: !user.enabled })} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">{user.enabled ? "Lock" : "Activate"}</button>
                   <button disabled={role.isPending} onClick={() => void changeRole(user)} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">{user.isSystemAdmin ? "Revoke SystemAdmin" : "Grant SystemAdmin"}</button>
                 </td>

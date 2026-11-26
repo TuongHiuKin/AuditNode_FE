@@ -16,6 +16,17 @@ export interface PaletteApp {
   isDerivedLabelInstance?: boolean;
   labels?: GraphLabelData[];
 }
+export interface PaletteExternalService {
+  id: string;
+  name: string;
+  kind: string;
+  provider: string | null;
+  endpoint: string | null;
+  port: number | null;
+  environment: string;
+  dependentApplicationCount: number;
+}
+
 export interface GraphLabelData { id: string; key: string; value: string; colorHex?: string; }
 export interface DependencyLabelGroupNodeData extends Record<string, unknown> { label: GraphLabelData; serverCount: number; applicationCount: number; width: number; height: number; }
 export type DependencyLabelGroupNode = Node<DependencyLabelGroupNodeData, "dependencyLabelGroupNode">;
