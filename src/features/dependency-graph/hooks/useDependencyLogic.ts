@@ -746,7 +746,15 @@ export function useDependencyLogic() {
       if (signal.aborted || activeGraphScopeRef.current !== requestScope) {
         return result;
       }
-      setNodes(result.nodes);
+
+      // Preserve nodes the operator dropped that the server does not know about yet.
+      // Without this a refetch (mount, refocus, palette load) wipes an external service
+      // the user just added, because the graph payload has no row for it.
+      setNodes((current) => {
+        const persisted = new Set(result.nodes.map((node) => node.id));
+        const unsaved = current.filter((node) => !persisted.has(node.id) && node.type === "externalServiceNode");
+        return unsaved.length === 0 ? result.nodes : [...result.nodes, ...unsaved];
+      });
       setEdges(result.edges);
       topologyVersionRef.current = result.version;
       pendingChangesRef.current = emptyPendingChanges();
